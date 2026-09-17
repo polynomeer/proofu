@@ -1,5 +1,10 @@
 packages:
   - apps/web
   - packages/contracts
+allowBuilds:
+  unrs-resolver: set this to true or false
 minimumReleaseAgeExclude:
   - '@redocly/cli@2.53.3'
+# Native resolver used by eslint-import-resolver-typescript; its postinstall only downloads a prebuilt binary.
+onlyBuiltDependencies:
+  - unrs-resolver

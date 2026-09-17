@@ -1,0 +1,107 @@
+/*
+ * ProofU design tokens (docs/design/design-tokens.md).
+ * Colors and spacing are used only through these tokens; screen-specific
+ * literal values are not allowed. Values marked "derived" are not in the
+ * v1.0 design document and were chosen to satisfy WCAG 2.2 AA contrast.
+ */
+@import "tailwindcss";
+
+@theme {
+  /* Brand and surfaces */
+  --color-primary-050: #eaf0fa; /* derived */
+  --color-primary-600: #3b5998;
+  --color-primary-700: #334c85; /* derived */
+  --color-primary-800: #2d4373;
+  --color-surface-000: #ffffff;
+  --color-surface-050: #f3f6fa;
+  --color-surface-100: #e9ebee;
+  --color-border-300: #d3d8e0;
+  --color-text-900: #1c1e21;
+  --color-text-600: #5b6270; /* derived */
+
+  /* Status */
+  --color-success-050: #e8f5ee; /* derived */
+  --color-success-600: #238c5a;
+  --color-success-700: #1c7049; /* derived */
+  --color-warning-050: #fbf3e4; /* derived */
+  --color-warning-600: #b7791f;
+  --color-warning-700: #926118; /* derived */
+  --color-neutral-100: #e9ebee;
+  --color-neutral-700: #4b5160; /* derived */
+
+  /* Typography */
+  --font-sans:
+    "Pretendard Variable", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", ui-sans-serif,
+    system-ui, sans-serif;
+  --text-page-title: 28px;
+  --text-page-title--line-height: 1.25;
+  --text-page-title--font-weight: 700;
+  --text-section-title: 20px;
+  --text-section-title--line-height: 1.3;
+  --text-section-title--font-weight: 700;
+  --text-card-title: 15px;
+  --text-card-title--line-height: 1.4;
+  --text-card-title--font-weight: 600;
+  --text-body: 14px;
+  --text-body--line-height: 1.55;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.45;
+  --text-stat: 28px;
+  --text-stat--line-height: 1.1;
+  --text-stat--font-weight: 700;
+
+  /* Spacing (4px base) — Tailwind's default scale already maps 1→4px … 8→32px */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Elevation */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.08);
+  --shadow-2: 0 8px 24px rgb(0 0 0 / 0.12);
+
+  /* Layout */
+  --width-sidebar: 224px;
+  --width-sidebar-collapsed: 72px;
+  --width-editor-outline: 240px;
+  --width-editor-evidence: 320px;
+  --container-content: 1440px;
+
+  /* Breakpoints (docs/design/design-tokens.md) */
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1200px;
+  --breakpoint-xl: 1440px;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+
+  body {
+    background-color: var(--color-surface-100);
+    color: var(--color-text-900);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  /* Keyboard focus is always visible: 2px brand outline (accessibility.md) */
+  :focus-visible {
+    outline: 2px solid var(--color-primary-600);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
