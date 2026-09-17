@@ -1,0 +1,8 @@
+spring:
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+proofu:
+  worker:
+    poll-interval: 200ms

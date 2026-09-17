@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: proofu-worker
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/proofu}
+    username: ${DATABASE_USERNAME:proofu}
+    password: ${DATABASE_PASSWORD:proofu}
+  threads:
+    virtual:
+      enabled: true
+  main:
+    web-application-type: none
+
+proofu:
+  worker:
+    poll-interval: ${WORKER_POLL_INTERVAL:2s}
+    batch-size: ${WORKER_BATCH_SIZE:5}
+
+logging:
+  level:
+    root: info
+    com.proofu: debug
