@@ -13,5 +13,6 @@ rootProject.name = "proofu"
 
 // JVM modules live under apps/ and packages/ next to the pnpm workspaces,
 // but are addressed with flat Gradle paths (:domain, :api, :worker).
-include(":domain")
+include(":domain", ":api")
 project(":domain").projectDir = file("packages/domain")
+project(":api").projectDir = file("apps/api")
