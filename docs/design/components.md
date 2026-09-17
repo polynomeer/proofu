@@ -8,12 +8,12 @@ review: 컴포넌트 변경 시 Storybook 동시 갱신
 
 ## 버튼
 
-| 유형 | 용도 | 상태 |
-|---|---|---|
-| Primary | 페이지당 한 개의 핵심 실행 | default, hover, active, focus, disabled, loading |
-| Secondary | 보조 실행과 취소 전 단계 | default, hover, active, focus, disabled |
-| Tertiary | 표와 카드의 가벼운 실행 | default, hover, focus, disabled |
-| Danger | 삭제, 연결 해제, 철회 | 확인 대화상자와 함께 사용 |
+| 유형      | 용도                       | 상태                                             |
+| --------- | -------------------------- | ------------------------------------------------ |
+| Primary   | 페이지당 한 개의 핵심 실행 | default, hover, active, focus, disabled, loading |
+| Secondary | 보조 실행과 취소 전 단계   | default, hover, active, focus, disabled          |
+| Tertiary  | 표와 카드의 가벼운 실행    | default, hover, focus, disabled                  |
+| Danger    | 삭제, 연결 해제, 철회      | 확인 대화상자와 함께 사용                        |
 
 ## 입력
 
@@ -29,12 +29,12 @@ review: 컴포넌트 변경 시 Storybook 동시 갱신
 
 ## 상태 칩
 
-| 상태 | 배경 | 텍스트 | 아이콘 |
-|---|---|---|---|
-| 검증됨 | success-050 | success-700 | check |
-| 검토 필요 | warning-050 | warning-700 | alert |
-| 만료 | neutral-100 | neutral-700 | clock |
-| 비공개 | neutral-100 | neutral-700 | lock |
+| 상태        | 배경        | 텍스트      | 아이콘        |
+| ----------- | ----------- | ----------- | ------------- |
+| 검증됨      | success-050 | success-700 | check         |
+| 검토 필요   | warning-050 | warning-700 | alert         |
+| 만료        | neutral-100 | neutral-700 | clock         |
+| 비공개      | neutral-100 | neutral-700 | lock          |
 | 제출 스냅샷 | primary-050 | primary-700 | document-lock |
 
 ## 사이드바
@@ -67,10 +67,10 @@ review: 컴포넌트 변경 시 Storybook 동시 갱신
 
 ## 구현 우선순위
 
-| 단계 | 구현 대상 | 완료 조건 |
-|---|---|---|
-| P0 | 토큰, 버튼, 입력, 사이드바, 카드, 표, 칩 | Storybook 상태와 접근성 테스트 |
-| P0 | 대시보드, Evidence, 공고 매칭, 편집기 | 핵심 흐름 E2E 통과 |
-| P1 | 버전 비교, 지원 보드, 회고 | 상태 전이와 권한 검증 |
-| P1 | 반응형 모바일 조회 | 주요 작업과 접근성 검수 |
-| P2 | 밀도 설정, 관계 시각화 | 사용자 검증 후 범위 확정 |
+| 단계 | 구현 대상                                | 완료 조건                      |
+| ---- | ---------------------------------------- | ------------------------------ |
+| P0   | 토큰, 버튼, 입력, 사이드바, 카드, 표, 칩 | Storybook 상태와 접근성 테스트 |
+| P0   | 대시보드, Evidence, 공고 매칭, 편집기    | 핵심 흐름 E2E 통과             |
+| P1   | 버전 비교, 지원 보드, 회고               | 상태 전이와 권한 검증          |
+| P1   | 반응형 모바일 조회                       | 주요 작업과 접근성 검수        |
+| P2   | 밀도 설정, 관계 시각화                   | 사용자 검증 후 범위 확정       |

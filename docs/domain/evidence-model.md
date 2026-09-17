@@ -6,14 +6,14 @@ review: 도메인 변경 시
 
 # Evidence와 Claim 규칙
 
-| 속성 | 값 | 규칙 |
-|---|---|---|
-| 유형 | `FILE`, `URL`, `REPOSITORY`, `COMMIT`, `METRIC`, `CERTIFICATE`, `NOTE`, `REFERENCE_LETTER` | 원본 또는 원본 위치를 보존합니다. |
-| 검증 상태 | `UNVERIFIED`, `USER_VERIFIED`, `EXTERNALLY_VERIFIED`, `EXPIRED` | **AI는 검증 상태를 올릴 수 없습니다.** |
-| 관계 (Claim↔Evidence) | `SUPPORTS`, `REFUTES`, `PARTIALLY_SUPPORTS` | 부분 지지는 적용 범위(`scope`)를 기록합니다. |
-| 민감도 | `PUBLIC`, `INTERNAL`, `CONFIDENTIAL`, `RESTRICTED` | 문서 생성과 외부 전송 필터에 사용합니다. |
-| 신뢰도 | 0 ~ 1 | 출처 품질과 최신성을 별도 근거로 기록합니다. |
-| 출처 | `USER_INPUT`, `EXTERNAL_IMPORT`, `SYSTEM_EXTRACTED` | 자동 추출은 원문 위치를 포함합니다. |
+| 속성                  | 값                                                                                         | 규칙                                         |
+| --------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| 유형                  | `FILE`, `URL`, `REPOSITORY`, `COMMIT`, `METRIC`, `CERTIFICATE`, `NOTE`, `REFERENCE_LETTER` | 원본 또는 원본 위치를 보존합니다.            |
+| 검증 상태             | `UNVERIFIED`, `USER_VERIFIED`, `EXTERNALLY_VERIFIED`, `EXPIRED`                            | **AI는 검증 상태를 올릴 수 없습니다.**       |
+| 관계 (Claim↔Evidence) | `SUPPORTS`, `REFUTES`, `PARTIALLY_SUPPORTS`                                                | 부분 지지는 적용 범위(`scope`)를 기록합니다. |
+| 민감도                | `PUBLIC`, `INTERNAL`, `CONFIDENTIAL`, `RESTRICTED`                                         | 문서 생성과 외부 전송 필터에 사용합니다.     |
+| 신뢰도                | 0 ~ 1                                                                                      | 출처 품질과 최신성을 별도 근거로 기록합니다. |
+| 출처                  | `USER_INPUT`, `EXTERNAL_IMPORT`, `SYSTEM_EXTRACTED`                                        | 자동 추출은 원문 위치를 포함합니다.          |
 
 ## Claim 유형
 

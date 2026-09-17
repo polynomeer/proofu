@@ -9,11 +9,11 @@
 
 ## 선택지
 
-| 선택지 | 장점 | 단점 |
-|---|---|---|
-| TypeScript 풀스택 (Next.js + NestJS) | 단일 언어, docx/pdf JS 생태계 | 대규모 도메인 로직의 타입 안정성·운영 성숙도 |
-| Next.js + Python FastAPI | AI 도구 생태계 | 두 언어 유지, 문서 렌더링 생태계 약함 |
-| Next.js + Kotlin Spring Boot | 엔터프라이즈 운영성, 강한 타입, JVM 문서 생태계(docx4j, Apache POI, OpenPDF) | 초기 세팅 비용, 두 언어 유지 |
+| 선택지                               | 장점                                                                         | 단점                                         |
+| ------------------------------------ | ---------------------------------------------------------------------------- | -------------------------------------------- |
+| TypeScript 풀스택 (Next.js + NestJS) | 단일 언어, docx/pdf JS 생태계                                                | 대규모 도메인 로직의 타입 안정성·운영 성숙도 |
+| Next.js + Python FastAPI             | AI 도구 생태계                                                               | 두 언어 유지, 문서 렌더링 생태계 약함        |
+| Next.js + Kotlin Spring Boot         | 엔터프라이즈 운영성, 강한 타입, JVM 문서 생태계(docx4j, Apache POI, OpenPDF) | 초기 세팅 비용, 두 언어 유지                 |
 
 ## 결정
 

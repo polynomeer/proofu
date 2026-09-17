@@ -12,29 +12,29 @@ MVP는 도메인 경계를 내부 모듈로 분리한 **모듈형 모놀리스**
 
 ## 기술 스택 ([ADR-0007](adr/0007-kotlin-spring-boot-and-nextjs.md))
 
-| 계층 | 선택 |
-|---|---|
-| Web Client | Next.js (App Router), TypeScript, Tailwind CSS |
-| API / Worker | Kotlin, Spring Boot 3, Gradle |
-| Domain | 순수 Kotlin 모듈 (`packages/domain`) — Spring 의존 없음 |
-| 데이터베이스 | PostgreSQL 16, Flyway |
-| 계약 | OpenAPI 3.1 (`packages/contracts`) → TypeScript 타입 생성 |
-| 큐 | TBD — 초기에는 PostgreSQL 기반 job 테이블, 필요 시 전용 브로커 |
+| 계층         | 선택                                                           |
+| ------------ | -------------------------------------------------------------- |
+| Web Client   | Next.js (App Router), TypeScript, Tailwind CSS                 |
+| API / Worker | Kotlin, Spring Boot 3, Gradle                                  |
+| Domain       | 순수 Kotlin 모듈 (`packages/domain`) — Spring 의존 없음        |
+| 데이터베이스 | PostgreSQL 16, Flyway                                          |
+| 계약         | OpenAPI 3.1 (`packages/contracts`) → TypeScript 타입 생성      |
+| 큐           | TBD — 초기에는 PostgreSQL 기반 job 테이블, 필요 시 전용 브로커 |
 
 ## 논리 컴포넌트
 
-| 컴포넌트 | 책임 | 저장 또는 연동 | 코드 위치 |
-|---|---|---|---|
-| Web Client | 데이터 입력, 검토, 편집, 다운로드 | Backend API | `apps/web` |
-| Identity | 로그인, 세션, 재인증, 계정 | OIDC 제공자 | `apps/api` identity |
-| Career Module | 경력, 프로젝트, 역량, Evidence | PostgreSQL, Object Storage | `apps/api` career |
-| Jobs Module | 공고 스냅샷, 요구사항 | career-ops, PostgreSQL | `apps/api` jobs |
-| Matching Module | 요구사항과 Evidence 매칭 | Search Index, Vector Index (선택) | `apps/api` matching |
-| Documents Module | 초안, 편집, 버전, 계보, 출력 | PostgreSQL, Object Storage | `apps/api` documents |
-| Applications Module | 지원 상태, 제출, 회고, 인계 | PostgreSQL, iterview | `apps/api` applications |
-| AI Gateway | 모델 호출 정책, 구조화 출력, 비용 기록 | 외부 AI 제공자 | `apps/api` ai |
-| Worker | 분석, 생성, 변환, 재시도 | Queue | `apps/worker` |
-| Observability | 로그, 메트릭, 추적, 감사 | 모니터링 플랫폼 | 공통 |
+| 컴포넌트            | 책임                                   | 저장 또는 연동                    | 코드 위치               |
+| ------------------- | -------------------------------------- | --------------------------------- | ----------------------- |
+| Web Client          | 데이터 입력, 검토, 편집, 다운로드      | Backend API                       | `apps/web`              |
+| Identity            | 로그인, 세션, 재인증, 계정             | OIDC 제공자                       | `apps/api` identity     |
+| Career Module       | 경력, 프로젝트, 역량, Evidence         | PostgreSQL, Object Storage        | `apps/api` career       |
+| Jobs Module         | 공고 스냅샷, 요구사항                  | career-ops, PostgreSQL            | `apps/api` jobs         |
+| Matching Module     | 요구사항과 Evidence 매칭               | Search Index, Vector Index (선택) | `apps/api` matching     |
+| Documents Module    | 초안, 편집, 버전, 계보, 출력           | PostgreSQL, Object Storage        | `apps/api` documents    |
+| Applications Module | 지원 상태, 제출, 회고, 인계            | PostgreSQL, iterview              | `apps/api` applications |
+| AI Gateway          | 모델 호출 정책, 구조화 출력, 비용 기록 | 외부 AI 제공자                    | `apps/api` ai           |
+| Worker              | 분석, 생성, 변환, 재시도               | Queue                             | `apps/worker`           |
+| Observability       | 로그, 메트릭, 추적, 감사               | 모니터링 플랫폼                   | 공통                    |
 
 ## 데이터 흐름
 
