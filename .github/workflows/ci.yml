@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web and contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm turbo run lint typecheck build
+
+  jvm:
+    name: Domain, API and worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew check --no-daemon
+
+  contract-compatibility:
+    name: OpenAPI contract vs runtime spec
+    runs-on: ubuntu-latest
+    needs: [jvm]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build API
+        run: ./gradlew :api:bootJar --no-daemon
+      - name: Start API and export runtime OpenAPI
+        run: |
+          docker run -d --name pg -e POSTGRES_DB=proofu -e POSTGRES_USER=proofu -e POSTGRES_PASSWORD=proofu -p 5432:5432 postgres:16-alpine
+          for i in $(seq 1 30); do docker exec pg pg_isready -U proofu && break; sleep 1; done
+          java -jar apps/api/build/libs/api-*.jar &
+          for i in $(seq 1 60); do curl -fs http://localhost:8080/actuator/health && break; sleep 1; done
+          curl -fs http://localhost:8080/api/v1/openapi.json -o runtime-openapi.json
+      - name: Compare with packages/contracts/openapi.yaml
+        # Reports paths the contract declares that the server does not implement yet, and vice versa.
+        # Advisory until the API surface is complete; see scripts/contract-diff.sh.
+        run: bash scripts/contract-diff.sh packages/contracts/openapi.yaml runtime-openapi.json || true
