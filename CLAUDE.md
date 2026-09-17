@@ -1,0 +1,48 @@
+# ProofU
+
+커리어 Source of Truth: 경력 사실과 Evidence를 축적하고, 채용공고 요구사항과 매칭해 **근거를 추적할 수 있는** 지원 문서를 만든다. 제출 스냅샷은 불변이며, 서류 결과는 사실/가설을 분리해 회고한다.
+
+문서의 단일 원천은 `docs/` (원본 docx는 `docs/source/`). 도메인 규칙은 코드보다 먼저 문서를 바꾼다.
+
+## 구조
+
+| 경로                 | 내용                                                                            | 도구             |
+| -------------------- | ------------------------------------------------------------------------------- | ---------------- |
+| `apps/web`           | Next.js 16 App Router, Tailwind 4, 디자인 토큰 `src/styles/tokens.css`          | pnpm             |
+| `apps/api`           | Spring Boot 4.1 REST API `/api/v1`, JPA(`ddl-auto=validate`), Flyway, springdoc | Gradle `:api`    |
+| `apps/worker`        | 헤드리스 Spring Boot, `jobs` 테이블 폴링 (SKIP LOCKED), `JobHandler` 빈 등록    | Gradle `:worker` |
+| `packages/domain`    | 순수 Kotlin 도메인 모델·불변식. **Spring 의존 금지**                            | Gradle `:domain` |
+| `packages/contracts` | `openapi.yaml` (단일 원천) → `generated/api.d.ts`                               | pnpm             |
+| `migrations/`        | Flyway SQL 단일 원천. api 빌드 시 `db/migration`으로 복사                       | —                |
+| `docs/`              | 제품·도메인·디자인·아키텍처·ADR                                                 | —                |
+
+## 명령
+
+```bash
+docker compose -f infra/docker-compose.yml up -d   # PostgreSQL 16 (localhost:5432, proofu/proofu)
+pnpm install && pnpm check                          # web + contracts: lint, typecheck, test
+pnpm dev --filter web                               # http://localhost:3000 (/api/* → :8080 rewrite)
+./gradlew check                                     # domain/api/worker 테스트 + ktlint (Docker 필요: Testcontainers)
+./gradlew :api:bootRun                              # http://localhost:8080, OpenAPI /api/v1/openapi.json
+./gradlew ktlintFormat                              # Kotlin 포맷
+pnpm format                                         # prettier
+```
+
+JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 항상 `./gradlew` 사용.
+
+## 규칙
+
+- **커밋**: Conventional Commits (`feat|fix|docs|refactor|test|chore|ci|perf(scope): subject`), 한 커밋 = 한 논리 변경. scope: `web`, `api`, `worker`, `domain`, `contracts`, `db`, `infra`, `docs`. 커밋 전 해당 영역 검사 통과.
+- **도메인 불변식은 `packages/domain`에 한 번만** 구현하고 단위 테스트한다. API/워커/UI는 이를 호출한다 (예: `ApplicationStatus.transitionTo`, `GeneratedOutput.requireGrounded`). DB CHECK/트리거는 방어선이지 대체가 아니다.
+- **enum 값**은 domain Kotlin enum ↔ `migrations/` CHECK ↔ `openapi.yaml` ↔ `docs/domain` 네 곳이 항상 일치해야 한다. 하나를 바꾸면 넷을 바꾼다.
+- **스키마 변경**은 `migrations/V{n}__*.sql` 추가만 (expand → migrate → contract). 기존 파일 수정 금지. JPA 엔티티는 스키마를 만들지 않는다.
+- **불변 테이블** (`submission_snapshots`, `job_posting_snapshots`, `application_status_events`, `provenance_links`, `audit_events`)은 UPDATE/DELETE 하지 않는다. 정정은 새 행.
+- **API 오류**는 항상 Problem Details + `code` (`ErrorCode`). 다른 workspace 리소스는 403이 아니라 404.
+- **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
+- **민감도** `CONFIDENTIAL`/`RESTRICTED`는 동의 없이 AI 컨텍스트에 넣지 않는다. 로그에 본문·프롬프트·토큰 금지.
+- **디자인**: 색상·간격은 `tokens.css` 토큰만 사용. 상태는 색상 + 텍스트/아이콘. 점수는 숫자 + 낮음/보통/높음 라벨, 합격 확률로 표현 금지. 탈락 원인은 단정하지 않는다.
+- **테스트 데이터**는 합성 데이터만 (`fixtures/`).
+
+## 미확정 (TBD)
+
+OIDC 제공자, AI 제공자/모델, 클라우드/리전, 객체 저장소, DOCX 렌더링 라이브러리, 큐 브로커 교체 시점 → `docs/project/open-decisions.md`. 결정 시 ADR 추가 (`docs/architecture/adr/`).

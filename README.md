@@ -34,7 +34,7 @@ pnpm install
 pnpm dev --filter web
 
 # 3. API
-./gradlew :apps:api:bootRun
+./gradlew :api:bootRun
 ```
 
 자세한 내용은 [docs/development/contribution-guide.md](docs/development/contribution-guide.md)를 참고하세요.

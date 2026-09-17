@@ -59,7 +59,7 @@ subject는 영문 명령형 소문자, 마침표 없이 72자 이내. body는 �
 ```bash
 docker compose -f infra/docker-compose.yml up -d   # PostgreSQL 16
 pnpm install && pnpm dev --filter web               # http://localhost:3000
-./gradlew :apps:api:bootRun                         # http://localhost:8080/api/v1
+./gradlew :api:bootRun                         # http://localhost:8080/api/v1
 ./gradlew check                                     # JVM 테스트 + lint
 pnpm check                                          # web/contracts lint + typecheck
 ```
