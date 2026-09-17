@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import java.net.URI
 
 /**
@@ -89,8 +90,10 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
         // resolve it here so the code property can be attached.
         val resolved =
             body ?: (ex as? ErrorResponse)?.updateAndGetBody(messageSource, LocaleContextHolder.getLocale())
-        if (resolved is ProblemDetail && resolved.properties?.containsKey(CODE) != true) {
-            resolved.setProperty(CODE, codeFor(statusCode))
+        if (resolved is ProblemDetail) {
+            if (resolved.properties?.containsKey(CODE) != true) resolved.setProperty(CODE, codeFor(statusCode))
+            // Spring's default wording ("No static resource ...") is misleading for an API.
+            if (ex is NoResourceFoundException) resolved.detail = "No route matches ${ex.resourcePath}"
         }
         return super.handleExceptionInternal(ex, resolved, headers, statusCode, request)
     }
