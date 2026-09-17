@@ -1,0 +1,998 @@
+openapi: 3.1.0
+info:
+  title: ProofU API
+  version: 0.1.0
+  description: |
+    Career source of truth: evidence-linked career data, job posting analysis, explainable
+    matching, traceable application documents, immutable submission snapshots and reviews.
+
+    Conventions (docs/api/conventions.md):
+    * Base path `/api/v1`, JSON, UTF-8.
+    * `201` on create, `202` + `jobId` for asynchronous work, polled via `GET /jobs/{id}`.
+    * Errors are RFC 9457 Problem Details with a stable `code` property.
+    * Cursor pagination (`cursor`, `limit` ≤ 100). Mutations carry `version`/`revision` for optimistic locking.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: /api/v1
+security:
+  - session: []
+tags:
+  - name: career
+    description: Career source of truth (entries, projects, achievements, skills)
+  - name: evidence
+    description: Evidence files and links, and their relation to claims
+  - name: jobs
+    description: Job postings, immutable snapshots and extracted requirements
+  - name: applications
+    description: Application lifecycle, submissions, reviews and interview handoff
+  - name: documents
+    description: Resume and cover letter versions, provenance and exports
+  - name: async
+    description: Long-running work accepted with 202 and polled via /jobs/{id}
+
+paths:
+  /career-entries:
+    get:
+      tags: [career]
+      operationId: listCareerEntries
+      summary: List career entries in the caller's workspace
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/CareerEntryType"
+        - name: q
+          in: query
+          description: Full-text search over title and description
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Page of career entries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CareerEntry"
+                  nextCursor:
+                    type: [string, "null"]
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [career]
+      operationId: createCareerEntry
+      summary: Create a career entry
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /career-entries/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: getCareerEntry
+      summary: Get a career entry
+      responses:
+        "200":
+          description: Career entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [career]
+      operationId: updateCareerEntry
+      summary: Update a career entry (optimistic locking via revision)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/CareerEntryInput"
+                - type: object
+                  required: [revision]
+                  properties:
+                    revision:
+                      $ref: "#/components/schemas/Revision"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerEntry"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [career]
+      operationId: deleteCareerEntry
+      summary: Soft-delete a career entry (30-day trash)
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /claims/{id}/evidence:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [evidence]
+      operationId: linkEvidenceToClaim
+      summary: Link evidence to a claim
+      description: Evidence must belong to the same workspace. Partial support requires `scope`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evidenceId, relation, confidence]
+              properties:
+                evidenceId:
+                  $ref: "#/components/schemas/Uuid"
+                relation:
+                  $ref: "#/components/schemas/EvidenceRelation"
+                confidence:
+                  $ref: "#/components/schemas/Confidence"
+                scope:
+                  type: string
+      responses:
+        "201":
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimEvidenceLink"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /files/upload-sessions:
+    post:
+      tags: [evidence]
+      operationId: createUploadSession
+      summary: Create a pre-signed upload session for an evidence file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileName, mimeType, sizeBytes]
+              properties:
+                fileName:
+                  type: string
+                mimeType:
+                  type: string
+                sizeBytes:
+                  type: integer
+                  format: int64
+                  minimum: 1
+      responses:
+        "201":
+          description: Upload session
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [uploadUrl, objectKey, expiresAt]
+                properties:
+                  uploadUrl:
+                    type: string
+                    format: uri
+                  objectKey:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /job-postings/import:
+    post:
+      tags: [jobs]
+      operationId: importJobPosting
+      summary: Import a posting from a URL, pasted text, or a career-ops reference
+      description: Creates the posting (if new) and an immutable snapshot keyed by content hash.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [source, text, company, roleTitle]
+                  properties:
+                    source:
+                      const: MANUAL_TEXT
+                    text:
+                      type: string
+                    company:
+                      type: string
+                    roleTitle:
+                      type: string
+                    sourceUrl:
+                      type: string
+                      format: uri
+                - type: object
+                  required: [source, url]
+                  properties:
+                    source:
+                      const: URL_FETCH
+                    url:
+                      type: string
+                      format: uri
+                - type: object
+                  required: [source, externalPostingId]
+                  properties:
+                    source:
+                      const: CAREER_OPS
+                    externalPostingId:
+                      type: string
+      responses:
+        "201":
+          description: Posting and snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [postingId, snapshotId, contentHash, capturedAt]
+                properties:
+                  postingId:
+                    $ref: "#/components/schemas/Uuid"
+                  snapshotId:
+                    $ref: "#/components/schemas/Uuid"
+                  contentHash:
+                    type: string
+                  capturedAt:
+                    type: string
+                    format: date-time
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /job-posting-snapshots/{id}/analysis-jobs:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [jobs, async]
+      operationId: startPostingAnalysis
+      summary: Extract requirements from a snapshot (asynchronous)
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /requirements/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [jobs]
+      operationId: getRequirement
+      summary: Get an extracted requirement
+      responses:
+        "200":
+          description: Requirement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requirement"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [jobs]
+      operationId: reviewRequirement
+      summary: Edit, approve or reject a requirement
+      description: Only APPROVED requirements are used for matching and generation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version:
+                  type: integer
+                  format: int64
+                category:
+                  $ref: "#/components/schemas/RequirementCategory"
+                text:
+                  type: string
+                status:
+                  $ref: "#/components/schemas/RequirementStatus"
+      responses:
+        "200":
+          description: Requirement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requirement"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /applications:
+    post:
+      tags: [applications]
+      operationId: createApplication
+      summary: Create an application for a posting snapshot
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [snapshotId]
+              properties:
+                snapshotId:
+                  $ref: "#/components/schemas/Uuid"
+      responses:
+        "201":
+          description: Application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /applications/{id}/match-jobs:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [applications, async]
+      operationId: startMatching
+      summary: Match approved requirements against evidence (asynchronous)
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /applications/{id}/submissions:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [applications]
+      operationId: createSubmission
+      summary: Freeze an immutable submission snapshot and move the application to SUBMITTED
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [documentVersionId, submittedAt]
+              properties:
+                documentVersionId:
+                  $ref: "#/components/schemas/Uuid"
+                submittedAt:
+                  type: string
+                  format: date-time
+      responses:
+        "201":
+          description: Submission snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionSnapshot"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /applications/{id}/reviews:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [applications]
+      operationId: createReview
+      summary: Record a post-result review (facts and hypotheses kept apart)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "201":
+          description: Review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /applications/{id}/interview-handoffs:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [applications]
+      operationId: requestInterviewHandoff
+      summary: Hand a DOCUMENT_PASSED application off to iterview with explicit consent
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [consent]
+              properties:
+                consent:
+                  type: boolean
+                  const: true
+                note:
+                  type: string
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /documents/{id}/generation-jobs:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [documents, async]
+      operationId: startDocumentGeneration
+      summary: Generate a new AI-drafted version from selected sources (asynchronous)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [templateVersion]
+              properties:
+                templateVersion:
+                  type: string
+                parentVersionId:
+                  $ref: "#/components/schemas/Uuid"
+                claimIds:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Uuid"
+                requirementIds:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Uuid"
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /documents/{id}/versions:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [documents]
+      operationId: listDocumentVersions
+      summary: List versions of a document
+      responses:
+        "200":
+          description: Versions, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DocumentVersion"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [documents]
+      operationId: createDocumentVersion
+      summary: Save a user-edited version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parentVersionId, blocks]
+              properties:
+                parentVersionId:
+                  $ref: "#/components/schemas/Uuid"
+                label:
+                  type: string
+                blocks:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/DocumentBlock"
+      responses:
+        "201":
+          description: Version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentVersion"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /document-versions/{id}/exports:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [documents, async]
+      operationId: startExport
+      summary: Render a version to DOCX, PDF, Markdown or JSON (asynchronous)
+      description: Rejected with `UNSUPPORTED_CLAIM_IN_EXPORT` while any INFERRED or UNSUPPORTED block is unapproved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [format]
+              properties:
+                format:
+                  $ref: "#/components/schemas/ExportFormat"
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /jobs/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [async]
+      operationId: getJob
+      summary: Poll an asynchronous job
+      responses:
+        "200":
+          description: Job status and, when finished, its result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        default:
+          $ref: "#/components/responses/Problem"
+
+components:
+  securitySchemes:
+    session:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OIDC-issued session token. Provider is TBD (docs/project/open-decisions.md).
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Repeating a request with the same key returns the original result.
+      schema:
+        type: string
+        maxLength: 120
+
+  responses:
+    Problem:
+      description: Error (RFC 9457)
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    Accepted:
+      description: Work accepted; poll `GET /jobs/{jobId}`
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [jobId]
+            properties:
+              jobId:
+                $ref: "#/components/schemas/Uuid"
+
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    Revision:
+      type: integer
+      format: int64
+      minimum: 1
+    Confidence:
+      type: number
+      minimum: 0
+      maximum: 1
+
+    ProblemDetail:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+              rejectedValue: {}
+
+    ErrorCode:
+      type: string
+      enum:
+        - VALIDATION_FAILED
+        - UNAUTHENTICATED
+        - REAUTHENTICATION_REQUIRED
+        - FORBIDDEN_WORKSPACE
+        - NOT_FOUND
+        - CONFLICT_STALE_VERSION
+        - INVALID_STATUS_TRANSITION
+        - SNAPSHOT_IMMUTABLE
+        - DOMAIN_RULE_VIOLATION
+        - UNSUPPORTED_CLAIM_IN_EXPORT
+        - RATE_LIMITED
+        - AI_PROVIDER_UNAVAILABLE
+        - INTERNAL_ERROR
+
+    Visibility:
+      type: string
+      enum: [PRIVATE, SELECTIVE, PUBLIC]
+    CareerEntryType:
+      type: string
+      enum: [EMPLOYMENT, EDUCATION, TRAINING, AWARD, CERTIFICATION, OTHER]
+    CareerEntryStatus:
+      type: string
+      enum: [ACTIVE, ARCHIVED, DELETED]
+    EvidenceRelation:
+      type: string
+      enum: [SUPPORTS, REFUTES, PARTIALLY_SUPPORTS]
+    RequirementCategory:
+      type: string
+      enum: [REQUIRED, PREFERRED, RESPONSIBILITY, SKILL, BEHAVIORAL]
+    RequirementStatus:
+      type: string
+      enum: [DRAFT, APPROVED, REJECTED]
+    ApplicationStatus:
+      type: string
+      enum:
+        - INTERESTED
+        - PREPARING
+        - SUBMITTED
+        - DOCUMENT_PASSED
+        - DOCUMENT_REJECTED
+        - NO_RESPONSE
+        - WITHDRAWN
+        - HANDOFF_READY
+        - HANDED_OFF_TO_ITERVIEW
+        - REVIEW_PENDING
+        - REVIEWED
+    Certainty:
+      type: string
+      enum: [SUPPORTED, INFERRED, UNSUPPORTED]
+    ExportFormat:
+      type: string
+      enum: [DOCX, PDF, MARKDOWN, JSON]
+    JobStatus:
+      type: string
+      enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELLED]
+    ReviewConfidence:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+
+    CareerEntryInput:
+      type: object
+      required: [type, title, startDate]
+      properties:
+        type:
+          $ref: "#/components/schemas/CareerEntryType"
+        title:
+          type: string
+          maxLength: 200
+        organization:
+          type: string
+          maxLength: 200
+        location:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        visibility:
+          $ref: "#/components/schemas/Visibility"
+
+    CareerEntry:
+      allOf:
+        - $ref: "#/components/schemas/CareerEntryInput"
+        - type: object
+          required: [id, status, revision, createdAt, updatedAt]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            status:
+              $ref: "#/components/schemas/CareerEntryStatus"
+            revision:
+              $ref: "#/components/schemas/Revision"
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    ClaimEvidenceLink:
+      type: object
+      required: [claimId, evidenceId, relation, confidence]
+      properties:
+        claimId:
+          $ref: "#/components/schemas/Uuid"
+        evidenceId:
+          $ref: "#/components/schemas/Uuid"
+        relation:
+          $ref: "#/components/schemas/EvidenceRelation"
+        confidence:
+          $ref: "#/components/schemas/Confidence"
+        scope:
+          type: string
+
+    Requirement:
+      type: object
+      required: [id, snapshotId, category, text, confidence, status, version]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        snapshotId:
+          $ref: "#/components/schemas/Uuid"
+        category:
+          $ref: "#/components/schemas/RequirementCategory"
+        text:
+          type: string
+        sourceSpan:
+          type: object
+          required: [start, end]
+          properties:
+            start:
+              type: integer
+            end:
+              type: integer
+        confidence:
+          $ref: "#/components/schemas/Confidence"
+        status:
+          $ref: "#/components/schemas/RequirementStatus"
+        approvedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+
+    Application:
+      type: object
+      required: [id, snapshotId, company, roleTitle, status, version, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        snapshotId:
+          $ref: "#/components/schemas/Uuid"
+        company:
+          type: string
+        roleTitle:
+          type: string
+        status:
+          $ref: "#/components/schemas/ApplicationStatus"
+        deadlineAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SubmissionSnapshot:
+      type: object
+      required: [id, applicationId, documentVersionId, postingSnapshotId, hash, submittedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        applicationId:
+          $ref: "#/components/schemas/Uuid"
+        documentVersionId:
+          $ref: "#/components/schemas/Uuid"
+        postingSnapshotId:
+          $ref: "#/components/schemas/Uuid"
+        hash:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+
+    ReviewInput:
+      type: object
+      required: [observedFact, hypothesis]
+      properties:
+        observedFact:
+          type: string
+        hypothesis:
+          type: string
+        rationale:
+          type: string
+        confidence:
+          $ref: "#/components/schemas/ReviewConfidence"
+        improvementAction:
+          type: string
+        verificationPlan:
+          type: string
+
+    Review:
+      allOf:
+        - $ref: "#/components/schemas/ReviewInput"
+        - type: object
+          required: [id, applicationId, createdAt]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            applicationId:
+              $ref: "#/components/schemas/Uuid"
+            createdAt:
+              type: string
+              format: date-time
+
+    DocumentBlock:
+      type: object
+      required: [blockId, text, certainty]
+      properties:
+        blockId:
+          type: string
+        text:
+          type: string
+        claimRefs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+        evidenceRefs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+        requirementRefs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+        certainty:
+          $ref: "#/components/schemas/Certainty"
+        warnings:
+          type: array
+          items:
+            type: string
+        approvedByUser:
+          type: boolean
+          default: false
+
+    DocumentVersion:
+      type: object
+      required: [id, documentId, blocks, templateVersion, createdBy, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        documentId:
+          $ref: "#/components/schemas/Uuid"
+        parentId:
+          $ref: "#/components/schemas/Uuid"
+        label:
+          type: string
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentBlock"
+        templateVersion:
+          type: string
+        promptVersion:
+          type: string
+        modelRef:
+          type: string
+        createdBy:
+          type: string
+          enum: [USER, AI]
+        createdAt:
+          type: string
+          format: date-time
+
+    Job:
+      type: object
+      required: [id, type, status, attempts, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        type:
+          type: string
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        attempts:
+          type: integer
+        errorCode:
+          type: string
+        result:
+          description: Job-type specific result, present when SUCCEEDED
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time

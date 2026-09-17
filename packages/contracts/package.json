@@ -1,0 +1,28 @@
+{
+  "name": "@proofu/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ProofU OpenAPI contract and generated TypeScript types",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./openapi.yaml": "./openapi.yaml"
+  },
+  "files": [
+    "openapi.yaml",
+    "src",
+    "generated"
+  ],
+  "scripts": {
+    "build": "openapi-typescript openapi.yaml -o generated/api.d.ts --alphabetize --root-types",
+    "lint": "redocly lint openapi.yaml",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.53.3",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3"
+  }
+}
