@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { ApplicationStatusChip } from "@/components/application/chips";
 import { DeadlineForm } from "@/components/application/DeadlineForm";
+import { ReviewSection } from "@/components/application/ReviewSection";
 import { TransitionPanel } from "@/components/application/TransitionPanel";
 import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -12,6 +13,14 @@ import { formatDateTime, formatDday } from "@/lib/format";
 import { applicationStatusLabel } from "@/lib/labels";
 
 type Params = Promise<{ id: string }>;
+
+/** Mirrors ApplicationStatus.acceptsReview for showing the form; the API is the enforcer. */
+const REVIEWABLE: readonly string[] = [
+  "DOCUMENT_REJECTED",
+  "NO_RESPONSE",
+  "REVIEW_PENDING",
+  "REVIEWED",
+];
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { id } = await params;
@@ -25,6 +34,10 @@ export default async function ApplicationPage({ params }: { params: Params }) {
   const { id } = await params;
   const { data: a } = await api.GET("/applications/{id}", { params: { path: { id } } });
   if (!a) notFound();
+  const { data: reviews } = await api.GET("/applications/{id}/reviews", {
+    params: { path: { id } },
+  });
+  const canReview = REVIEWABLE.includes(a.status);
 
   return (
     <>
@@ -83,6 +96,12 @@ export default async function ApplicationPage({ params }: { params: Params }) {
               ))}
             </ol>
           </section>
+
+          <ReviewSection
+            applicationId={a.id}
+            initialReviews={reviews?.items ?? []}
+            canReview={canReview}
+          />
         </div>
 
         <aside className="flex h-fit flex-col gap-4">
