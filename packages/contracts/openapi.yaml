@@ -1084,10 +1084,34 @@ paths:
   /applications/{id}/reviews:
     parameters:
       - $ref: "#/components/parameters/Id"
+    get:
+      tags: [applications]
+      operationId: listReviews
+      summary: Reviews written for this application, oldest first
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Review"
+        default:
+          $ref: "#/components/responses/Problem"
     post:
       tags: [applications]
       operationId: createReview
       summary: Record a post-result review (facts and hypotheses kept apart)
+      description: |
+        Allowed only in DOCUMENT_REJECTED, NO_RESPONSE, REVIEW_PENDING or REVIEWED (422 otherwise).
+        The first review moves DOCUMENT_REJECTED/NO_RESPONSE through REVIEW_PENDING to REVIEWED.
+        `warnings` lists definitive-cause phrases found in the hypothesis or rationale; the
+        review is still saved.
       requestBody:
         required: true
         content:
@@ -1101,6 +1125,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Review"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /reviews/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [applications]
+      operationId: getReview
+      summary: Get a review
+      responses:
+        "200":
+          description: Review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [applications]
+      operationId: updateReview
+      summary: Update a review (optimistic locking via version)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/ReviewInput"
+                - type: object
+                  required: [version]
+                  properties:
+                    version:
+                      type: integer
+                      format: int64
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [applications]
+      operationId: deleteReview
+      summary: Delete a review
+      responses:
+        "204":
+          description: Deleted
         default:
           $ref: "#/components/responses/Problem"
 
@@ -2117,13 +2193,26 @@ components:
       allOf:
         - $ref: "#/components/schemas/ReviewInput"
         - type: object
-          required: [id, applicationId, createdAt]
+          required: [id, applicationId, confidence, warnings, version, createdAt, updatedAt]
           properties:
             id:
               $ref: "#/components/schemas/Uuid"
             applicationId:
               $ref: "#/components/schemas/Uuid"
+            confidence:
+              $ref: "#/components/schemas/ReviewConfidence"
+            warnings:
+              type: array
+              description: Definitive-cause phrases found in the hypothesis or rationale
+              items:
+                type: string
+            version:
+              type: integer
+              format: int64
             createdAt:
+              type: string
+              format: date-time
+            updatedAt:
               type: string
               format: date-time
 
