@@ -17,9 +17,9 @@ import java.util.UUID
 /** Matches `CareerEntryInput` in packages/contracts/openapi.yaml. Fields are nullable so bean validation reports them. */
 data class CareerEntryRequest(
     @field:NotNull val type: CareerEntryType?,
-    @field:NotBlank @field:Size(max = 200) val title: String?,
-    @field:Size(max = 200) val organization: String? = null,
-    @field:Size(max = 200) val location: String? = null,
+    @field:NotBlank @field:Size(max = 200, message = "{max}자 이하로 입력하세요") val title: String?,
+    @field:Size(max = 200, message = "{max}자 이하로 입력하세요") val organization: String? = null,
+    @field:Size(max = 200, message = "{max}자 이하로 입력하세요") val location: String? = null,
     val description: String? = null,
     @field:NotNull val startDate: LocalDate?,
     val endDate: LocalDate? = null,
