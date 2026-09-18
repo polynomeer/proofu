@@ -1449,6 +1449,13 @@ components:
           properties:
             revision:
               $ref: "#/components/schemas/Revision"
+            title:
+              type: [string, "null"]
+              description: Display name of the record at read time (entry title, project name or achievement action)
+            projectId:
+              type: [string, "null"]
+              format: uuid
+              description: For ACHIEVEMENT sources, the project the achievement belongs to
 
     ClaimInput:
       type: object

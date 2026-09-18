@@ -43,6 +43,10 @@ data class ClaimSourceResponse(
     val type: ClaimSourceType,
     val id: UUID,
     val revision: Long,
+    /** Display name at read time; null when the record has since been deleted. */
+    val title: String?,
+    /** For ACHIEVEMENT sources, the owning project. */
+    val projectId: UUID?,
 )
 
 data class ClaimEvidenceLinkResponse(

@@ -77,6 +77,8 @@ class ClaimApiTest {
         val sources = claim["sources"] as List<*>
         assertThat((sources.single() as Map<*, *>)["revision"]).isEqualTo(1)
         assertThat((sources.single() as Map<*, *>)["id"]).isEqualTo(achievementId.toString())
+        assertThat((sources.single() as Map<*, *>)["title"]).isEqualTo("Cut build time")
+        assertThat((sources.single() as Map<*, *>)["projectId"]).isEqualTo(projectId.toString())
     }
 
     @Test

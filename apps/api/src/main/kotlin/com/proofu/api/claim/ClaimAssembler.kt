@@ -29,6 +29,7 @@ class ClaimAssembler(
         val ids = claims.map { it.id }
         val sources = sourcesFor(ids)
         val links = linksFor(ids)
+        val names = sourceNames(sources.values.flatten())
         return claims.map { c ->
             val claimLinks = links[c.id] ?: emptyList()
             val status =
@@ -49,13 +50,44 @@ class ClaimAssembler(
                 type = c.type,
                 sensitivity = c.sensitivity,
                 status = status,
-                sources = (sources[c.id] ?: emptyList()).map { ClaimSourceResponse(it.type, it.id, it.revision.value) },
+                sources =
+                    (sources[c.id] ?: emptyList()).map {
+                        val name = names[it.type to it.id]
+                        ClaimSourceResponse(it.type, it.id, it.revision.value, name?.first, name?.second)
+                    },
                 links = claimLinks,
                 revision = c.revision,
                 createdAt = checkNotNull(c.createdAt),
                 updatedAt = checkNotNull(c.updatedAt),
             )
         }
+    }
+
+    /** (title, projectId) per source record, read from the live tables. */
+    private fun sourceNames(sources: List<ClaimSource>): Map<Pair<ClaimSourceType, UUID>, Pair<String, UUID?>> {
+        val result = mutableMapOf<Pair<ClaimSourceType, UUID>, Pair<String, UUID?>>()
+        sources.groupBy({ it.type }, { it.id }).forEach { (type, rawIds) ->
+            val ids = rawIds.distinct()
+            val placeholders = ids.joinToString(",") { "?" }
+            val (table, nameColumn, projectColumn) =
+                when (type) {
+                    ClaimSourceType.CAREER_ENTRY -> Triple("career_entries", "title", "null::uuid")
+                    ClaimSourceType.PROJECT -> Triple("projects", "name", "null::uuid")
+                    ClaimSourceType.ACHIEVEMENT -> Triple("achievements", "action", "project_id")
+                }
+            val sql =
+                "select id, $nameColumn as name, $projectColumn as project_id " +
+                    "from $table where id in ($placeholders)"
+            jdbc.query(
+                sql,
+                { rs, _ ->
+                    result[type to rs.getObject("id", UUID::class.java)] =
+                        rs.getString("name") to rs.getObject("project_id", UUID::class.java)
+                },
+                *ids.toTypedArray(),
+            )
+        }
+        return result
     }
 
     private fun sourcesFor(claimIds: List<UUID>): Map<UUID, List<ClaimSource>> {
