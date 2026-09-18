@@ -8,36 +8,37 @@ review: 스키마 변경 시
 
 모든 workspace 소유 테이블은 `workspace_id`를 가지며 쿼리 계층에서 격리를 강제합니다. 변경 가능한 테이블은 `revision` (원천 데이터) 또는 `version` (기타) 열로 낙관적 잠금을 적용합니다.
 
-| 테이블                    | 핵심 열                                                                                         | 무결성 규칙                           |
-| ------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------- |
-| users                     | id, email, display_name                                                                         | OIDC subject로 식별                   |
-| workspaces                | id, owner_user_id, name                                                                         | 사용자당 1개 (MVP)                    |
-| workspace_members         | workspace_id, user_id, role                                                                     | (workspace, user) 유일                |
-| career_entries            | id, workspace_id, type, title, start_date, end_date, visibility, revision                       | end_date ≥ start_date                 |
-| projects                  | id, workspace_id, career_entry_id, name, role, summary, visibility, revision                    | workspace 경계를 넘어 연결하지 않음   |
-| achievements              | id, workspace_id, project_id, action, outcome, metric_value, metric_unit, confidence            | 수치가 있으면 단위 필요               |
-| skills                    | id, workspace_id, canonical_name, category, aliases                                             | (workspace, canonical_name) 유일      |
-| project_skills            | project_id, skill_id                                                                            | 중복 금지                             |
-| capabilities              | id, workspace_id, name, definition, level, parent_id                                            | —                                     |
-| claims                    | id, workspace_id, text, claim_type, status, sensitivity, revision                               | 사실·추론·의견 구분                   |
-| evidence                  | id, workspace_id, type, uri, object_key, verification, sensitivity, captured_at                 | uri 또는 object_key 중 하나 필요      |
-| claim_evidence            | claim_id, evidence_id, relation, scope, confidence                                              | 동일 관계 중복 금지                   |
-| capability_evidence       | capability_id, evidence_id                                                                      | 중복 금지                             |
-| job_postings              | id, workspace_id, external_posting_id, canonical_url, company, role_title                       | (workspace, external_posting_id) 유일 |
-| job_posting_snapshots     | id, posting_id, source, source_url, raw_text, content_hash, captured_at                         | content_hash와 captured_at 보존       |
-| requirements              | id, snapshot_id, category, text, source_span, confidence, status, approved_at                   | AI 추출 결과는 승인 전 DRAFT          |
-| applications              | id, workspace_id, snapshot_id, status, company, role_title, version                             | 상태 전이는 허용 목록만 사용          |
-| application_status_events | id, application_id, from_status, to_status, occurred_at                                         | append only                           |
-| documents                 | id, workspace_id, application_id, type, title                                                   | —                                     |
-| document_versions         | id, document_id, parent_id, content_json, template_version, model_ref, created_by               | 부모는 같은 document에 속함           |
-| provenance_links          | version_id, block_id, source_type, source_id, source_revision, relation                         | 원천 revision 고정                    |
-| submission_snapshots      | id, application_id, document_version_id, posting_snapshot_id, hash, submitted_at                | 생성 후 갱신·삭제 금지                |
-| reviews                   | id, application_id, observed_fact, hypothesis, rationale, confidence, action, verification_plan | 원인 단정 금지 (UI 경고)              |
-| interview_handoffs        | id, application_id, idempotency_key, handoff_id, status, consent_at                             | (application, idempotency_key) 유일   |
-| jobs                      | id, workspace_id, type, status, payload, result, attempts, scheduled_at                         | 비동기 작업 큐 (ADR-0004)             |
-| exports                   | id, document_version_id, format, status, object_key, sha256, size_bytes, page_count             | 상태 REQUESTED→READY                  |
-| ai_executions             | id, purpose, provider, model, prompt_version, input_hash, status, token_usage, cost             | 민감 입력 원문 로그는 기본 비활성     |
-| audit_events              | id, actor, action, target, before_hash, after_hash, occurred_at                                 | append only                           |
+| 테이블                    | 핵심 열                                                                                         | 무결성 규칙                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| users                     | id, email, display_name                                                                         | OIDC subject로 식별                             |
+| workspaces                | id, owner_user_id, name                                                                         | 사용자당 1개 (MVP)                              |
+| workspace_members         | workspace_id, user_id, role                                                                     | (workspace, user) 유일                          |
+| career_entries            | id, workspace_id, type, title, start_date, end_date, visibility, revision                       | end_date ≥ start_date                           |
+| projects                  | id, workspace_id, career_entry_id, name, role, summary, visibility, revision                    | workspace 경계를 넘어 연결하지 않음             |
+| achievements              | id, workspace_id, project_id, action, outcome, metric_value, metric_unit, confidence            | 수치가 있으면 단위 필요                         |
+| skills                    | id, workspace_id, canonical_name, category, aliases                                             | (workspace, canonical_name) 유일                |
+| project_skills            | project_id, skill_id                                                                            | 중복 금지                                       |
+| capabilities              | id, workspace_id, name, definition, level, parent_id                                            | —                                               |
+| claims                    | id, workspace_id, text, claim_type, status, sensitivity, revision                               | 사실·추론·의견 구분                             |
+| evidence                  | id, workspace_id, type, uri, object_key, body, verification, sensitivity, captured_at           | NOTE→body, FILE→object_key, 그 외→uri 필요 (V2) |
+| claim_sources             | claim_id, source_type, source_id, source_revision                                               | 같은 기록 중복 금지, revision 고정              |
+| claim_evidence            | claim_id, evidence_id, relation, scope, confidence                                              | 동일 관계 중복 금지                             |
+| capability_evidence       | capability_id, evidence_id                                                                      | 중복 금지                                       |
+| job_postings              | id, workspace_id, external_posting_id, canonical_url, company, role_title                       | (workspace, external_posting_id) 유일           |
+| job_posting_snapshots     | id, posting_id, source, source_url, raw_text, content_hash, captured_at                         | content_hash와 captured_at 보존                 |
+| requirements              | id, snapshot_id, category, text, source_span, confidence, status, approved_at                   | AI 추출 결과는 승인 전 DRAFT                    |
+| applications              | id, workspace_id, snapshot_id, status, company, role_title, version                             | 상태 전이는 허용 목록만 사용                    |
+| application_status_events | id, application_id, from_status, to_status, occurred_at                                         | append only                                     |
+| documents                 | id, workspace_id, application_id, type, title                                                   | —                                               |
+| document_versions         | id, document_id, parent_id, content_json, template_version, model_ref, created_by               | 부모는 같은 document에 속함                     |
+| provenance_links          | version_id, block_id, source_type, source_id, source_revision, relation                         | 원천 revision 고정                              |
+| submission_snapshots      | id, application_id, document_version_id, posting_snapshot_id, hash, submitted_at                | 생성 후 갱신·삭제 금지                          |
+| reviews                   | id, application_id, observed_fact, hypothesis, rationale, confidence, action, verification_plan | 원인 단정 금지 (UI 경고)                        |
+| interview_handoffs        | id, application_id, idempotency_key, handoff_id, status, consent_at                             | (application, idempotency_key) 유일             |
+| jobs                      | id, workspace_id, type, status, payload, result, attempts, scheduled_at                         | 비동기 작업 큐 (ADR-0004)                       |
+| exports                   | id, document_version_id, format, status, object_key, sha256, size_bytes, page_count             | 상태 REQUESTED→READY                            |
+| ai_executions             | id, purpose, provider, model, prompt_version, input_hash, status, token_usage, cost             | 민감 입력 원문 로그는 기본 비활성               |
+| audit_events              | id, actor, action, target, before_hash, after_hash, occurred_at                                 | append only                                     |
 
 ## 인덱스와 검색
 

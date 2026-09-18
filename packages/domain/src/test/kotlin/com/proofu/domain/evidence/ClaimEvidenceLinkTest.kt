@@ -80,15 +80,16 @@ class ClaimEvidenceLinkTest {
     }
 
     @Test
-    fun `evidence needs a uri or an object key`() {
+    fun `claim sources must not repeat a record`() {
+        val source =
+            ClaimSource(ClaimSourceType.ACHIEVEMENT, Fixtures.uuid(34), com.proofu.domain.common.Revision.INITIAL)
         assertThatThrownBy {
-            Evidence(
-                id = EvidenceId(Fixtures.uuid(33)),
-                workspaceId = Fixtures.workspaceA,
-                type = EvidenceType.FILE,
-                title = "Certificate",
-                source = EvidenceSource.USER_INPUT,
-                capturedAt = Instant.EPOCH,
+            Claim(
+                ClaimId(Fixtures.uuid(35)),
+                Fixtures.workspaceA,
+                "text",
+                ClaimType.FACT,
+                sources = listOf(source, source),
             )
         }.isInstanceOf(DomainRuleViolation::class.java)
     }

@@ -15,6 +15,20 @@ review: 도메인 변경 시
 | 신뢰도                | 0 ~ 1                                                                                      | 출처 품질과 최신성을 별도 근거로 기록합니다. |
 | 출처                  | `USER_INPUT`, `EXTERNAL_IMPORT`, `SYSTEM_EXTRACTED`                                        | 자동 추출은 원문 위치를 포함합니다.          |
 
+## 위치 규칙 (유형별)
+
+| 유형                                                                               | 필수                                                            |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `NOTE`                                                                             | `body` (메모 본문)                                              |
+| `FILE`                                                                             | `object_key` (객체 저장소, 스토리지 확정 전까지 API에서 미지원) |
+| 그 외 (`URL`, `REPOSITORY`, `COMMIT`, `METRIC`, `CERTIFICATE`, `REFERENCE_LETTER`) | 절대 http(s) `uri`                                              |
+
+`body`는 다른 유형에서 선택적 설명으로 쓸 수 있습니다. 사용자는 검증 상태를 `UNVERIFIED`, `USER_VERIFIED`, `EXPIRED` 사이에서만 바꿀 수 있고 `EXTERNALLY_VERIFIED`는 연동 전용입니다.
+
+## Claim 원천
+
+Claim은 어떤 경력 기록에 대한 주장인지 `claim_sources`로 가리키며 (`CAREER_ENTRY` | `PROJECT` | `ACHIEVEMENT`), 읽은 시점의 `revision`을 고정합니다. 같은 기록을 두 번 가리킬 수 없습니다.
+
 ## Claim 유형
 
 `FACT` (사실), `INFERENCE` (추론), `OPINION` (의견)
