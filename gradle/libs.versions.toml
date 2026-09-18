@@ -5,6 +5,8 @@ spring-dependency-management = "1.1.7"
 springdoc = "3.1.1"
 ktlint-gradle = "14.2.0"
 uuid-generator = "5.2.0"
+anthropic = "2.63.0"
+json-schema-validator = "3.0.7"
 
 [libraries]
 # BOM
@@ -33,6 +35,10 @@ jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" 
 uuid-generator = { module = "com.fasterxml.uuid:java-uuid-generator", version.ref = "uuid-generator" }
 postgresql = { module = "org.postgresql:postgresql" }
 flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+anthropic-java = { module = "com.anthropic:anthropic-java", version.ref = "anthropic" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+spring-jdbc = { module = "org.springframework:spring-jdbc" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind" }
 
 # Test
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
