@@ -40,6 +40,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **API 오류**는 항상 Problem Details + `code` (`ErrorCode`). 다른 workspace 리소스는 403이 아니라 404. 컨트롤러는 `WorkspaceContext` 파라미터로 호출자 workspace를 받는다.
 - **인증은 임시**: OIDC 확정 전까지 `X-Workspace-Id` 헤더 (`HeaderWorkspaceResolver`, production 프로필 제외). `local` 프로필이 시드하는 workspace `00000000-0000-7000-8000-000000000002`를 웹이 기본으로 보낸다. OIDC 도입 시 `WorkspaceResolver`만 교체.
 - **API 패턴** (`apps/api/.../career` 참고): 요청 DTO는 nullable + Bean Validation(400 fieldErrors) → 도메인 객체 생성(422) → JPA 엔티티(`from`/`apply`/`toDomain`). 목록은 keyset cursor, 변경은 row lock + revision 비교(409), 모든 변경은 `AuditLog`(해시만) + 도메인 이벤트 발행.
+- **Evidence/Claim 흐름**: Claim은 경력 기록(`ClaimSource`, revision 고정)에 대한 문장이고 상태(`UNSUPPORTED/SUPPORTED/CONTESTED`)는 저장하지 않고 `ClaimEvidenceLink.statusOf`로 파생한다. Evidence 위치 규칙은 유형별(NOTE→body, FILE→object_key, 그 외→절대 uri). FILE 등록은 객체 저장소 확정 전까지 API가 422로 거부한다.
 - **웹 패턴**: 서버 컴포넌트가 `@/lib/api`로 조회, 폼은 클라이언트 컴포넌트. enum 라벨은 `@/lib/labels` 조회표(알 수 없는 값은 코드 그대로). 페이지 헤더의 primary 버튼은 하나.
 - **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
 - **민감도** `CONFIDENTIAL`/`RESTRICTED`는 동의 없이 AI 컨텍스트에 넣지 않는다. 로그에 본문·프롬프트·토큰 금지.
