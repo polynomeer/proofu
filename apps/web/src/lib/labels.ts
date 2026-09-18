@@ -144,3 +144,25 @@ export const APPLICATION_BOARD_COLUMNS: readonly {
   },
   { key: "closed", label: "종료", statuses: ["WITHDRAWN"] },
 ];
+
+export const requirementCategoryLabel = labelsOf<Schema<"RequirementCategory">>({
+  REQUIRED: "필수 조건",
+  PREFERRED: "우대 조건",
+  RESPONSIBILITY: "책임",
+  SKILL: "기술",
+  BEHAVIORAL: "행동 역량",
+});
+
+export const REQUIREMENT_CATEGORIES: readonly Schema<"RequirementCategory">[] = [
+  "REQUIRED",
+  "PREFERRED",
+  "RESPONSIBILITY",
+  "SKILL",
+  "BEHAVIORAL",
+];
+
+export const requirementStatusLabel = labelsOf<Schema<"RequirementStatus">>({
+  DRAFT: "검토 필요",
+  APPROVED: "승인됨",
+  REJECTED: "제외됨",
+});

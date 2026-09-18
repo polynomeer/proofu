@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CreateApplicationButton } from "@/components/application/CreateApplicationButton";
+import { SnapshotRequirementsPanel } from "@/components/jobs/SnapshotRequirementsPanel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
@@ -37,9 +38,14 @@ export default async function JobPostingPage({
 
   const selectedSummary =
     posting.snapshots.find((s) => s.id === selectedId) ?? posting.snapshots[0];
-  const { data: snapshot } = selectedSummary
-    ? await api.GET("/job-posting-snapshots/{id}", { params: { path: { id: selectedSummary.id } } })
-    : { data: undefined };
+  const [{ data: snapshot }, { data: requirements }] = selectedSummary
+    ? await Promise.all([
+        api.GET("/job-posting-snapshots/{id}", { params: { path: { id: selectedSummary.id } } }),
+        api.GET("/job-posting-snapshots/{id}/requirements", {
+          params: { path: { id: selectedSummary.id } },
+        }),
+      ])
+    : [{ data: undefined }, { data: undefined }];
   const isLatest = selectedSummary?.id === posting.snapshots[0]?.id;
 
   return (
@@ -77,24 +83,24 @@ export default async function JobPostingPage({
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <section className="rounded-md border border-border-300 bg-surface-000 p-6">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-section-title">공고 원문</h2>
-            {selectedSummary ? (
-              <span className="flex items-center gap-2 text-caption text-text-600">
-                <Chip tone="snapshot">{isLatest ? "최신 스냅샷" : "이전 스냅샷"}</Chip>
-                {formatDateTime(selectedSummary.capturedAt)}
-              </span>
-            ) : null}
-          </div>
+        <div className="flex flex-col gap-4">
+          {selectedSummary ? (
+            <div className="flex flex-wrap items-center gap-2 text-caption text-text-600">
+              <Chip tone="snapshot">{isLatest ? "최신 스냅샷" : "이전 스냅샷"}</Chip>
+              {formatDateTime(selectedSummary.capturedAt)}
+            </div>
+          ) : null}
           {snapshot ? (
-            <pre className="max-h-[70vh] overflow-auto rounded-md bg-surface-050 p-4 font-sans text-body whitespace-pre-wrap">
-              {snapshot.rawText}
-            </pre>
+            <SnapshotRequirementsPanel
+              key={snapshot.id}
+              snapshotId={snapshot.id}
+              rawText={snapshot.rawText}
+              initialItems={requirements?.items ?? []}
+            />
           ) : (
             <p className="text-body text-text-600">저장된 본문이 없습니다.</p>
           )}
-        </section>
+        </div>
 
         <aside className="flex h-fit flex-col gap-4">
           <div className="rounded-md border border-border-300 bg-surface-000 p-6">
