@@ -8,6 +8,10 @@ plugins {
 
 description = "ProofU REST API (/api/v1)"
 
+allOpen {
+    annotations("jakarta.persistence.Entity", "jakarta.persistence.MappedSuperclass", "jakarta.persistence.Embeddable")
+}
+
 kotlin {
     jvmToolchain(21)
     compilerOptions {

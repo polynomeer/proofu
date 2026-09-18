@@ -46,6 +46,15 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(DomainRuleViolation::class)
     fun onDomainRule(e: DomainRuleViolation): ProblemDetail = problem(ErrorCode.DOMAIN_RULE_VIOLATION, e.message)
 
+    @ExceptionHandler(ResourceNotFoundException::class)
+    fun onNotFound(e: ResourceNotFoundException): ProblemDetail = problem(ErrorCode.NOT_FOUND, e.message)
+
+    @ExceptionHandler(StaleVersionException::class)
+    fun onStaleVersion(e: StaleVersionException): ProblemDetail = problem(ErrorCode.CONFLICT_STALE_VERSION, e.message)
+
+    @ExceptionHandler(InvalidRequestException::class)
+    fun onInvalidRequest(e: InvalidRequestException): ProblemDetail = problem(ErrorCode.VALIDATION_FAILED, e.message)
+
     @ExceptionHandler(Exception::class)
     fun onUnexpected(
         e: Exception,
