@@ -50,7 +50,7 @@ MVP는 도메인 경계를 내부 모듈로 분리한 **모듈형 모놀리스**
 
 ```
 apps/web  apps/api  apps/worker
-packages/domain  packages/contracts  packages/document-renderer  packages/ai-evaluation
+packages/domain  packages/ai-gateway  packages/contracts  packages/document-renderer  packages/ai-evaluation
 docs/  infra/  migrations/  fixtures/  scripts/
 ```
 

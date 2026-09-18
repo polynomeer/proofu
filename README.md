@@ -13,6 +13,7 @@ apps/
 └─ worker/     비동기 작업 워커 (공고 분석, 문서 생성, 내보내기)
 packages/
 ├─ domain/     순수 Kotlin 도메인 모델과 불변식 (api, worker 공유)
+├─ ai-gateway/ 모델 제공자로 가는 유일한 경로 (정책·예산·검증·기록)
 ├─ contracts/  OpenAPI 계약과 생성된 TypeScript 타입
 ├─ document-renderer/  DOCX / PDF 렌더러 (예정)
 └─ ai-evaluation/      AI 사실성·근거 충실도 평가 세트 (예정)

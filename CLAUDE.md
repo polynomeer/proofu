@@ -6,15 +6,16 @@
 
 ## 구조
 
-| 경로                 | 내용                                                                            | 도구             |
-| -------------------- | ------------------------------------------------------------------------------- | ---------------- |
-| `apps/web`           | Next.js 16 App Router, Tailwind 4, 디자인 토큰 `src/styles/tokens.css`          | pnpm             |
-| `apps/api`           | Spring Boot 4.1 REST API `/api/v1`, JPA(`ddl-auto=validate`), Flyway, springdoc | Gradle `:api`    |
-| `apps/worker`        | 헤드리스 Spring Boot, `jobs` 테이블 폴링 (SKIP LOCKED), `JobHandler` 빈 등록    | Gradle `:worker` |
-| `packages/domain`    | 순수 Kotlin 도메인 모델·불변식. **Spring 의존 금지**                            | Gradle `:domain` |
-| `packages/contracts` | `openapi.yaml` (단일 원천) → `generated/api.d.ts`                               | pnpm             |
-| `migrations/`        | Flyway SQL 단일 원천. api 빌드 시 `db/migration`으로 복사                       | —                |
-| `docs/`              | 제품·도메인·디자인·아키텍처·ADR                                                 | —                |
+| 경로                  | 내용                                                                                                                                    | 도구                 |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `apps/web`            | Next.js 16 App Router, Tailwind 4, 디자인 토큰 `src/styles/tokens.css`                                                                  | pnpm                 |
+| `apps/api`            | Spring Boot 4.1 REST API `/api/v1`, JPA(`ddl-auto=validate`), Flyway, springdoc                                                         | Gradle `:api`        |
+| `apps/worker`         | 헤드리스 Spring Boot, `jobs` 테이블 폴링 (SKIP LOCKED), `JobHandler` 빈 등록                                                            | Gradle `:worker`     |
+| `packages/domain`     | 순수 Kotlin 도메인 모델·불변식. **Spring 의존 금지**                                                                                    | Gradle `:domain`     |
+| `packages/ai-gateway` | 모델 제공자로 가는 유일한 문. 컨텍스트 정책·예산·스키마 검증·비용·`ai_executions` 기록. api/worker가 `AiGatewayFactory`로 동일하게 구성 | Gradle `:ai-gateway` |
+| `packages/contracts`  | `openapi.yaml` (단일 원천) → `generated/api.d.ts`                                                                                       | pnpm                 |
+| `migrations/`         | Flyway SQL 단일 원천. api 빌드 시 `db/migration`으로 복사                                                                               | —                    |
+| `docs/`               | 제품·도메인·디자인·아키텍처·ADR                                                                                                         | —                    |
 
 ## 명령
 
@@ -51,7 +52,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **디자인**: 색상·간격은 `tokens.css` 토큰만 사용. 상태는 색상 + 텍스트/아이콘. 점수는 숫자 + 낮음/보통/높음 라벨, 합격 확률로 표현 금지. 탈락 원인은 단정하지 않는다.
 - **테스트 데이터**는 합성 데이터만 (`fixtures/`).
 
-- **AI (ADR-0008)**: Anthropic Claude, 기본 `claude-opus-5` + 작업별 `effort`. 모든 호출은 AI Gateway를 통해, Java SDK `com.anthropic:anthropic-java`. 구조화 출력은 `strict` 스키마 + `GeneratedOutput.requireGrounded` 이중 검증, 추출의 원문 구간은 `citations`로. 원문은 `document` 블록으로 격리, 프리필 금지, thinking은 adaptive 유지. 예산: 워크스페이스 월 $5, 30건/시간, 배포 일일 $50.
+- **AI (ADR-0008)**: Anthropic Claude, 기본 `claude-opus-5` + 작업별 `effort`. 모든 호출은 `AiGateway.execute(workspace, AiCall)`로만 (기능 코드는 `ModelClient`를 직접 쓰지 않는다). 결과 JSON의 참조 id는 호출자가 `AiResult.context.includedSourceIds`로 화이트리스트 검증한다. 로컬 기본 `AI_PROVIDER=fake`. 실제 호출 스모크 테스트는 `ANTHROPIC_API_KEY`가 있을 때만 실행된다. 구조화 출력은 `strict` 스키마 + `GeneratedOutput.requireGrounded` 이중 검증, 추출의 원문 구간은 `citations`로. 원문은 `document` 블록으로 격리, 프리필 금지, thinking은 adaptive 유지. 예산: 워크스페이스 월 $5, 30건/시간, 배포 일일 $50.
 
 ## 미확정 (TBD)
 
