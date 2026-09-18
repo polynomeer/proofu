@@ -775,10 +775,12 @@ components:
       allOf:
         - $ref: "#/components/schemas/CareerEntryInput"
         - type: object
-          required: [id, status, revision, createdAt, updatedAt]
+          required: [id, visibility, status, revision, createdAt, updatedAt]
           properties:
             id:
               $ref: "#/components/schemas/Uuid"
+            visibility:
+              $ref: "#/components/schemas/Visibility"
             status:
               $ref: "#/components/schemas/CareerEntryStatus"
             revision:
