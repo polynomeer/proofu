@@ -33,3 +33,72 @@ export const CAREER_ENTRY_TYPES: readonly Schema<"CareerEntryType">[] = [
 ];
 
 export const VISIBILITIES: readonly Schema<"Visibility">[] = ["PRIVATE", "SELECTIVE", "PUBLIC"];
+
+export const evidenceTypeLabel = labelsOf<Schema<"EvidenceType">>({
+  FILE: "파일",
+  URL: "링크",
+  REPOSITORY: "저장소",
+  COMMIT: "커밋",
+  METRIC: "지표",
+  CERTIFICATE: "인증서",
+  NOTE: "메모",
+  REFERENCE_LETTER: "추천서",
+});
+
+/** FILE is excluded until object storage is decided (docs/project/open-decisions.md). */
+export const EVIDENCE_TYPES: readonly Schema<"EvidenceType">[] = [
+  "URL",
+  "REPOSITORY",
+  "COMMIT",
+  "METRIC",
+  "CERTIFICATE",
+  "REFERENCE_LETTER",
+  "NOTE",
+];
+
+export const verificationLabel = labelsOf<Schema<"VerificationStatus">>({
+  UNVERIFIED: "검토 필요",
+  USER_VERIFIED: "검증됨",
+  EXTERNALLY_VERIFIED: "외부 검증",
+  EXPIRED: "만료",
+});
+
+export const sensitivityLabel = labelsOf<Schema<"Sensitivity">>({
+  PUBLIC: "공개",
+  INTERNAL: "내부",
+  CONFIDENTIAL: "기밀",
+  RESTRICTED: "제한",
+});
+
+export const SENSITIVITIES: readonly Schema<"Sensitivity">[] = [
+  "PUBLIC",
+  "INTERNAL",
+  "CONFIDENTIAL",
+  "RESTRICTED",
+];
+
+export const claimTypeLabel = labelsOf<Schema<"ClaimType">>({
+  FACT: "사실",
+  INFERENCE: "추론",
+  OPINION: "의견",
+});
+
+export const CLAIM_TYPES: readonly Schema<"ClaimType">[] = ["FACT", "INFERENCE", "OPINION"];
+
+export const claimStatusLabel = labelsOf<Schema<"ClaimStatus">>({
+  UNSUPPORTED: "근거 없음",
+  SUPPORTED: "근거 있음",
+  CONTESTED: "반박 있음",
+});
+
+export const relationLabel = labelsOf<Schema<"EvidenceRelation">>({
+  SUPPORTS: "지지",
+  REFUTES: "반박",
+  PARTIALLY_SUPPORTS: "부분 지지",
+});
+
+export const RELATIONS: readonly Schema<"EvidenceRelation">[] = [
+  "SUPPORTS",
+  "PARTIALLY_SUPPORTS",
+  "REFUTES",
+];
