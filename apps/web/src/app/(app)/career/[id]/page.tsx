@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { DeleteCareerEntryButton } from "@/components/career/DeleteCareerEntryButton";
+import { ProjectList } from "@/components/project/ProjectList";
 import { ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
 import { formatDateTime, formatPeriod } from "@/lib/format";
@@ -23,6 +26,15 @@ export default async function CareerEntryPage({ params }: { params: Params }) {
   const { id } = await params;
   const { data: entry } = await api.GET("/career-entries/{id}", { params: { path: { id } } });
   if (!entry) notFound();
+  const { data: projects } = await api.GET("/projects", {
+    params: { query: { careerEntryId: id, limit: 50 } },
+  });
+  const addProject = (
+    <ButtonLink variant="secondary" href={`/projects/new?careerEntryId=${entry.id}`}>
+      <Icon name="plus" size={16} />
+      프로젝트 추가
+    </ButtonLink>
+  );
 
   return (
     <>
@@ -34,24 +46,49 @@ export default async function CareerEntryPage({ params }: { params: Params }) {
             <ButtonLink variant="secondary" href={`/career/${entry.id}/edit`}>
               편집
             </ButtonLink>
-            <DeleteCareerEntryButton id={entry.id} title={entry.title} />
+            <DeleteResourceButton
+              resource="career-entry"
+              id={entry.id}
+              title={entry.title}
+              redirectTo="/career"
+            />
           </div>
         }
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <section className="rounded-md border border-border-300 bg-surface-000 p-6">
-          <h2 className="text-section-title">설명</h2>
-          {entry.description ? (
-            <p className="mt-3 text-body whitespace-pre-line">{entry.description}</p>
-          ) : (
-            <p className="mt-3 text-body text-text-600">
-              설명이 없습니다. 편집에서 역할과 책임을 추가하세요.
-            </p>
-          )}
-        </section>
+        <div className="flex flex-col gap-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+            <h2 className="text-section-title">설명</h2>
+            {entry.description ? (
+              <p className="mt-3 text-body whitespace-pre-line">{entry.description}</p>
+            ) : (
+              <p className="mt-3 text-body text-text-600">
+                설명이 없습니다. 편집에서 역할과 책임을 추가하세요.
+              </p>
+            )}
+          </section>
 
-        <aside className="flex flex-col gap-4 rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-section-title">프로젝트</h2>
+              {projects && projects.items.length > 0 ? addProject : null}
+            </div>
+            {!projects ? (
+              <p className="text-body text-text-600">프로젝트 목록을 불러오지 못했습니다.</p>
+            ) : projects.items.length === 0 ? (
+              <EmptyState
+                title="연결된 프로젝트가 없습니다"
+                description="이 경력에서 수행한 프로젝트를 추가하면 성과와 Evidence를 그 아래에 쌓을 수 있습니다."
+                action={addProject}
+              />
+            ) : (
+              <ProjectList items={projects.items} />
+            )}
+          </section>
+        </div>
+
+        <aside className="flex h-fit flex-col gap-4 rounded-md border border-border-300 bg-surface-000 p-6">
           <h2 className="text-card-title">정보</h2>
           <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-2 text-body">
             <dt className="text-text-600">유형</dt>
