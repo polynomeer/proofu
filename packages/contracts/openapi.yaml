@@ -19,6 +19,8 @@ servers:
 security:
   - session: []
 tags:
+  - name: dashboard
+    description: Read models that summarise a workspace
   - name: career
     description: Career source of truth (entries, projects, achievements, skills)
   - name: evidence
@@ -33,6 +35,31 @@ tags:
     description: Long-running work accepted with 202 and polled via /jobs/{id}
 
 paths:
+  /dashboard:
+    get:
+      tags: [dashboard]
+      operationId: getDashboard
+      summary: Workspace summary for the dashboard (D01)
+      description: |
+        KPI definitions follow docs/design/screens.md: career entries exclude deleted rows,
+        verified evidence counts USER_VERIFIED and EXTERNALLY_VERIFIED, active applications
+        exclude terminal states, and evidence coverage is the share of live claims with at
+        least one linked evidence item. Ratios are integers 0–100.
+      parameters:
+        - name: timelineType
+          in: query
+          schema:
+            $ref: "#/components/schemas/CareerEntryType"
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /career-entries:
     get:
       tags: [career]
@@ -1091,6 +1118,123 @@ components:
     Uuid:
       type: string
       format: uuid
+
+    DashboardSummary:
+      type: object
+      required: [kpis, timeline, recentEvidence, attention]
+      properties:
+        kpis:
+          type: object
+          required: [careerEntries, verifiedEvidence, activeApplications, evidenceCoverage]
+          properties:
+            careerEntries:
+              type: object
+              required: [total, addedLast30Days, projects, achievements]
+              properties:
+                total:
+                  type: integer
+                addedLast30Days:
+                  type: integer
+                projects:
+                  type: integer
+                achievements:
+                  type: integer
+            verifiedEvidence:
+              type: object
+              required: [verified, total, expired, addedLast30Days]
+              properties:
+                verified:
+                  type: integer
+                total:
+                  type: integer
+                expired:
+                  type: integer
+                addedLast30Days:
+                  type: integer
+            activeApplications:
+              type: object
+              required: [total, submitted, documentPassed]
+              properties:
+                total:
+                  type: integer
+                submitted:
+                  type: integer
+                documentPassed:
+                  type: integer
+            evidenceCoverage:
+              type: object
+              required: [claims, supported, ratio]
+              properties:
+                claims:
+                  type: integer
+                supported:
+                  type: integer
+                ratio:
+                  type: integer
+                  description: supported / claims × 100, 0 when there are no claims
+        timeline:
+          type: array
+          description: Most recent career entries by start date
+          items:
+            type: object
+            required: [id, type, title, startDate, projectCount, claimCount, evidenceCount]
+            properties:
+              id:
+                $ref: "#/components/schemas/Uuid"
+              type:
+                $ref: "#/components/schemas/CareerEntryType"
+              title:
+                type: string
+              organization:
+                type: [string, "null"]
+              startDate:
+                type: string
+                format: date
+              endDate:
+                type: [string, "null"]
+                format: date
+              projectCount:
+                type: integer
+              claimCount:
+                type: integer
+              evidenceCount:
+                type: integer
+                description: Distinct evidence linked to claims about the entry, its projects or their achievements
+        recentEvidence:
+          type: array
+          items:
+            type: object
+            required: [id, title, type, verification, capturedAt]
+            properties:
+              id:
+                $ref: "#/components/schemas/Uuid"
+              title:
+                type: string
+              type:
+                $ref: "#/components/schemas/EvidenceType"
+              verification:
+                $ref: "#/components/schemas/VerificationStatus"
+              capturedAt:
+                type: string
+                format: date-time
+        attention:
+          type: array
+          description: Up to three items that need the user's action, most impactful first
+          items:
+            type: object
+            required: [code, count]
+            properties:
+              code:
+                type: string
+                enum:
+                  [
+                    UNSUPPORTED_CLAIMS,
+                    UNVERIFIED_EVIDENCE,
+                    ENTRIES_WITHOUT_PROJECTS,
+                    NO_CAREER_ENTRIES,
+                  ]
+              count:
+                type: integer
     Revision:
       type: integer
       format: int64
