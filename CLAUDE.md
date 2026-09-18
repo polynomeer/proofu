@@ -43,6 +43,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **Evidence/Claim 흐름**: Claim은 경력 기록(`ClaimSource`, revision 고정)에 대한 문장이고 상태(`UNSUPPORTED/SUPPORTED/CONTESTED`)는 저장하지 않고 `ClaimEvidenceLink.statusOf`로 파생한다. Evidence 위치 규칙은 유형별(NOTE→body, FILE→object_key, 그 외→절대 uri). FILE 등록은 객체 저장소 확정 전까지 API가 422로 거부한다.
 - **채용공고**: `JobPosting`(가변 식별)과 `JobPostingSnapshot`(불변 원문) 분리. 스냅샷은 `JobPostingSnapshot.capture`로만 만들고 `ContentHash`(정규화 후 SHA-256)가 같으면 재사용, 다르면 새 행. 수동 붙여넣기만 구현; URL 수집·career-ops는 `NOT_IMPLEMENTED`(501).
 - **지원 상태**: 전이는 `POST /applications/{id}/transitions` → `Application.transition`만. 응답의 `allowedTransitions`를 UI가 그대로 버튼으로 쓴다. `HANDED_OFF_TO_ITERVIEW`는 인계 엔드포인트 전용, `application_status_events`는 append-only.
+- **회고**: `ApplicationStatus.acceptsReview` 상태에서만. 첫 회고 저장이 `REVIEW_PENDING → REVIEWED`를 유발한다(`ReviewService` → `ApplicationService.advance`). 원인 단정 표현은 `Review.definitiveLanguage()`가 경고만 하고 막지 않는다.
 - **웹 패턴**: 서버 컴포넌트가 `@/lib/api`로 조회, 폼은 클라이언트 컴포넌트. enum 라벨은 `@/lib/labels` 조회표(알 수 없는 값은 코드 그대로). 페이지 헤더의 primary 버튼은 하나.
 - **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
 - **민감도** `CONFIDENTIAL`/`RESTRICTED`는 동의 없이 AI 컨텍스트에 넣지 않는다. 로그에 본문·프롬프트·토큰 금지.
