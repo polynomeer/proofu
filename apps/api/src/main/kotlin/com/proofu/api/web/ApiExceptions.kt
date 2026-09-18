@@ -13,7 +13,13 @@ class StaleVersionException(
     actual: Long,
 ) : RuntimeException("$resource has revision $actual, request carried $expected")
 
-/** Malformed client input outside bean validation, e.g. an undecodable pagination cursor. */
+/** Malformed client input outside bean validation, e.g. an undecodable cursor or a source-dependent field. */
 class InvalidRequestException(
     message: String,
+    val fieldErrors: Map<String, String> = emptyMap(),
 ) : RuntimeException(message)
+
+/** A contract path whose integration does not exist yet (URL fetching, career-ops, iterview). */
+class NotImplementedException(
+    feature: String,
+) : RuntimeException("$feature is not available yet")

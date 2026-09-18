@@ -53,7 +53,23 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     fun onStaleVersion(e: StaleVersionException): ProblemDetail = problem(ErrorCode.CONFLICT_STALE_VERSION, e.message)
 
     @ExceptionHandler(InvalidRequestException::class)
-    fun onInvalidRequest(e: InvalidRequestException): ProblemDetail = problem(ErrorCode.VALIDATION_FAILED, e.message)
+    fun onInvalidRequest(e: InvalidRequestException): ProblemDetail =
+        problem(ErrorCode.VALIDATION_FAILED, e.message).apply {
+            if (e.fieldErrors.isNotEmpty()) {
+                setProperty(
+                    "fieldErrors",
+                    e.fieldErrors.map { (field, message) ->
+                        mapOf(
+                            "field" to field,
+                            "message" to message,
+                        )
+                    },
+                )
+            }
+        }
+
+    @ExceptionHandler(NotImplementedException::class)
+    fun onNotImplemented(e: NotImplementedException): ProblemDetail = problem(ErrorCode.NOT_IMPLEMENTED, e.message)
 
     @ExceptionHandler(Exception::class)
     fun onUnexpected(
