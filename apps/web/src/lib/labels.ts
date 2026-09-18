@@ -166,3 +166,16 @@ export const requirementStatusLabel = labelsOf<Schema<"RequirementStatus">>({
   APPROVED: "승인됨",
   REJECTED: "제외됨",
 });
+
+export const scoreBandLabel = labelsOf<Schema<"ScoreBand">>({
+  LOW: "낮음",
+  MEDIUM: "보통",
+  HIGH: "높음",
+});
+
+export const assessmentLabel = labelsOf<Schema<"RequirementAssessment">>({
+  MET: "충족",
+  PARTIALLY_MET: "부분 충족",
+  UNVERIFIED: "미확인",
+  UNMET: "불충족",
+});

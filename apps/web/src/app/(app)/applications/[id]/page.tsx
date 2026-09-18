@@ -6,6 +6,7 @@ import { ApplicationStatusChip } from "@/components/application/chips";
 import { DeadlineForm } from "@/components/application/DeadlineForm";
 import { ReviewSection } from "@/components/application/ReviewSection";
 import { TransitionPanel } from "@/components/application/TransitionPanel";
+import { ButtonLink } from "@/components/ui/Button";
 import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
@@ -45,13 +46,16 @@ export default async function ApplicationPage({ params }: { params: Params }) {
         title={a.roleTitle}
         description={a.company}
         action={
-          <DeleteResourceButton
-            resource="application"
-            id={a.id}
-            title={`${a.company} · ${a.roleTitle}`}
-            redirectTo="/applications"
-            note="상태 이력은 보존됩니다."
-          />
+          <div className="flex gap-2">
+            <ButtonLink href={`/applications/${a.id}/matches`}>공고 매칭</ButtonLink>
+            <DeleteResourceButton
+              resource="application"
+              id={a.id}
+              title={`${a.company} · ${a.roleTitle}`}
+              redirectTo="/applications"
+              note="상태 이력은 보존됩니다."
+            />
+          </div>
         }
       />
 
