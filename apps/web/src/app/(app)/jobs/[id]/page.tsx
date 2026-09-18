@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { CreateApplicationButton } from "@/components/application/CreateApplicationButton";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
@@ -48,6 +49,7 @@ export default async function JobPostingPage({
         description={posting.company}
         action={
           <div className="flex flex-wrap gap-2">
+            <CreateApplicationButton snapshotId={posting.snapshots[0]?.id} />
             <Button variant="secondary" disabled title="AI 제공자 확정 후 제공됩니다">
               요구사항 분석
             </Button>

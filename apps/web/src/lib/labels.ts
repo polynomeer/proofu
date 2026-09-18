@@ -108,3 +108,39 @@ export const snapshotSourceLabel = labelsOf<Schema<"SnapshotSource">>({
   URL_FETCH: "URL 수집",
   CAREER_OPS: "career-ops",
 });
+
+export const applicationStatusLabel = labelsOf<Schema<"ApplicationStatus">>({
+  INTERESTED: "관심",
+  PREPARING: "준비",
+  SUBMITTED: "제출",
+  DOCUMENT_PASSED: "서류 합격",
+  DOCUMENT_REJECTED: "서류 탈락",
+  NO_RESPONSE: "무응답",
+  WITHDRAWN: "철회",
+  HANDOFF_READY: "면접 인계 준비",
+  HANDED_OFF_TO_ITERVIEW: "iterview 인계됨",
+  REVIEW_PENDING: "회고 대기",
+  REVIEWED: "회고 완료",
+});
+
+/** Board columns (docs/domain/application-lifecycle.md §지원 보드 표시). Order is the column order. */
+export const APPLICATION_BOARD_COLUMNS: readonly {
+  key: string;
+  label: string;
+  statuses: readonly Schema<"ApplicationStatus">[];
+}[] = [
+  { key: "interested", label: "관심", statuses: ["INTERESTED"] },
+  { key: "preparing", label: "준비", statuses: ["PREPARING"] },
+  { key: "submitted", label: "제출", statuses: ["SUBMITTED"] },
+  {
+    key: "passed",
+    label: "서류 합격",
+    statuses: ["DOCUMENT_PASSED", "HANDOFF_READY", "HANDED_OFF_TO_ITERVIEW"],
+  },
+  {
+    key: "rejected",
+    label: "서류 탈락 · 무응답",
+    statuses: ["DOCUMENT_REJECTED", "NO_RESPONSE", "REVIEW_PENDING", "REVIEWED"],
+  },
+  { key: "closed", label: "종료", statuses: ["WITHDRAWN"] },
+];

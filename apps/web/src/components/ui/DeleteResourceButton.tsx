@@ -6,13 +6,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
 
-type Resource = "career-entry" | "project" | "evidence" | "job-posting";
+type Resource = "career-entry" | "project" | "evidence" | "job-posting" | "application";
 
 const DELETE: Record<Resource, (id: string) => Promise<{ error?: { detail?: string } }>> = {
   "career-entry": (id) => api.DELETE("/career-entries/{id}", { params: { path: { id } } }),
   project: (id) => api.DELETE("/projects/{id}", { params: { path: { id } } }),
   evidence: (id) => api.DELETE("/evidence/{id}", { params: { path: { id } } }),
   "job-posting": (id) => api.DELETE("/job-postings/{id}", { params: { path: { id } } }),
+  application: (id) => api.DELETE("/applications/{id}", { params: { path: { id } } }),
 };
 
 /** Danger action with an explicit confirmation naming the target (docs/design/components.md §삭제와 복구). */
