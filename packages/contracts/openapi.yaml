@@ -1155,10 +1155,61 @@ paths:
     post:
       tags: [applications, async]
       operationId: startMatching
-      summary: Match approved requirements against evidence (asynchronous)
+      summary: Match approved requirements against claims and evidence (asynchronous)
+      description: |
+        Scores every approved requirement of the application's snapshot against the workspace's
+        claims with deterministic features, then asks the model to explain the top candidates.
+        Confidential/restricted claims are skipped. Re-running keeps the user's accept/reject
+        decisions. While a run is pending the same job is returned.
       responses:
         "202":
           $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /applications/{id}/matches:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [applications]
+      operationId: getMatches
+      summary: The latest match report for an application (J02)
+      responses:
+        "200":
+          description: Match report grouped by requirement; empty when matching has not run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchReport"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /requirement-matches/{id}/decision:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: [applications]
+      operationId: decideMatch
+      summary: Accept or reject a recommendation, or clear the decision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  oneOf:
+                    - $ref: "#/components/schemas/MatchDecision"
+                    - type: "null"
+      responses:
+        "200":
+          description: Updated match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequirementMatch"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -2309,6 +2360,124 @@ components:
         submittedAt:
           type: string
           format: date-time
+
+    MatchDecision:
+      type: string
+      enum: [ACCEPTED, REJECTED]
+
+    RequirementAssessment:
+      type: string
+      enum: [MET, PARTIALLY_MET, UNVERIFIED, UNMET]
+
+    ScoreBand:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+
+    MatchFeatures:
+      type: object
+      required:
+        [requirementCoverage, evidenceStrength, recency, complexity, impact, semanticSimilarity]
+      properties:
+        requirementCoverage:
+          type: number
+        evidenceStrength:
+          type: number
+        recency:
+          type: number
+        complexity:
+          type: number
+        impact:
+          type: number
+        semanticSimilarity:
+          type: number
+
+    RequirementMatch:
+      type: object
+      required: [id, claimId, claimText, claimStatus, sources, evidence, score, band, features]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        claimId:
+          $ref: "#/components/schemas/Uuid"
+        claimText:
+          type: string
+        claimStatus:
+          $ref: "#/components/schemas/ClaimStatus"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClaimSource"
+        evidence:
+          type: array
+          items:
+            type: object
+            required: [id, title, verification, relation]
+            properties:
+              id:
+                $ref: "#/components/schemas/Uuid"
+              title:
+                type: string
+              verification:
+                $ref: "#/components/schemas/VerificationStatus"
+              relation:
+                $ref: "#/components/schemas/EvidenceRelation"
+        score:
+          type: integer
+          description: 0–100 ordering aid, never a probability; max 90 until semantic search exists
+        band:
+          $ref: "#/components/schemas/ScoreBand"
+        features:
+          $ref: "#/components/schemas/MatchFeatures"
+        reason:
+          type: [string, "null"]
+          description: Model-written explanation; null when the model did not cover this pair
+        matchedRequirementPhrase:
+          type: [string, "null"]
+        matchedEvidencePhrase:
+          type: [string, "null"]
+        userDecision:
+          oneOf:
+            - $ref: "#/components/schemas/MatchDecision"
+            - type: "null"
+
+    RequirementMatchGroup:
+      type: object
+      required: [requirement, candidates]
+      properties:
+        requirement:
+          $ref: "#/components/schemas/Requirement"
+        assessment:
+          oneOf:
+            - $ref: "#/components/schemas/RequirementAssessment"
+            - type: "null"
+          description: Only for REQUIRED items
+        candidates:
+          type: array
+          description: Best first
+          items:
+            $ref: "#/components/schemas/RequirementMatch"
+
+    MatchReport:
+      type: object
+      required: [applicationId, groups, gaps, hasRun]
+      properties:
+        applicationId:
+          $ref: "#/components/schemas/Uuid"
+        hasRun:
+          type: boolean
+        lastRunAt:
+          type: [string, "null"]
+          format: date-time
+        groups:
+          type: array
+          description: REQUIRED first, then by confidence (design §8.2)
+          items:
+            $ref: "#/components/schemas/RequirementMatchGroup"
+        gaps:
+          type: array
+          description: REQUIRED requirements assessed UNMET or UNVERIFIED
+          items:
+            $ref: "#/components/schemas/Uuid"
 
     ReviewInput:
       type: object
