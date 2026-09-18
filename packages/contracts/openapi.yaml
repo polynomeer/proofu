@@ -886,10 +886,41 @@ paths:
           $ref: "#/components/responses/Problem"
 
   /applications:
+    get:
+      tags: [applications]
+      operationId: listApplications
+      summary: List applications for the board, newest status change first
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/ApplicationStatus"
+        - name: includeTerminal
+          in: query
+          description: Include WITHDRAWN, REVIEWED and HANDED_OFF_TO_ITERVIEW (default true; the board shows them in 종료)
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Applications (at most 200)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Application"
+        default:
+          $ref: "#/components/responses/Problem"
     post:
       tags: [applications]
       operationId: createApplication
       summary: Create an application for a posting snapshot
+      description: Company and role are copied from the posting; the application starts INTERESTED.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -902,6 +933,9 @@ paths:
               properties:
                 snapshotId:
                   $ref: "#/components/schemas/Uuid"
+                deadlineAt:
+                  type: [string, "null"]
+                  format: date-time
       responses:
         "201":
           description: Application
@@ -909,6 +943,98 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Application"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /applications/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [applications]
+      operationId: getApplication
+      summary: Get an application with its status history and posting summary
+      responses:
+        "200":
+          description: Application detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationDetail"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [applications]
+      operationId: updateApplication
+      summary: Update the deadline (optimistic locking via version)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                deadlineAt:
+                  type: [string, "null"]
+                  format: date-time
+                version:
+                  type: integer
+                  format: int64
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [applications]
+      operationId: deleteApplication
+      summary: Soft-delete an application; its status events and submissions stay
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /applications/{id}/transitions:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [applications]
+      operationId: transitionApplication
+      summary: Move the application to another status
+      description: |
+        Only transitions allowed by the domain state machine succeed (409
+        INVALID_STATUS_TRANSITION otherwise); the response lists what is allowed next.
+        HANDED_OFF_TO_ITERVIEW cannot be set here — it is the result of an interview handoff.
+        Moving to SUBMITTED through this endpoint records the result without a document;
+        `/applications/{id}/submissions` is the path that also freezes a submission snapshot.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to, version]
+              properties:
+                to:
+                  $ref: "#/components/schemas/ApplicationStatus"
+                note:
+                  type: [string, "null"]
+                  maxLength: 500
+                version:
+                  type: integer
+                  format: int64
+      responses:
+        "200":
+          description: Application after the transition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationDetail"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -1874,11 +2000,26 @@ components:
 
     Application:
       type: object
-      required: [id, snapshotId, company, roleTitle, status, version, createdAt, updatedAt]
+      required:
+        [
+          id,
+          snapshotId,
+          postingId,
+          company,
+          roleTitle,
+          status,
+          allowedTransitions,
+          statusChangedAt,
+          version,
+          createdAt,
+          updatedAt,
+        ]
       properties:
         id:
           $ref: "#/components/schemas/Uuid"
         snapshotId:
+          $ref: "#/components/schemas/Uuid"
+        postingId:
           $ref: "#/components/schemas/Uuid"
         company:
           type: string
@@ -1886,8 +2027,16 @@ components:
           type: string
         status:
           $ref: "#/components/schemas/ApplicationStatus"
-        deadlineAt:
+        allowedTransitions:
+          type: array
+          description: Statuses the domain allows next, minus HANDED_OFF_TO_ITERVIEW which needs a handoff
+          items:
+            $ref: "#/components/schemas/ApplicationStatus"
+        statusChangedAt:
           type: string
+          format: date-time
+        deadlineAt:
+          type: [string, "null"]
           format: date-time
         version:
           type: integer
@@ -1898,6 +2047,36 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    ApplicationStatusEvent:
+      type: object
+      required: [to, occurredAt]
+      properties:
+        from:
+          oneOf:
+            - $ref: "#/components/schemas/ApplicationStatus"
+            - type: "null"
+        to:
+          $ref: "#/components/schemas/ApplicationStatus"
+        note:
+          type: [string, "null"]
+        occurredAt:
+          type: string
+          format: date-time
+
+    ApplicationDetail:
+      allOf:
+        - $ref: "#/components/schemas/Application"
+        - type: object
+          required: [events, snapshot]
+          properties:
+            events:
+              type: array
+              description: Oldest first
+              items:
+                $ref: "#/components/schemas/ApplicationStatusEvent"
+            snapshot:
+              $ref: "#/components/schemas/JobPostingSnapshotSummary"
 
     SubmissionSnapshot:
       type: object

@@ -31,7 +31,9 @@ review: API 릴리스 시
 | POST ✅            | `/job-postings/import`                      | URL, 본문 또는 career-ops 참조 가져오기                 |
 | POST               | `/job-posting-snapshots/{id}/analysis-jobs` | 공고 분석 작업 시작 (202)                               |
 | GET, PATCH         | `/requirements/{id}`                        | 추출 요구사항 검토·승인                                 |
-| POST               | `/applications`                             | 공고 기반 지원 생성                                     |
+| GET, POST ✅       | `/applications`                             | 지원 보드 목록, 공고 스냅샷 기반 생성                   |
+| GET, PATCH, DELETE | `/applications/{id}` ✅                     | 지원 상세(상태 이력), 마감일 변경, 삭제                 |
+| POST               | `/applications/{id}/transitions` ✅         | 상태 전이 (도메인 허용 목록만)                          |
 | POST               | `/applications/{id}/match-jobs`             | Evidence 매칭 작업 시작 (202)                           |
 | POST               | `/documents/{id}/generation-jobs`           | 문서 버전 생성 (202)                                    |
 | GET, POST          | `/documents/{id}/versions`                  | 버전 조회와 사용자 버전 생성                            |
