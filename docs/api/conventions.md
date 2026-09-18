@@ -15,6 +15,10 @@ review: API 릴리스 시
 - 낙관적 잠금: 변경 요청은 `version`(또는 `revision`)을 포함하고 불일치 시 `409` + `code: CONFLICT_STALE_VERSION`.
 - API 계약은 `packages/contracts/openapi.yaml`로 관리하고 호환성 검사를 CI에서 수행합니다.
 
+## 인증 (임시)
+
+OIDC 제공자가 확정될 때까지 `X-Workspace-Id: <uuid>` 헤더로 workspace를 지정하며 호출자는 그 소유자로 취급됩니다 (`HeaderWorkspaceResolver`, `production` 프로필에서는 비활성). 헤더가 없거나 workspace가 없으면 `401 UNAUTHENTICATED`. `local` 프로필은 고정 workspace `00000000-0000-7000-8000-000000000002`를 시드합니다. OIDC 도입 시 `WorkspaceResolver` 구현만 교체합니다.
+
 ## 오류 코드 (초안)
 
 | code                          | status | 의미                                      |
