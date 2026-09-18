@@ -28,6 +28,7 @@ class FakeModelClient(
             val text =
                 when (request.purpose) {
                     AiPurpose.REQUIREMENT_EXTRACTION -> extractionHeuristic(request)
+                    AiPurpose.MATCH_EXPLANATION -> explanationHeuristic(request)
                     else -> """{"fake":true,"purpose":"${request.purpose}"}"""
                 }
             return ModelOutcome.Completed(text, request.model, ModelUsage(100, 20, 0, 0), truncated = false)
@@ -63,6 +64,21 @@ class FakeModelClient(
             }
             return """{"items":[${items.joinToString(",")}]}"""
         }
+
+        /** Echoes every offered pair with a placeholder reason so the UI flow can be exercised. */
+        private fun explanationHeuristic(request: ModelRequest): String {
+            val items =
+                PAIR
+                    .findAll(request.instruction)
+                    .map { m ->
+                        """{"requirementId":${json(m.groupValues[1])},"claimId":${json(m.groupValues[2])},""" +
+                            """"reason":"(가짜 제공자) 점수 ${m.groupValues[3]}점 후보입니다. 실제 설명은 모델 연결 후 생성됩니다.",""" +
+                            """"matchedRequirementPhrase":"","matchedEvidencePhrase":""}"""
+                    }.toList()
+            return """{"explanations":[${items.joinToString(",")}]}"""
+        }
+
+        private val PAIR = Regex("requirementId=([0-9a-f-]{36}) claimId=([0-9a-f-]{36}) \\(score (\\d+)\\)")
 
         private fun isHeader(line: String) =
             line.startsWith("[") || line.endsWith(":") || (!line.startsWith("-") && !line.startsWith("•"))
