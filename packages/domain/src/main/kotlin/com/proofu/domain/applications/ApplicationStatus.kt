@@ -43,4 +43,8 @@ enum class ApplicationStatus {
 
     /** Handoff to iterview requires DOCUMENT_PASSED lineage and explicit consent (checked by the caller). */
     val isHandoffEligible: Boolean get() = this == DOCUMENT_PASSED || this == HANDOFF_READY
+
+    /** A retrospective only makes sense once a document result (or silence) is in. */
+    val acceptsReview: Boolean
+        get() = this == DOCUMENT_REJECTED || this == NO_RESPONSE || this == REVIEW_PENDING || this == REVIEWED
 }
