@@ -1,5 +1,9 @@
 package com.proofu.api.web
 
+import com.proofu.ai.AiBudgetExceeded
+import com.proofu.ai.AiCallFailed
+import com.proofu.ai.BudgetBlock
+import com.proofu.ai.model.ModelProviderException
 import com.proofu.domain.common.DomainRuleViolation
 import com.proofu.domain.common.ImmutableSnapshotViolation
 import com.proofu.domain.common.InvalidStatusTransition
@@ -67,6 +71,29 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
                 )
             }
         }
+
+    @ExceptionHandler(AiBudgetExceeded::class)
+    fun onAiBudget(e: AiBudgetExceeded): ProblemDetail =
+        problem(
+            ErrorCode.AI_BUDGET_EXCEEDED,
+            when (e.block) {
+                BudgetBlock.WORKSPACE_MONTHLY_BUDGET -> "이번 달 AI 예산을 모두 사용했습니다. 다음 달에 다시 시도하세요."
+                BudgetBlock.WORKSPACE_HOURLY_LIMIT -> "시간당 AI 작업 한도에 도달했습니다. 잠시 후 다시 시도하세요."
+                BudgetBlock.DEPLOYMENT_DAILY_BUDGET -> "서비스 전체 AI 예산이 오늘 소진되었습니다. 내일 다시 시도하세요."
+            },
+        )
+
+    @ExceptionHandler(AiCallFailed.Refused::class)
+    fun onAiRefused(e: AiCallFailed.Refused): ProblemDetail =
+        problem(ErrorCode.AI_REFUSED, "AI 제공자가 이 요청을 처리하지 않았습니다. 입력 내용을 확인하세요.")
+
+    @ExceptionHandler(AiCallFailed.InvalidOutput::class)
+    fun onAiInvalidOutput(e: AiCallFailed.InvalidOutput): ProblemDetail =
+        problem(ErrorCode.AI_OUTPUT_INVALID, "AI 응답이 검증을 통과하지 못해 채택하지 않았습니다. 다시 시도하세요.")
+
+    @ExceptionHandler(ModelProviderException::class)
+    fun onAiProvider(e: ModelProviderException): ProblemDetail =
+        problem(ErrorCode.AI_PROVIDER_UNAVAILABLE, "AI 제공자에 연결하지 못했습니다. 잠시 후 다시 시도하세요.")
 
     @ExceptionHandler(NotImplementedException::class)
     fun onNotImplemented(e: NotImplementedException): ProblemDetail = problem(ErrorCode.NOT_IMPLEMENTED, e.message)

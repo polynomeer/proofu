@@ -60,6 +60,46 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /ai/usage:
+    get:
+      tags: [dashboard]
+      operationId: getAiUsage
+      summary: The workspace's AI budget position (ADR-0008 §6)
+      responses:
+        "200":
+          description: Usage
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [
+                    provider,
+                    model,
+                    monthSpentUsd,
+                    monthBudgetUsd,
+                    monthUsedPercent,
+                    jobsLastHour,
+                    hourlyLimit,
+                  ]
+                properties:
+                  provider:
+                    type: string
+                  model:
+                    type: string
+                  monthSpentUsd:
+                    type: number
+                  monthBudgetUsd:
+                    type: number
+                  monthUsedPercent:
+                    type: integer
+                  jobsLastHour:
+                    type: integer
+                  hourlyLimit:
+                    type: integer
+        default:
+          $ref: "#/components/responses/Problem"
+
   /career-entries:
     get:
       tags: [career]
@@ -1633,6 +1673,9 @@ components:
         - UNSUPPORTED_CLAIM_IN_EXPORT
         - RATE_LIMITED
         - AI_PROVIDER_UNAVAILABLE
+        - AI_REFUSED
+        - AI_OUTPUT_INVALID
+        - AI_BUDGET_EXCEEDED
         - NOT_IMPLEMENTED
         - INTERNAL_ERROR
 

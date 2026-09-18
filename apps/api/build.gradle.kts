@@ -22,6 +22,7 @@ kotlin {
 
 dependencies {
     implementation(project(":domain"))
+    implementation(project(":ai-gateway"))
 
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.jackson)

@@ -21,17 +21,20 @@ OIDC 제공자가 확정될 때까지 `X-Workspace-Id: <uuid>` 헤더로 workspa
 
 ## 오류 코드 (초안)
 
-| code                          | status | 의미                                                         |
-| ----------------------------- | ------ | ------------------------------------------------------------ |
-| `VALIDATION_FAILED`           | 400    | 필드 검증 실패, `fieldErrors` 포함                           |
-| `UNAUTHENTICATED`             | 401    | 인증 필요                                                    |
-| `REAUTHENTICATION_REQUIRED`   | 401    | 민감 작업에 최근 재인증 필요                                 |
-| `FORBIDDEN_WORKSPACE`         | 403    | workspace 경계 위반                                          |
-| `NOT_FOUND`                   | 404    | 리소스 없음 (다른 workspace 리소스도 404)                    |
-| `CONFLICT_STALE_VERSION`      | 409    | 낙관적 잠금 실패                                             |
-| `INVALID_STATUS_TRANSITION`   | 409    | 허용되지 않은 지원 상태 전이                                 |
-| `SNAPSHOT_IMMUTABLE`          | 409    | 제출 스냅샷 변경 시도                                        |
-| `UNSUPPORTED_CLAIM_IN_EXPORT` | 422    | 승인되지 않은 unsupported 문장 내보내기                      |
-| `RATE_LIMITED`                | 429    | 속도 제한                                                    |
-| `AI_PROVIDER_UNAVAILABLE`     | 503    | 모델 제공자 장애                                             |
-| `NOT_IMPLEMENTED`             | 501    | 계약에는 있으나 연동이 아직 없는 경로 (URL 수집, career-ops) |
+| code                          | status | 의미                                                                 |
+| ----------------------------- | ------ | -------------------------------------------------------------------- |
+| `VALIDATION_FAILED`           | 400    | 필드 검증 실패, `fieldErrors` 포함                                   |
+| `UNAUTHENTICATED`             | 401    | 인증 필요                                                            |
+| `REAUTHENTICATION_REQUIRED`   | 401    | 민감 작업에 최근 재인증 필요                                         |
+| `FORBIDDEN_WORKSPACE`         | 403    | workspace 경계 위반                                                  |
+| `NOT_FOUND`                   | 404    | 리소스 없음 (다른 workspace 리소스도 404)                            |
+| `CONFLICT_STALE_VERSION`      | 409    | 낙관적 잠금 실패                                                     |
+| `INVALID_STATUS_TRANSITION`   | 409    | 허용되지 않은 지원 상태 전이                                         |
+| `SNAPSHOT_IMMUTABLE`          | 409    | 제출 스냅샷 변경 시도                                                |
+| `UNSUPPORTED_CLAIM_IN_EXPORT` | 422    | 승인되지 않은 unsupported 문장 내보내기                              |
+| `RATE_LIMITED`                | 429    | 속도 제한                                                            |
+| `AI_PROVIDER_UNAVAILABLE`     | 503    | 모델 제공자 장애                                                     |
+| `AI_REFUSED`                  | 422    | 모델 제공자가 정책상 요청을 거절                                     |
+| `AI_OUTPUT_INVALID`           | 502    | 모델 출력이 스키마·참조 검증에 실패해 채택하지 않음                  |
+| `AI_BUDGET_EXCEEDED`          | 429    | 워크스페이스 월 예산·시간당 한도 또는 배포 일일 예산 초과 (ADR-0008) |
+| `NOT_IMPLEMENTED`             | 501    | 계약에는 있으나 연동이 아직 없는 경로 (URL 수집, career-ops)         |

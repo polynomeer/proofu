@@ -19,6 +19,16 @@ spring:
     virtual:
       enabled: true
 
+proofu:
+  ai:
+    provider: ${AI_PROVIDER:fake}
+    api-key: ${ANTHROPIC_API_KEY:}
+    default-model: ${AI_MODEL_DEFAULT:claude-opus-5}
+    workspace-monthly-budget-usd: ${AI_WORKSPACE_MONTHLY_BUDGET_USD:5}
+    workspace-hourly-job-limit: ${AI_WORKSPACE_HOURLY_JOB_LIMIT:30}
+    deployment-daily-budget-usd: ${AI_DAILY_BUDGET_USD:50}
+    max-input-tokens: ${AI_MAX_INPUT_TOKENS:50000}
+
 server:
   port: ${PORT:8080}
   error:
