@@ -25,7 +25,10 @@ review: API 릴리스 시
 | DELETE             | `/claims/{id}/evidence/{evidenceId}` ✅     | Claim–Evidence 연결 해제                                |
 | POST ✅            | `/claims/{id}/evidence`                     | Claim과 Evidence 연결                                   |
 | POST               | `/files/upload-sessions`                    | 파일 업로드 세션 생성                                   |
-| POST               | `/job-postings/import`                      | URL, 본문 또는 career-ops 참조 가져오기                 |
+| GET                | `/job-postings` ✅                          | 공고 목록 (최신 스냅샷 요약)                            |
+| GET, DELETE        | `/job-postings/{id}` ✅                     | 공고 상세 (스냅샷 목록), 삭제                           |
+| GET                | `/job-posting-snapshots/{id}` ✅            | 불변 스냅샷 원문 조회                                   |
+| POST ✅            | `/job-postings/import`                      | URL, 본문 또는 career-ops 참조 가져오기                 |
 | POST               | `/job-posting-snapshots/{id}/analysis-jobs` | 공고 분석 작업 시작 (202)                               |
 | GET, PATCH         | `/requirements/{id}`                        | 추출 요구사항 검토·승인                                 |
 | POST               | `/applications`                             | 공고 기반 지원 생성                                     |

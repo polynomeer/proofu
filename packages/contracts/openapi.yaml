@@ -688,12 +688,47 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /job-postings:
+    get:
+      tags: [jobs]
+      operationId: listJobPostings
+      summary: List postings with their latest snapshot, newest capture first
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: q
+          in: query
+          description: Full-text search over company, role title and the latest snapshot text
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Page of postings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/JobPosting"
+                  nextCursor:
+                    type: [string, "null"]
+        default:
+          $ref: "#/components/responses/Problem"
+
   /job-postings/import:
     post:
       tags: [jobs]
       operationId: importJobPosting
-      summary: Import a posting from a URL, pasted text, or a career-ops reference
-      description: Creates the posting (if new) and an immutable snapshot keyed by content hash.
+      summary: Import a posting from pasted text, a URL, or a career-ops reference
+      description: |
+        Creates the posting (or reuses one with the same canonical url / external id in the
+        workspace) and captures an immutable snapshot keyed by content hash. Re-importing
+        unchanged text returns the existing snapshot; changed text adds a new one.
+        URL_FETCH and CAREER_OPS answer 501 NOT_IMPLEMENTED until their integrations exist.
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -711,11 +746,16 @@ paths:
                       type: string
                     company:
                       type: string
+                      maxLength: 200
                     roleTitle:
                       type: string
+                      maxLength: 200
                     sourceUrl:
-                      type: string
+                      type: [string, "null"]
                       format: uri
+                    publishedAt:
+                      type: [string, "null"]
+                      format: date-time
                 - type: object
                   required: [source, url]
                   properties:
@@ -733,22 +773,54 @@ paths:
                       type: string
       responses:
         "201":
-          description: Posting and snapshot
+          description: Posting and snapshot (snapshotCreated is false when the text was already captured)
           content:
             application/json:
               schema:
-                type: object
-                required: [postingId, snapshotId, contentHash, capturedAt]
-                properties:
-                  postingId:
-                    $ref: "#/components/schemas/Uuid"
-                  snapshotId:
-                    $ref: "#/components/schemas/Uuid"
-                  contentHash:
-                    type: string
-                  capturedAt:
-                    type: string
-                    format: date-time
+                $ref: "#/components/schemas/ImportResult"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /job-postings/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [jobs]
+      operationId: getJobPosting
+      summary: Get a posting with all of its snapshots (newest first)
+      responses:
+        "200":
+          description: Posting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobPostingDetail"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [jobs]
+      operationId: deleteJobPosting
+      summary: Soft-delete a posting; its snapshots stay immutable in the trash
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /job-posting-snapshots/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [jobs]
+      operationId: getJobPostingSnapshot
+      summary: Read one immutable snapshot including its full text
+      responses:
+        "200":
+          description: Snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobPostingSnapshot"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -1288,6 +1360,7 @@ components:
         - UNSUPPORTED_CLAIM_IN_EXPORT
         - RATE_LIMITED
         - AI_PROVIDER_UNAVAILABLE
+        - NOT_IMPLEMENTED
         - INTERNAL_ERROR
 
     Visibility:
@@ -1676,6 +1749,97 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Claim"
+
+    SnapshotSource:
+      type: string
+      enum: [MANUAL_TEXT, URL_FETCH, CAREER_OPS]
+
+    JobPostingSnapshotSummary:
+      type: object
+      required: [id, source, contentHash, capturedAt, textPreview]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        source:
+          $ref: "#/components/schemas/SnapshotSource"
+        sourceUrl:
+          type: [string, "null"]
+        contentHash:
+          type: string
+        capturedAt:
+          type: string
+          format: date-time
+        textPreview:
+          type: string
+          description: First ~200 characters of the captured text
+
+    JobPostingSnapshot:
+      allOf:
+        - $ref: "#/components/schemas/JobPostingSnapshotSummary"
+        - type: object
+          required: [postingId, rawText]
+          properties:
+            postingId:
+              $ref: "#/components/schemas/Uuid"
+            rawText:
+              type: string
+
+    JobPosting:
+      type: object
+      required: [id, company, roleTitle, snapshotCount, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        company:
+          type: string
+        roleTitle:
+          type: string
+        canonicalUrl:
+          type: [string, "null"]
+        externalPostingId:
+          type: [string, "null"]
+        publishedAt:
+          type: [string, "null"]
+          format: date-time
+        snapshotCount:
+          type: integer
+        latestSnapshot:
+          oneOf:
+            - $ref: "#/components/schemas/JobPostingSnapshotSummary"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    JobPostingDetail:
+      allOf:
+        - $ref: "#/components/schemas/JobPosting"
+        - type: object
+          required: [snapshots]
+          properties:
+            snapshots:
+              type: array
+              items:
+                $ref: "#/components/schemas/JobPostingSnapshotSummary"
+
+    ImportResult:
+      type: object
+      required: [postingId, snapshotId, contentHash, capturedAt, snapshotCreated]
+      properties:
+        postingId:
+          $ref: "#/components/schemas/Uuid"
+        snapshotId:
+          $ref: "#/components/schemas/Uuid"
+        contentHash:
+          type: string
+        capturedAt:
+          type: string
+          format: date-time
+        snapshotCreated:
+          type: boolean
 
     Requirement:
       type: object
