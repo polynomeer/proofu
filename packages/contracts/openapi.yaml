@@ -837,13 +837,67 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /job-posting-snapshots/{id}/requirements:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [jobs]
+      operationId: listRequirements
+      summary: Requirements of a snapshot in display order (drafts included)
+      responses:
+        "200":
+          description: Requirements
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Requirement"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [jobs]
+      operationId: createRequirement
+      summary: Add a requirement by hand (approved as written)
+      description: Optional sourceSpan must lie inside the snapshot text (422 otherwise).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, text]
+              properties:
+                category:
+                  $ref: "#/components/schemas/RequirementCategory"
+                text:
+                  type: string
+                  maxLength: 1000
+                sourceSpan:
+                  oneOf:
+                    - $ref: "#/components/schemas/SourceSpan"
+                    - type: "null"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Requirement"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /requirements/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
     get:
       tags: [jobs]
       operationId: getRequirement
-      summary: Get an extracted requirement
+      summary: Get a requirement
       responses:
         "200":
           description: Requirement
@@ -856,8 +910,10 @@ paths:
     patch:
       tags: [jobs]
       operationId: reviewRequirement
-      summary: Edit, approve or reject a requirement
-      description: Only APPROVED requirements are used for matching and generation.
+      summary: Reword, re-categorise, approve or exclude a requirement
+      description: |
+        Only APPROVED requirements are used for matching and generation. Status may be set to
+        APPROVED or REJECTED; DRAFT is reserved for AI extraction. Omitted fields keep their value.
       requestBody:
         required: true
         content:
@@ -873,8 +929,14 @@ paths:
                   $ref: "#/components/schemas/RequirementCategory"
                 text:
                   type: string
+                  maxLength: 1000
+                sourceSpan:
+                  oneOf:
+                    - $ref: "#/components/schemas/SourceSpan"
+                    - type: "null"
                 status:
-                  $ref: "#/components/schemas/RequirementStatus"
+                  type: string
+                  enum: [APPROVED, REJECTED]
       responses:
         "200":
           description: Requirement
@@ -882,6 +944,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Requirement"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [jobs]
+      operationId: deleteRequirement
+      summary: Soft-delete a requirement
+      responses:
+        "204":
+          description: Deleted
         default:
           $ref: "#/components/responses/Problem"
 
@@ -2043,9 +2114,26 @@ components:
         snapshotCreated:
           type: boolean
 
+    RequirementOrigin:
+      type: string
+      enum: [USER, AI]
+
+    SourceSpan:
+      type: object
+      required: [start, end]
+      description: Character range [start, end) in the snapshot's rawText
+      properties:
+        start:
+          type: integer
+          minimum: 0
+        end:
+          type: integer
+          minimum: 1
+
     Requirement:
       type: object
-      required: [id, snapshotId, category, text, confidence, status, version]
+      required:
+        [id, snapshotId, category, text, confidence, origin, status, version, createdAt, updatedAt]
       properties:
         id:
           $ref: "#/components/schemas/Uuid"
@@ -2056,23 +2144,30 @@ components:
         text:
           type: string
         sourceSpan:
-          type: object
-          required: [start, end]
-          properties:
-            start:
-              type: integer
-            end:
-              type: integer
+          oneOf:
+            - $ref: "#/components/schemas/SourceSpan"
+            - type: "null"
+        excerpt:
+          type: [string, "null"]
+          description: The snapshot text the span points at, for display
         confidence:
           $ref: "#/components/schemas/Confidence"
+        origin:
+          $ref: "#/components/schemas/RequirementOrigin"
         status:
           $ref: "#/components/schemas/RequirementStatus"
         approvedAt:
-          type: string
+          type: [string, "null"]
           format: date-time
         version:
           type: integer
           format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     Application:
       type: object
