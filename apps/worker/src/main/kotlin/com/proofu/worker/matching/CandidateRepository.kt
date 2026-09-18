@@ -64,7 +64,7 @@ class CandidateRepository(
                 left join lateral (
                     select cs.source_type,
                            case cs.source_type
-                             when 'ACHIEVEMENT' then (select a.action || ' ' || a.outcome from achievements a where a.id = cs.source_id)
+                             when 'ACHIEVEMENT' then (select p.name || ' ' || a.action || ' ' || a.outcome from achievements a join projects p on p.id = a.project_id where a.id = cs.source_id)
                              when 'PROJECT' then (select p.name || ' ' || p.role || ' ' || p.summary from projects p where p.id = cs.source_id)
                              else (select e.title || ' ' || coalesce(e.organization, '') || ' ' || coalesce(e.description, '') from career_entries e where e.id = cs.source_id)
                            end as source_text,
