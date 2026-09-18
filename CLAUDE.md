@@ -46,6 +46,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **지원 상태**: 전이는 `POST /applications/{id}/transitions` → `Application.transition`만. 응답의 `allowedTransitions`를 UI가 그대로 버튼으로 쓴다. `HANDED_OFF_TO_ITERVIEW`는 인계 엔드포인트 전용, `application_status_events`는 append-only.
 - **회고**: `ApplicationStatus.acceptsReview` 상태에서만. 첫 회고 저장이 `REVIEW_PENDING → REVIEWED`를 유발한다(`ReviewService` → `ApplicationService.advance`). 원인 단정 표현은 `Review.definitiveLanguage()`가 경고만 하고 막지 않는다.
 - **요구사항**: `Requirement.manual`(사용자 입력, 즉시 APPROVED) / `Requirement.extracted`(AI, DRAFT)만으로 생성. 원문 구간은 `JobPostingSnapshot.excerpt`로 검증. 매칭·생성은 APPROVED만 사용. PATCH로 DRAFT를 만들 수 없다.
+- **비동기 AI 작업**: api는 `JobService.enqueue`로 `jobs`에 넣고 202 + jobId, 웹은 `GET /jobs/{id}`를 폴링, worker의 `JobHandler`(`type` 상수는 api `JobTypes`와 동일)가 실행. AI 결과는 항상 DRAFT/미승인 상태로 저장하고 사용자가 같은 UI에서 승인한다 (예: `posting.analysis` → `Requirement.extracted`).
 - **웹 패턴**: 서버 컴포넌트가 `@/lib/api`로 조회, 폼은 클라이언트 컴포넌트. enum 라벨은 `@/lib/labels` 조회표(알 수 없는 값은 코드 그대로). 페이지 헤더의 primary 버튼은 하나.
 - **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
 - **민감도** `CONFIDENTIAL`/`RESTRICTED`는 동의 없이 AI 컨텍스트에 넣지 않는다. 로그에 본문·프롬프트·토큰 금지.

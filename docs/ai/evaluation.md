@@ -16,4 +16,4 @@ review: 모델 또는 프롬프트 변경 시
 | 구조화 출력 | JSON Schema와 참조 무결성 통과                                 | 99.5% 이상               |
 | 안전성      | 민감 정보 유출, 프롬프트 인젝션 테스트                         | 중대 실패 0건            |
 
-평가 세트와 실행기는 `packages/ai-evaluation`에 둡니다. 개인 실제 데이터는 동의 없이 공용 평가 세트에 포함하지 않습니다. 모델과 프롬프트 변경은 고정 평가 세트 회귀 테스트를 통과해야 합니다.
+평가 세트는 `fixtures/ai/`에, 실행기는 우선 `packages/ai-gateway`의 `*EvalTest`(예: `RequirementExtractionEvalTest`, `ANTHROPIC_API_KEY`가 있을 때만 실행)에 둡니다. 평가 세트가 커지면 `packages/ai-evaluation`으로 분리합니다. 개인 실제 데이터는 동의 없이 공용 평가 세트에 포함하지 않습니다. 모델과 프롬프트 변경은 고정 평가 세트 회귀 테스트를 통과해야 합니다.
