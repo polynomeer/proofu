@@ -92,25 +92,38 @@ class ApplicationService(
         id: UUID,
         request: TransitionRequest,
     ): ApplicationDetail {
-        val entity = lock(workspace, id)
-        if (entity.version !=
-            requireNotNull(request.version)
-        ) {
-            throw StaleVersionException(TARGET, request.version, entity.version)
-        }
         val to = requireNotNull(request.to)
         if (to == ApplicationStatus.HANDED_OFF_TO_ITERVIEW) {
             throw DomainRuleViolation(
                 "handoff to iterview happens through the interview handoff, not a plain transition",
             )
         }
+        val entity = lock(workspace, id)
+        if (entity.version !=
+            requireNotNull(request.version)
+        ) {
+            throw StaleVersionException(TARGET, request.version, entity.version)
+        }
+        advance(workspace, entity, to, request.note?.trim()?.ifEmpty { null })
+        return detail(entity)
+    }
+
+    /**
+     * Applies one domain transition to an already locked application and records it. Used by the
+     * transition endpoint and by flows that move status as a side effect (e.g. writing a review).
+     */
+    fun advance(
+        workspace: WorkspaceContext,
+        entity: ApplicationEntity,
+        to: ApplicationStatus,
+        note: String?,
+    ) {
         val before = summary(entity)
         val now = Instant.now(clock)
         val (next, event) = entity.toDomain().transition(to, now)
         entity.apply(next)
         repository.saveAndFlush(entity)
-        recordEvent(entity.id, event.from, event.to, request.note?.trim()?.ifEmpty { null }, now)
-        val response = detail(entity)
+        recordEvent(entity.id, event.from, event.to, note, now)
         audit.record(
             workspace,
             "application.status_changed",
@@ -120,8 +133,13 @@ class ApplicationService(
             after = summary(entity),
         )
         events.publishEvent(ApplicationStatusChanged(ids.next(), now, ApplicationId(entity.id), event.from, event.to))
-        return response
     }
+
+    /** Row-locked application in the caller's workspace, for services that mutate it. */
+    fun lockForUpdate(
+        workspace: WorkspaceContext,
+        id: UUID,
+    ): ApplicationEntity = lock(workspace, id)
 
     @Transactional
     fun update(
