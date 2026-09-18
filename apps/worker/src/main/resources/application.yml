@@ -10,6 +10,8 @@ spring:
       enabled: true
   main:
     web-application-type: none
+    # Virtual-thread schedulers are daemon threads; without this the JVM exits right after startup.
+    keep-alive: true
 
 proofu:
   worker:

@@ -321,6 +321,7 @@ export function SnapshotRequirementsPanel({
     items: items.filter((r) => r.category === c),
   })).filter((g) => g.items.length > 0);
   const approved = items.filter((r) => r.status === "APPROVED").length;
+  const drafts = items.filter((r) => r.status === "DRAFT").length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -367,6 +368,7 @@ export function SnapshotRequirementsPanel({
             요구사항{" "}
             <span className="text-body font-normal text-text-600">
               승인 {approved} / 전체 {items.length}
+              {drafts > 0 ? ` · 검토 필요 ${drafts}` : ""}
             </span>
           </h2>
           {editing === null ? (
@@ -384,8 +386,8 @@ export function SnapshotRequirementsPanel({
           ) : null}
         </div>
         <p className="mb-4 text-caption text-text-600">
-          승인된 항목만 경력 매칭과 문서 생성에 쓰입니다. AI 추출은 제공자 확정 후 같은 목록에 검토
-          필요 상태로 들어옵니다.
+          승인된 항목만 경력 매칭과 문서 생성에 쓰입니다. AI가 뽑은 초안은 검토 필요 상태이며,
+          승인하기 전에는 어디에도 쓰이지 않습니다.
         </p>
 
         {editing === "new" ? (

@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CreateApplicationButton } from "@/components/application/CreateApplicationButton";
+import { AnalyzeRequirementsButton } from "@/components/jobs/AnalyzeRequirementsButton";
 import { SnapshotRequirementsPanel } from "@/components/jobs/SnapshotRequirementsPanel";
-import { Button, ButtonLink } from "@/components/ui/Button";
+import { ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
 import { Icon } from "@/components/ui/Icon";
@@ -56,9 +57,7 @@ export default async function JobPostingPage({
         action={
           <div className="flex flex-wrap gap-2">
             <CreateApplicationButton snapshotId={posting.snapshots[0]?.id} />
-            <Button variant="secondary" disabled title="AI 제공자 확정 후 제공됩니다">
-              요구사항 분석
-            </Button>
+            <AnalyzeRequirementsButton snapshotId={selectedSummary?.id} />
             <ButtonLink variant="secondary" href={`/jobs/new?postingId=${posting.id}`}>
               <Icon name="plus" size={16} />새 버전 붙여넣기
             </ButtonLink>
@@ -92,7 +91,7 @@ export default async function JobPostingPage({
           ) : null}
           {snapshot ? (
             <SnapshotRequirementsPanel
-              key={snapshot.id}
+              key={`${snapshot.id}:${(requirements?.items ?? []).map((r) => `${r.id}.${r.version}`).join(",")}`}
               snapshotId={snapshot.id}
               rawText={snapshot.rawText}
               initialItems={requirements?.items ?? []}
