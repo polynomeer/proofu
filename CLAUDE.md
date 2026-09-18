@@ -37,7 +37,10 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **enum 값**은 domain Kotlin enum ↔ `migrations/` CHECK ↔ `openapi.yaml` ↔ `docs/domain` 네 곳이 항상 일치해야 한다. 하나를 바꾸면 넷을 바꾼다.
 - **스키마 변경**은 `migrations/V{n}__*.sql` 추가만 (expand → migrate → contract). 기존 파일 수정 금지. JPA 엔티티는 스키마를 만들지 않는다.
 - **불변 테이블** (`submission_snapshots`, `job_posting_snapshots`, `application_status_events`, `provenance_links`, `audit_events`)은 UPDATE/DELETE 하지 않는다. 정정은 새 행.
-- **API 오류**는 항상 Problem Details + `code` (`ErrorCode`). 다른 workspace 리소스는 403이 아니라 404.
+- **API 오류**는 항상 Problem Details + `code` (`ErrorCode`). 다른 workspace 리소스는 403이 아니라 404. 컨트롤러는 `WorkspaceContext` 파라미터로 호출자 workspace를 받는다.
+- **인증은 임시**: OIDC 확정 전까지 `X-Workspace-Id` 헤더 (`HeaderWorkspaceResolver`, production 프로필 제외). `local` 프로필이 시드하는 workspace `00000000-0000-7000-8000-000000000002`를 웹이 기본으로 보낸다. OIDC 도입 시 `WorkspaceResolver`만 교체.
+- **API 패턴** (`apps/api/.../career` 참고): 요청 DTO는 nullable + Bean Validation(400 fieldErrors) → 도메인 객체 생성(422) → JPA 엔티티(`from`/`apply`/`toDomain`). 목록은 keyset cursor, 변경은 row lock + revision 비교(409), 모든 변경은 `AuditLog`(해시만) + 도메인 이벤트 발행.
+- **웹 패턴**: 서버 컴포넌트가 `@/lib/api`로 조회, 폼은 클라이언트 컴포넌트. enum 라벨은 `@/lib/labels` 조회표(알 수 없는 값은 코드 그대로). 페이지 헤더의 primary 버튼은 하나.
 - **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
 - **민감도** `CONFIDENTIAL`/`RESTRICTED`는 동의 없이 AI 컨텍스트에 넣지 않는다. 로그에 본문·프롬프트·토큰 금지.
 - **디자인**: 색상·간격은 `tokens.css` 토큰만 사용. 상태는 색상 + 텍스트/아이콘. 점수는 숫자 + 낮음/보통/높음 라벨, 합격 확률로 표현 금지. 탈락 원인은 단정하지 않는다.

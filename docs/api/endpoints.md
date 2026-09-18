@@ -6,12 +6,12 @@ review: API 릴리스 시
 
 # 주요 엔드포인트
 
-정식 계약은 `packages/contracts/openapi.yaml`입니다.
+정식 계약은 `packages/contracts/openapi.yaml`입니다. ✅ 는 API 구현 완료.
 
 | 메서드             | 경로                                        | 목적                                    |
 | ------------------ | ------------------------------------------- | --------------------------------------- |
-| GET, POST          | `/career-entries`                           | 경력 목록 조회와 생성                   |
-| GET, PATCH, DELETE | `/career-entries/{id}`                      | 경력 상세, 변경, 삭제                   |
+| GET, POST          | `/career-entries` ✅                        | 경력 목록 조회와 생성                   |
+| GET, PATCH, DELETE | `/career-entries/{id}` ✅                   | 경력 상세, 변경, 삭제                   |
 | POST               | `/claims/{id}/evidence`                     | Claim과 Evidence 연결                   |
 | POST               | `/files/upload-sessions`                    | 파일 업로드 세션 생성                   |
 | POST               | `/job-postings/import`                      | URL, 본문 또는 career-ops 참조 가져오기 |
