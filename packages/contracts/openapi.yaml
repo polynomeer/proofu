@@ -334,6 +334,236 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /evidence:
+    get:
+      tags: [evidence]
+      operationId: listEvidence
+      summary: List evidence in the caller's workspace, newest capture first
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/EvidenceType"
+        - name: verification
+          in: query
+          schema:
+            $ref: "#/components/schemas/VerificationStatus"
+        - name: q
+          in: query
+          description: Full-text search over title and body
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Page of evidence
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Evidence"
+                  nextCursor:
+                    type: [string, "null"]
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [evidence]
+      operationId: createEvidence
+      summary: Register evidence (link-like types and notes; files arrive via upload sessions)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvidenceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evidence"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /evidence/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [evidence]
+      operationId: getEvidence
+      summary: Get evidence
+      responses:
+        "200":
+          description: Evidence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evidence"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [evidence]
+      operationId: updateEvidence
+      summary: Update evidence, including the user-settable verification state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/EvidenceInput"
+                - type: object
+                  required: [revision]
+                  properties:
+                    revision:
+                      $ref: "#/components/schemas/Revision"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evidence"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [evidence]
+      operationId: deleteEvidence
+      summary: Soft-delete evidence; its claim links are removed and affected claims become unsupported
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /evidence/{id}/claims:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [evidence]
+      operationId: listClaimsForEvidence
+      summary: Claims this evidence is linked to
+      responses:
+        "200":
+          description: Claims
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimList"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /claims:
+    get:
+      tags: [evidence]
+      operationId: listClaims
+      summary: List claims, filtered by the record they are about
+      description: Pass `sourceType`+`sourceId` for one record, or `projectId` for a project and all of its achievements.
+      parameters:
+        - name: sourceType
+          in: query
+          schema:
+            $ref: "#/components/schemas/ClaimSourceType"
+        - name: sourceId
+          in: query
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - name: projectId
+          in: query
+          schema:
+            $ref: "#/components/schemas/Uuid"
+      responses:
+        "200":
+          description: Claims, oldest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [evidence]
+      operationId: createClaim
+      summary: Create a claim about one or more career records
+      description: Each source's current revision is pinned so the claim can be re-read against what it was made about.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimInput"
+      responses:
+        "201":
+          description: Created (status UNSUPPORTED until evidence is linked)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /claims/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [evidence]
+      operationId: getClaim
+      summary: Get a claim with its evidence links and derived status
+      responses:
+        "200":
+          description: Claim
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [evidence]
+      operationId: updateClaim
+      summary: Update claim text, type or sensitivity (sources are fixed at creation)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text, type, revision]
+              properties:
+                text:
+                  type: string
+                type:
+                  $ref: "#/components/schemas/ClaimType"
+                sensitivity:
+                  $ref: "#/components/schemas/Sensitivity"
+                revision:
+                  $ref: "#/components/schemas/Revision"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [evidence]
+      operationId: deleteClaim
+      summary: Soft-delete a claim
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
   /claims/{id}/evidence:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -341,7 +571,7 @@ paths:
       tags: [evidence]
       operationId: linkEvidenceToClaim
       summary: Link evidence to a claim
-      description: Evidence must belong to the same workspace. Partial support requires `scope`.
+      description: Evidence must belong to the same workspace. Partial support requires `scope`. Returns the updated claim.
       requestBody:
         required: true
         content:
@@ -364,7 +594,29 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClaimEvidenceLink"
+                $ref: "#/components/schemas/Claim"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /claims/{id}/evidence/{evidenceId}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+      - name: evidenceId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/Uuid"
+    delete:
+      tags: [evidence]
+      operationId: unlinkEvidenceFromClaim
+      summary: Remove every link between the claim and the evidence
+      responses:
+        "200":
+          description: Updated claim
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -1095,20 +1347,184 @@ components:
               type: string
               format: date-time
 
+    Sensitivity:
+      type: string
+      enum: [PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED]
+    EvidenceType:
+      type: string
+      enum: [FILE, URL, REPOSITORY, COMMIT, METRIC, CERTIFICATE, NOTE, REFERENCE_LETTER]
+    EvidenceSource:
+      type: string
+      enum: [USER_INPUT, EXTERNAL_IMPORT, SYSTEM_EXTRACTED]
+    VerificationStatus:
+      type: string
+      enum: [UNVERIFIED, USER_VERIFIED, EXTERNALLY_VERIFIED, EXPIRED]
+    ClaimType:
+      type: string
+      enum: [FACT, INFERENCE, OPINION]
+    ClaimStatus:
+      type: string
+      enum: [UNSUPPORTED, SUPPORTED, CONTESTED]
+    ClaimSourceType:
+      type: string
+      enum: [CAREER_ENTRY, PROJECT, ACHIEVEMENT]
+
+    EvidenceInput:
+      type: object
+      required: [type, title]
+      description: NOTE needs `body`; every other type needs an absolute http(s) `uri`. FILE is created through upload sessions.
+      properties:
+        type:
+          $ref: "#/components/schemas/EvidenceType"
+        title:
+          type: string
+          maxLength: 200
+        uri:
+          type: [string, "null"]
+          format: uri
+        body:
+          type: [string, "null"]
+        capturedAt:
+          type: string
+          format: date-time
+          description: When the evidence was captured; defaults to now
+        verification:
+          $ref: "#/components/schemas/VerificationStatus"
+        sensitivity:
+          $ref: "#/components/schemas/Sensitivity"
+
+    Evidence:
+      allOf:
+        - $ref: "#/components/schemas/EvidenceInput"
+        - type: object
+          required:
+            [
+              id,
+              source,
+              capturedAt,
+              verification,
+              sensitivity,
+              linkedClaimCount,
+              revision,
+              createdAt,
+              updatedAt,
+            ]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            source:
+              $ref: "#/components/schemas/EvidenceSource"
+            capturedAt:
+              type: string
+              format: date-time
+            verification:
+              $ref: "#/components/schemas/VerificationStatus"
+            sensitivity:
+              $ref: "#/components/schemas/Sensitivity"
+            linkedClaimCount:
+              type: integer
+            revision:
+              $ref: "#/components/schemas/Revision"
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    ClaimSourceInput:
+      type: object
+      required: [type, id]
+      properties:
+        type:
+          $ref: "#/components/schemas/ClaimSourceType"
+        id:
+          $ref: "#/components/schemas/Uuid"
+
+    ClaimSource:
+      allOf:
+        - $ref: "#/components/schemas/ClaimSourceInput"
+        - type: object
+          required: [revision]
+          properties:
+            revision:
+              $ref: "#/components/schemas/Revision"
+
+    ClaimInput:
+      type: object
+      required: [text, type]
+      properties:
+        text:
+          type: string
+        type:
+          $ref: "#/components/schemas/ClaimType"
+        sensitivity:
+          $ref: "#/components/schemas/Sensitivity"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClaimSourceInput"
+
     ClaimEvidenceLink:
       type: object
-      required: [claimId, evidenceId, relation, confidence]
+      required:
+        [evidenceId, evidenceTitle, evidenceType, evidenceVerification, relation, confidence]
       properties:
-        claimId:
-          $ref: "#/components/schemas/Uuid"
         evidenceId:
           $ref: "#/components/schemas/Uuid"
+        evidenceTitle:
+          type: string
+        evidenceType:
+          $ref: "#/components/schemas/EvidenceType"
+        evidenceVerification:
+          $ref: "#/components/schemas/VerificationStatus"
         relation:
           $ref: "#/components/schemas/EvidenceRelation"
         confidence:
           $ref: "#/components/schemas/Confidence"
         scope:
+          type: [string, "null"]
+
+    Claim:
+      type: object
+      required:
+        [id, text, type, sensitivity, status, sources, links, revision, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        text:
           type: string
+        type:
+          $ref: "#/components/schemas/ClaimType"
+        sensitivity:
+          $ref: "#/components/schemas/Sensitivity"
+        status:
+          $ref: "#/components/schemas/ClaimStatus"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClaimSource"
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClaimEvidenceLink"
+        revision:
+          $ref: "#/components/schemas/Revision"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ClaimList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Claim"
 
     Requirement:
       type: object
