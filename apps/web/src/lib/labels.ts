@@ -102,3 +102,9 @@ export const RELATIONS: readonly Schema<"EvidenceRelation">[] = [
   "PARTIALLY_SUPPORTS",
   "REFUTES",
 ];
+
+export const snapshotSourceLabel = labelsOf<Schema<"SnapshotSource">>({
+  MANUAL_TEXT: "직접 붙여넣기",
+  URL_FETCH: "URL 수집",
+  CAREER_OPS: "career-ops",
+});
