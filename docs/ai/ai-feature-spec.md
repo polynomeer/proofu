@@ -39,4 +39,4 @@ review: 모델 또는 프롬프트 변경 시
 - 입력 해시와 정책 버전이 같을 때 안전한 범위에서 결과를 캐시합니다.
 - 워크스페이스별 월간 예산과 요청 속도 제한을 적용합니다.
 - 제공자 장애 시 폴백 모델은 동일한 개인정보 지역 및 보존 조건을 충족해야 합니다.
-- 제공자와 모델 선택은 TBD (→ [project/open-decisions.md](../project/open-decisions.md)).
+- 제공자·모델·예산·지역 결정: [ADR-0008](../architecture/adr/0008-ai-provider-anthropic-claude.md). 기본 `claude-opus-5`, 작업별 `effort`(추출 low · 매칭 medium · 생성 high). 요구사항 추출은 API `citations`의 문자 위치로 `source_span`을 채운다.

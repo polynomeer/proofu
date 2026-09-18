@@ -51,6 +51,8 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **디자인**: 색상·간격은 `tokens.css` 토큰만 사용. 상태는 색상 + 텍스트/아이콘. 점수는 숫자 + 낮음/보통/높음 라벨, 합격 확률로 표현 금지. 탈락 원인은 단정하지 않는다.
 - **테스트 데이터**는 합성 데이터만 (`fixtures/`).
 
+- **AI (ADR-0008)**: Anthropic Claude, 기본 `claude-opus-5` + 작업별 `effort`. 모든 호출은 AI Gateway를 통해, Java SDK `com.anthropic:anthropic-java`. 구조화 출력은 `strict` 스키마 + `GeneratedOutput.requireGrounded` 이중 검증, 추출의 원문 구간은 `citations`로. 원문은 `document` 블록으로 격리, 프리필 금지, thinking은 adaptive 유지. 예산: 워크스페이스 월 $5, 30건/시간, 배포 일일 $50.
+
 ## 미확정 (TBD)
 
-OIDC 제공자, AI 제공자/모델, 클라우드/리전, 객체 저장소, DOCX 렌더링 라이브러리, 큐 브로커 교체 시점 → `docs/project/open-decisions.md`. 결정 시 ADR 추가 (`docs/architecture/adr/`).
+OIDC 제공자, 클라우드/리전, 객체 저장소, DOCX 렌더링 라이브러리, 큐 브로커 교체 시점 → `docs/project/open-decisions.md`. 결정 시 ADR 추가 (`docs/architecture/adr/`).
