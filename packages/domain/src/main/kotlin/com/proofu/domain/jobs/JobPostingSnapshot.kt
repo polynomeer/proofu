@@ -26,7 +26,28 @@ data class JobPostingSnapshot(
         domainRequire(contentHash.matches(SHA256_HEX)) { "content hash must be lowercase sha256 hex" }
     }
 
-    private companion object {
-        val SHA256_HEX = Regex("^[0-9a-f]{64}$")
+    companion object {
+        private val SHA256_HEX = Regex("^[0-9a-f]{64}$")
+
+        /** Captures normalised text with its hash; the only way new snapshots should be made. */
+        fun capture(
+            id: JobPostingSnapshotId,
+            postingId: JobPostingId,
+            source: SnapshotSource,
+            text: String,
+            capturedAt: Instant,
+            sourceUrl: String? = null,
+        ): JobPostingSnapshot {
+            val normalized = ContentHash.normalize(text)
+            return JobPostingSnapshot(
+                id,
+                postingId,
+                source,
+                normalized,
+                ContentHash.of(normalized),
+                capturedAt,
+                sourceUrl,
+            )
+        }
     }
 }
