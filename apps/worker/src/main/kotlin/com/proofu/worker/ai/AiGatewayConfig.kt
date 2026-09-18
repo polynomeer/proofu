@@ -7,6 +7,7 @@ import com.proofu.ai.AiUsageSource
 import com.proofu.ai.extraction.RequirementExtractor
 import com.proofu.ai.jdbc.JdbcAiExecutionRecorder
 import com.proofu.ai.jdbc.JdbcAiUsageSource
+import com.proofu.ai.matching.MatchExplainer
 import com.proofu.ai.model.ModelClient
 import com.proofu.domain.common.IdGenerator
 import org.slf4j.LoggerFactory
@@ -46,6 +47,9 @@ class AiGatewayConfig {
         val client = clientOverride.ifAvailable ?: AiGatewayFactory.clientFor(settings)
         return AiGatewayFactory.create(settings, usage, JdbcAiExecutionRecorder(jdbc), clock, ids, client)
     }
+
+    @Bean
+    fun matchExplainer(gateway: AiGateway) = MatchExplainer(gateway)
 
     @Bean
     fun requirementExtractor(
