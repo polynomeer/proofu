@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AchievementSection } from "@/components/achievement/AchievementSection";
+import { ClaimPanel } from "@/components/claim/ClaimPanel";
 import { ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
@@ -26,8 +27,9 @@ export default async function ProjectPage({ params }: { params: Params }) {
   const { data: project } = await api.GET("/projects/{id}", { params: { path: { id } } });
   if (!project) notFound();
 
-  const [achievements, entry] = await Promise.all([
+  const [achievements, claims, entry] = await Promise.all([
     api.GET("/projects/{id}/achievements", { params: { path: { id } } }),
+    api.GET("/claims", { params: { query: { projectId: id } } }),
     project.careerEntryId
       ? api.GET("/career-entries/{id}", { params: { path: { id: project.careerEntryId } } })
       : Promise.resolve({ data: undefined }),
@@ -63,7 +65,18 @@ export default async function ProjectPage({ params }: { params: Params }) {
           <AchievementSection
             projectId={project.id}
             initialItems={achievements.data?.items ?? []}
+            initialClaims={claims.data?.items ?? []}
           />
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4">
+            <ClaimPanel
+              heading="프로젝트 전체에 대한 주장"
+              source={{ type: "PROJECT", id: project.id }}
+              initialClaims={(claims.data?.items ?? []).filter((c) =>
+                c.sources.some((s) => s.type === "PROJECT" && s.id === project.id),
+              )}
+              defaultText={`${project.name}에서 ${project.role}로 ${project.summary}`}
+            />
+          </section>
         </div>
 
         <aside className="flex h-fit flex-col gap-4 rounded-md border border-border-300 bg-surface-000 p-6">

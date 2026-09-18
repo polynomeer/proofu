@@ -9,9 +9,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Field, inputClass, textareaClass } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
+import { ClaimPanel } from "@/components/claim/ClaimPanel";
 import { api } from "@/lib/api";
 
 type Achievement = Schema<"Achievement">;
+type Claim = Schema<"Claim">;
 type Input = Schema<"AchievementInput">;
 
 /**
@@ -222,12 +224,19 @@ function confidenceLabel(value: number): string {
   return band >= 0.9 ? "신뢰도 높음" : band >= 0.6 ? "신뢰도 보통" : "신뢰도 낮음";
 }
 
+function claimText(item: Achievement): string {
+  const metric = item.metricValue != null ? ` (${item.metricValue}${item.metricUnit ?? ""})` : "";
+  return `${item.action} — ${item.outcome}${metric}`;
+}
+
 function AchievementRow({
   item,
+  claims,
   onEdit,
   onDeleted,
 }: {
   item: Achievement;
+  claims: Claim[];
   onEdit: () => void;
   onDeleted: () => void;
 }) {
@@ -249,30 +258,37 @@ function AchievementRow({
     onDeleted();
   }
   return (
-    <li className="flex flex-col gap-2 px-4 py-4 md:flex-row md:items-start md:gap-4">
-      <div className="min-w-0 flex-1">
-        <p className="text-card-title">{item.action}</p>
-        <p className="mt-1 text-body text-text-900">{item.outcome}</p>
-        <p className="mt-1 flex flex-wrap gap-x-3 text-caption text-text-600 tabular-nums">
-          {item.metricValue != null ? (
-            <span className="font-semibold text-text-900">
-              {item.metricValue}
-              {item.metricUnit}
-              {item.baseline ? ` (기준 ${item.baseline})` : ""}
-            </span>
-          ) : null}
-          {item.timeframe ? <span>{item.timeframe}</span> : null}
-          <span>{confidenceLabel(item.confidence)}</span>
-        </p>
+    <li className="flex flex-col gap-3 px-4 py-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-card-title">{item.action}</p>
+          <p className="mt-1 text-body text-text-900">{item.outcome}</p>
+          <p className="mt-1 flex flex-wrap gap-x-3 text-caption text-text-600 tabular-nums">
+            {item.metricValue != null ? (
+              <span className="font-semibold text-text-900">
+                {item.metricValue}
+                {item.metricUnit}
+                {item.baseline ? ` (기준 ${item.baseline})` : ""}
+              </span>
+            ) : null}
+            {item.timeframe ? <span>{item.timeframe}</span> : null}
+            <span>{confidenceLabel(item.confidence)}</span>
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-1">
+          <Button type="button" variant="tertiary" onClick={onEdit}>
+            편집
+          </Button>
+          <Button type="button" variant="tertiary" onClick={remove} loading={busy}>
+            삭제
+          </Button>
+        </div>
       </div>
-      <div className="flex shrink-0 gap-1">
-        <Button type="button" variant="tertiary" onClick={onEdit}>
-          편집
-        </Button>
-        <Button type="button" variant="tertiary" onClick={remove} loading={busy}>
-          삭제
-        </Button>
-      </div>
+      <ClaimPanel
+        source={{ type: "ACHIEVEMENT", id: item.id }}
+        initialClaims={claims}
+        defaultText={claimText(item)}
+      />
     </li>
   );
 }
@@ -281,9 +297,12 @@ function AchievementRow({
 export function AchievementSection({
   projectId,
   initialItems,
+  initialClaims,
 }: {
   projectId: string;
   initialItems: Achievement[];
+  /** Claims about this project's achievements, grouped here by source id. */
+  initialClaims: Claim[];
 }) {
   const [items, setItems] = useState(initialItems);
   const [editing, setEditing] = useState<"new" | string | null>(null);
@@ -339,6 +358,9 @@ export function AchievementSection({
               <AchievementRow
                 key={item.id}
                 item={item}
+                claims={initialClaims.filter((c) =>
+                  c.sources.some((s) => s.type === "ACHIEVEMENT" && s.id === item.id),
+                )}
                 onEdit={() => setEditing(item.id)}
                 onDeleted={() => setItems((list) => list.filter((x) => x.id !== item.id))}
               />
