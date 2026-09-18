@@ -21,7 +21,13 @@ enum class RequirementStatus {
     REJECTED,
 }
 
-/** Character range in the snapshot's raw text that the requirement was extracted from. */
+/** Who wrote the requirement text. Manual entries are the user's own words and start approved. */
+enum class RequirementOrigin {
+    USER,
+    AI,
+}
+
+/** Character range in the snapshot's raw text that the requirement was taken from. */
 data class SourceSpan(
     val start: Int,
     val end: Int,
@@ -29,6 +35,8 @@ data class SourceSpan(
     init {
         require(start >= 0 && end > start) { "invalid source span [$start, $end)" }
     }
+
+    fun fitsIn(text: String): Boolean = end <= text.length
 }
 
 data class Requirement(
@@ -37,6 +45,7 @@ data class Requirement(
     val category: RequirementCategory,
     val text: String,
     val confidence: Confidence,
+    val origin: RequirementOrigin,
     val sourceSpan: SourceSpan? = null,
     val status: RequirementStatus = RequirementStatus.DRAFT,
     val approvedAt: Instant? = null,
@@ -53,4 +62,54 @@ data class Requirement(
     fun approve(at: Instant): Requirement = copy(status = RequirementStatus.APPROVED, approvedAt = at)
 
     fun reject(): Requirement = copy(status = RequirementStatus.REJECTED, approvedAt = null)
+
+    /** Edited wording keeps the status: the user is rewriting, not re-deciding. */
+    fun reworded(
+        category: RequirementCategory,
+        text: String,
+        sourceSpan: SourceSpan?,
+    ): Requirement = copy(category = category, text = text, sourceSpan = sourceSpan)
+
+    companion object {
+        /** The user typed it, so it is approved as written; confidence is full by definition. */
+        fun manual(
+            id: RequirementId,
+            snapshotId: JobPostingSnapshotId,
+            category: RequirementCategory,
+            text: String,
+            sourceSpan: SourceSpan?,
+            at: Instant,
+        ): Requirement =
+            Requirement(
+                id = id,
+                snapshotId = snapshotId,
+                category = category,
+                text = text.trim(),
+                confidence = Confidence.FULL,
+                origin = RequirementOrigin.USER,
+                sourceSpan = sourceSpan,
+                status = RequirementStatus.APPROVED,
+                approvedAt = at,
+            )
+
+        /** Model output waits for the user; nothing extracted is usable for matching until approved. */
+        fun extracted(
+            id: RequirementId,
+            snapshotId: JobPostingSnapshotId,
+            category: RequirementCategory,
+            text: String,
+            confidence: Confidence,
+            sourceSpan: SourceSpan?,
+        ): Requirement =
+            Requirement(
+                id = id,
+                snapshotId = snapshotId,
+                category = category,
+                text = text.trim(),
+                confidence = confidence,
+                origin = RequirementOrigin.AI,
+                sourceSpan = sourceSpan,
+                status = RequirementStatus.DRAFT,
+            )
+    }
 }

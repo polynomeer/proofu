@@ -26,6 +26,14 @@ data class JobPostingSnapshot(
         domainRequire(contentHash.matches(SHA256_HEX)) { "content hash must be lowercase sha256 hex" }
     }
 
+    /** The captured text a requirement points at; a span outside the text is a rule violation. */
+    fun excerpt(span: SourceSpan): String {
+        domainRequire(
+            span.fitsIn(rawText),
+        ) { "source span ${span.start}-${span.end} exceeds text length ${rawText.length}" }
+        return rawText.substring(span.start, span.end)
+    }
+
     companion object {
         private val SHA256_HEX = Regex("^[0-9a-f]{64}$")
 

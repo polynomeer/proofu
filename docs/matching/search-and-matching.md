@@ -28,6 +28,10 @@ MatchScore = 0.30 × RequirementCoverage
 
 점수는 정렬 보조 수단이며 합격 확률로 표현하지 않습니다. 각 하위 점수와 사용한 Evidence를 함께 표시하고, 필수 조건이 명시적으로 충족되지 않으면 전체 숫자와 별도로 격차를 보여줍니다. 점수 계산은 `packages/domain`의 순수 함수로 구현하고 단위 테스트합니다.
 
+## 요구사항 입력과 승인
+
+요구사항은 스냅샷 원문에서 나옵니다. 사용자가 직접 입력한 것(`origin=USER`)은 본인의 말이므로 즉시 `APPROVED`이고, AI가 추출한 것(`origin=AI`)은 `DRAFT`로 시작해 사용자가 승인해야 합니다. 두 경로 모두 원문 구간(`source_span`)을 가질 수 있고 구간은 스냅샷 텍스트 안에 있어야 합니다(`JobPostingSnapshot.excerpt`). 매칭은 `APPROVED`만 사용합니다.
+
 ## 요구사항 분류
 
 | 범주      | 코드             | 예시                            | 매칭 규칙                            |
