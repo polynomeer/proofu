@@ -140,6 +140,200 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /projects:
+    get:
+      tags: [career]
+      operationId: listProjects
+      summary: List projects, optionally those attached to one career entry
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: careerEntryId
+          in: query
+          schema:
+            $ref: "#/components/schemas/Uuid"
+      responses:
+        "200":
+          description: Page of projects, most recent first (projects without a start date come first)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+                  nextCursor:
+                    type: [string, "null"]
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [career]
+      operationId: createProject
+      summary: Create a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: getProject
+      summary: Get a project
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [career]
+      operationId: updateProject
+      summary: Update a project (optimistic locking via revision)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/ProjectInput"
+                - type: object
+                  required: [revision]
+                  properties:
+                    revision:
+                      $ref: "#/components/schemas/Revision"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [career]
+      operationId: deleteProject
+      summary: Soft-delete a project and its achievements (30-day trash)
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /projects/{id}/achievements:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: listAchievements
+      summary: List a project's achievements in creation order
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Achievement"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [career]
+      operationId: createAchievement
+      summary: Record a measurable outcome on a project
+      description: A metric value requires a unit. The number is stored as given; it is not evidence.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AchievementInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Achievement"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /achievements/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: getAchievement
+      summary: Get an achievement
+      responses:
+        "200":
+          description: Achievement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Achievement"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [career]
+      operationId: updateAchievement
+      summary: Update an achievement (optimistic locking via revision)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/AchievementInput"
+                - type: object
+                  required: [revision]
+                  properties:
+                    revision:
+                      $ref: "#/components/schemas/Revision"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Achievement"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [career]
+      operationId: deleteAchievement
+      summary: Soft-delete an achievement
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
   /claims/{id}/evidence:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -783,6 +977,115 @@ components:
               $ref: "#/components/schemas/Visibility"
             status:
               $ref: "#/components/schemas/CareerEntryStatus"
+            revision:
+              $ref: "#/components/schemas/Revision"
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    ProjectLink:
+      type: object
+      required: [label, url]
+      properties:
+        label:
+          type: string
+          maxLength: 80
+        url:
+          type: string
+          format: uri
+
+    ProjectInput:
+      type: object
+      required: [name, role, summary]
+      properties:
+        careerEntryId:
+          type: [string, "null"]
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        role:
+          type: string
+          maxLength: 200
+        summary:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        teamSize:
+          type: integer
+          minimum: 1
+        links:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/ProjectLink"
+        visibility:
+          $ref: "#/components/schemas/Visibility"
+
+    Project:
+      allOf:
+        - $ref: "#/components/schemas/ProjectInput"
+        - type: object
+          required: [id, links, visibility, revision, createdAt, updatedAt]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            links:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProjectLink"
+            visibility:
+              $ref: "#/components/schemas/Visibility"
+            revision:
+              $ref: "#/components/schemas/Revision"
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    AchievementInput:
+      type: object
+      required: [action, outcome, confidence]
+      properties:
+        action:
+          type: string
+          description: What was done
+        outcome:
+          type: string
+          description: What changed as a result
+        metricValue:
+          type: [number, "null"]
+        metricUnit:
+          type: [string, "null"]
+          maxLength: 40
+        baseline:
+          type: [string, "null"]
+          maxLength: 200
+        timeframe:
+          type: [string, "null"]
+          maxLength: 120
+        confidence:
+          $ref: "#/components/schemas/Confidence"
+
+    Achievement:
+      allOf:
+        - $ref: "#/components/schemas/AchievementInput"
+        - type: object
+          required: [id, projectId, revision, createdAt, updatedAt]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            projectId:
+              $ref: "#/components/schemas/Uuid"
             revision:
               $ref: "#/components/schemas/Revision"
             createdAt:

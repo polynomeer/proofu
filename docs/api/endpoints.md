@@ -11,6 +11,10 @@ review: API 릴리스 시
 | 메서드             | 경로                                        | 목적                                    |
 | ------------------ | ------------------------------------------- | --------------------------------------- |
 | GET, POST          | `/career-entries` ✅                        | 경력 목록 조회와 생성                   |
+| GET, POST          | `/projects` ✅                              | 프로젝트 목록(경력별 필터)과 생성       |
+| GET, PATCH, DELETE | `/projects/{id}` ✅                         | 프로젝트 상세, 변경, 삭제               |
+| GET, POST          | `/projects/{id}/achievements` ✅            | 프로젝트 성과 목록과 생성               |
+| GET, PATCH, DELETE | `/achievements/{id}` ✅                     | 성과 상세, 변경, 삭제                   |
 | GET, PATCH, DELETE | `/career-entries/{id}` ✅                   | 경력 상세, 변경, 삭제                   |
 | POST               | `/claims/{id}/evidence`                     | Claim과 Evidence 연결                   |
 | POST               | `/files/upload-sessions`                    | 파일 업로드 세션 생성                   |
