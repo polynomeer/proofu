@@ -50,4 +50,5 @@ class JobController(
 /** Job type names shared with the worker's handlers; keep in sync with apps/worker. */
 object JobTypes {
     const val POSTING_ANALYSIS = "posting.analysis"
+    const val APPLICATION_MATCH = "application.match"
 }
