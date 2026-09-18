@@ -1,0 +1,14 @@
+{
+  "title": "B2B SaaS 프로덕트 매니저 (경력)",
+  "text": "[담당 업무]\n- B2B SaaS 제품 로드맵 수립과 우선순위 결정\n- 데이터 기반 의사결정과 실험 설계\n- 디자인, 개발, 마케팅과 협업해 기능을 출시\n\n[자격 요건]\n- 프로덕트 매니저 경력 5년 이상\n- SaaS 제품 기획 경험\n- SQL로 지표를 직접 조회할 수 있는 분\n\n[우대 사항]\n- 신규 서비스 런칭 경험\n- 영어 커뮤니케이션 가능자\n\n[근무 조건]\n- 주 5일 근무, 유연 근무제\n- 복지: 점심 식대, 건강검진",
+  "expected": [
+    { "category": "RESPONSIBILITY", "quote": "B2B SaaS 제품 로드맵 수립과 우선순위 결정" },
+    { "category": "RESPONSIBILITY", "quote": "데이터 기반 의사결정과 실험 설계" },
+    { "category": "REQUIRED", "quote": "프로덕트 매니저 경력 5년 이상" },
+    { "category": "REQUIRED", "quote": "SaaS 제품 기획 경험" },
+    { "category": "SKILL", "quote": "SQL로 지표를 직접 조회할 수 있는 분" },
+    { "category": "PREFERRED", "quote": "신규 서비스 런칭 경험" },
+    { "category": "PREFERRED", "quote": "영어 커뮤니케이션 가능자" }
+  ],
+  "mustNotContain": ["점심 식대", "건강검진", "주 5일"]
+}

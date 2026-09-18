@@ -53,7 +53,7 @@
 
 ## 결과
 
-- ADR-0005의 "제공자 중립"은 유지되지만, **요구사항 추출의 원문 위치는 Anthropic `citations`에 의존**한다. 제공자를 바꾸면 프롬프트 기반 구간 추출로 대체해야 하며 품질 저하를 감수한다. 이 의존은 Gateway의 추출 어댑터 한 곳에 격리한다.
+- 구현 시 정정(2026-09-18): `citations`는 구조화 출력(`output_config.format`)과 함께 쓸 수 없어(400) 사용하지 않는다. 대신 모델이 **원문 인용문(quote)** 을 반환하고 서버가 `RequirementExtractor.locate`로 `SourceSpan`을 계산·검증한다. 결정적이고 제공자 중립적이므로 ADR-0005의 제공자 중립은 그대로 유지된다.
 - 구현 순서: Gateway 골격(정책·검증·예산·기록) → F04 추출 → F05 매칭 설명 → F06 생성. 각 단계는 [ai/evaluation.md](../../ai/evaluation.md)의 평가 세트(`packages/ai-evaluation`, 합성 데이터)를 함께 만든다.
 - 환경 변수: `AI_PROVIDER=anthropic`, `ANTHROPIC_API_KEY`, `AI_MODEL_DEFAULT=claude-opus-5`, `AI_DAILY_BUDGET_USD`, `AI_WORKSPACE_MONTHLY_BUDGET_USD`.
 

@@ -1,0 +1,17 @@
+{
+  "title": "Senior Backend Engineer (Kotlin)",
+  "text": "About the role\nYou will own services that process payments for merchants across Asia.\n\nWhat you'll do\n- Design and operate Kotlin/Spring Boot services on PostgreSQL\n- Lead incident response and improve observability\n- Mentor junior engineers\n\nRequirements\n- 5+ years building backend systems in Kotlin or Java\n- Production experience with PostgreSQL\n- Strong written communication in English\n\nNice to have\n- Experience with event-driven architecture (Kafka)\n- Payments or fintech background\n\nAbout us\nWe are a 200-person company founded in 2015 with offices in Seoul and Singapore.",
+  "expected": [
+    {
+      "category": "RESPONSIBILITY",
+      "quote": "Design and operate Kotlin/Spring Boot services on PostgreSQL"
+    },
+    { "category": "RESPONSIBILITY", "quote": "Lead incident response and improve observability" },
+    { "category": "REQUIRED", "quote": "5+ years building backend systems in Kotlin or Java" },
+    { "category": "REQUIRED", "quote": "Production experience with PostgreSQL" },
+    { "category": "BEHAVIORAL", "quote": "Strong written communication in English" },
+    { "category": "PREFERRED", "quote": "Experience with event-driven architecture (Kafka)" },
+    { "category": "PREFERRED", "quote": "Payments or fintech background" }
+  ],
+  "mustNotContain": ["200-person", "founded in 2015"]
+}
