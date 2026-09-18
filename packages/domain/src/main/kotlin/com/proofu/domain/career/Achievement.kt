@@ -3,6 +3,7 @@ package com.proofu.domain.career
 import com.proofu.domain.common.AchievementId
 import com.proofu.domain.common.Confidence
 import com.proofu.domain.common.ProjectId
+import com.proofu.domain.common.Revision
 import com.proofu.domain.common.WorkspaceId
 import com.proofu.domain.common.domainRequire
 import java.math.BigDecimal
@@ -19,6 +20,7 @@ data class Achievement(
     val metricUnit: String? = null,
     val baseline: String? = null,
     val timeframe: String? = null,
+    val revision: Revision = Revision.INITIAL,
 ) {
     init {
         domainRequire(action.isNotBlank()) { "achievement action must not be blank" }
