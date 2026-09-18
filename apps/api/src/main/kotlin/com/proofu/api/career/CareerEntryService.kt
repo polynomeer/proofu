@@ -2,6 +2,7 @@ package com.proofu.api.career
 
 import com.proofu.api.audit.AuditLog
 import com.proofu.api.identity.WorkspaceContext
+import com.proofu.api.web.DateIdCursor
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.api.web.StaleVersionException
 import com.proofu.domain.career.CareerEntryStatus
@@ -30,7 +31,7 @@ class CareerEntryService(
         workspace: WorkspaceContext,
         type: CareerEntryType?,
         q: String?,
-        cursor: CareerEntryCursor?,
+        cursor: DateIdCursor?,
         limit: Int,
     ): CareerEntryPage {
         val rows =
@@ -38,12 +39,12 @@ class CareerEntryService(
                 workspaceId = workspace.workspaceId.value,
                 type = type?.name,
                 q = q?.trim()?.ifEmpty { null },
-                cursorDate = cursor?.startDate,
+                cursorDate = cursor?.date,
                 cursorId = cursor?.id,
                 limit = limit + 1,
             )
         val page = rows.take(limit)
-        val next = if (rows.size > limit) CareerEntryCursor.of(page.last()).encode() else null
+        val next = if (rows.size > limit) DateIdCursor(page.last().startDate, page.last().id).encode() else null
         return CareerEntryPage(page.map(CareerEntryResponse::from), next)
     }
 

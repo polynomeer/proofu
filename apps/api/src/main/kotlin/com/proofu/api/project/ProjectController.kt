@@ -1,10 +1,9 @@
-package com.proofu.api.career
+package com.proofu.api.project
 
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.web.ApiPaths
 import com.proofu.api.web.DateIdCursor
 import com.proofu.api.web.InvalidRequestException
-import com.proofu.domain.career.CareerEntryType
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -22,38 +21,37 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
-@RequestMapping("${ApiPaths.V1}/career-entries")
-class CareerEntryController(
-    private val service: CareerEntryService,
+@RequestMapping("${ApiPaths.V1}/projects")
+class ProjectController(
+    private val service: ProjectService,
 ) {
     @GetMapping
     fun list(
         workspace: WorkspaceContext,
+        @RequestParam(required = false) careerEntryId: UUID?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) limit: Int,
-        @RequestParam(required = false) type: CareerEntryType?,
-        @RequestParam(required = false) q: String?,
-    ): CareerEntryPage = service.list(workspace, type, q, cursor?.let(DateIdCursor::decode), limit)
+    ): ProjectPage = service.list(workspace, careerEntryId, cursor?.let(DateIdCursor::decode), limit)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(
         workspace: WorkspaceContext,
-        @Valid @RequestBody request: CareerEntryRequest,
-    ): CareerEntryResponse = service.create(workspace, request)
+        @Valid @RequestBody request: ProjectRequest,
+    ): ProjectResponse = service.create(workspace, request)
 
     @GetMapping("/{id}")
     fun get(
         workspace: WorkspaceContext,
         @PathVariable id: UUID,
-    ): CareerEntryResponse = service.get(workspace, id)
+    ): ProjectResponse = service.get(workspace, id)
 
     @PatchMapping("/{id}")
     fun update(
         workspace: WorkspaceContext,
         @PathVariable id: UUID,
-        @Valid @RequestBody request: CareerEntryRequest,
-    ): CareerEntryResponse {
+        @Valid @RequestBody request: ProjectRequest,
+    ): ProjectResponse {
         val revision = request.revision ?: throw InvalidRequestException("revision is required")
         return service.update(workspace, id, request, revision)
     }
