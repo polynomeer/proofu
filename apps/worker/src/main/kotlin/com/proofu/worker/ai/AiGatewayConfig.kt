@@ -4,6 +4,7 @@ import com.proofu.ai.AiGateway
 import com.proofu.ai.AiGatewayFactory
 import com.proofu.ai.AiGatewayProperties
 import com.proofu.ai.AiUsageSource
+import com.proofu.ai.documents.DocumentDrafter
 import com.proofu.ai.extraction.RequirementExtractor
 import com.proofu.ai.jdbc.JdbcAiExecutionRecorder
 import com.proofu.ai.jdbc.JdbcAiUsageSource
@@ -50,6 +51,9 @@ class AiGatewayConfig {
 
     @Bean
     fun matchExplainer(gateway: AiGateway) = MatchExplainer(gateway)
+
+    @Bean
+    fun documentDrafter(gateway: AiGateway) = DocumentDrafter(gateway)
 
     @Bean
     fun requirementExtractor(
