@@ -2540,10 +2540,15 @@ components:
       allOf:
         - $ref: "#/components/schemas/SubmissionSnapshot"
         - type: object
-          required: [version, company, roleTitle]
+          required: [version, sections, company, roleTitle]
           properties:
             version:
               $ref: "#/components/schemas/DocumentVersion"
+            sections:
+              description: Sections of the template the frozen version was written with
+              type: array
+              items:
+                $ref: "#/components/schemas/TemplateSection"
             company:
               type: string
             roleTitle:

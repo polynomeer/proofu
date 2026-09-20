@@ -5,6 +5,7 @@ import com.proofu.api.audit.AuditLog
 import com.proofu.api.document.DocumentBlockDto
 import com.proofu.api.document.DocumentRepository
 import com.proofu.api.document.DocumentVersionStore
+import com.proofu.api.document.TemplateSectionResponse
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.domain.applications.ApplicationStatus
@@ -13,6 +14,7 @@ import com.proofu.domain.common.ApplicationId
 import com.proofu.domain.common.DocumentVersionId
 import com.proofu.domain.common.IdGenerator
 import com.proofu.domain.common.SubmissionSnapshotId
+import com.proofu.domain.documents.DocumentTemplate
 import com.proofu.domain.documents.DocumentType
 import com.proofu.domain.documents.GeneratedOutput
 import com.proofu.domain.documents.VersionAuthor
@@ -82,6 +84,12 @@ class SubmissionService(
             submittedAt = summary.submittedAt,
             createdAt = summary.createdAt,
             version = version,
+            sections =
+                (
+                    DocumentTemplate.find(version.templateVersion, summary.documentType)
+                        ?: DocumentTemplate.latest(summary.documentType)
+                ).sections
+                    .map(TemplateSectionResponse::from),
             company = posting.first,
             roleTitle = posting.second,
         )

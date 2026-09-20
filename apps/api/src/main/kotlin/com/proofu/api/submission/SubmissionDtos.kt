@@ -1,6 +1,7 @@
 package com.proofu.api.submission
 
 import com.proofu.api.document.DocumentVersionResponse
+import com.proofu.api.document.TemplateSectionResponse
 import com.proofu.domain.documents.DocumentType
 import com.proofu.domain.documents.VersionAuthor
 import jakarta.validation.constraints.NotNull
@@ -43,6 +44,7 @@ data class SubmissionDetailResponse(
     val submittedAt: Instant,
     val createdAt: Instant,
     val version: DocumentVersionResponse,
+    val sections: List<TemplateSectionResponse>,
     val company: String,
     val roleTitle: String,
 )
