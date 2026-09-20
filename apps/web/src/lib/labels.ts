@@ -179,3 +179,26 @@ export const assessmentLabel = labelsOf<Schema<"RequirementAssessment">>({
   UNVERIFIED: "미확인",
   UNMET: "불충족",
 });
+
+export const documentTypeLabel = labelsOf<Schema<"DocumentType">>({
+  RESUME: "이력서",
+  COVER_LETTER: "자기소개서",
+  PORTFOLIO: "포트폴리오",
+});
+
+export const DOCUMENT_TYPES: readonly Schema<"DocumentType">[] = [
+  "RESUME",
+  "COVER_LETTER",
+  "PORTFOLIO",
+];
+
+export const certaintyLabel = labelsOf<Schema<"Certainty">>({
+  SUPPORTED: "근거 있음",
+  INFERRED: "추론",
+  UNSUPPORTED: "근거 없음",
+});
+
+export const versionAuthorLabel = labelsOf<"USER" | "AI">({
+  USER: "사용자",
+  AI: "AI 초안",
+});

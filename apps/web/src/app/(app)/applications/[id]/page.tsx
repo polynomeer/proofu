@@ -6,6 +6,7 @@ import { ApplicationStatusChip } from "@/components/application/chips";
 import { DeadlineForm } from "@/components/application/DeadlineForm";
 import { ReviewSection } from "@/components/application/ReviewSection";
 import { TransitionPanel } from "@/components/application/TransitionPanel";
+import { DocumentSection } from "@/components/document/DocumentSection";
 import { ButtonLink } from "@/components/ui/Button";
 import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -35,9 +36,10 @@ export default async function ApplicationPage({ params }: { params: Params }) {
   const { id } = await params;
   const { data: a } = await api.GET("/applications/{id}", { params: { path: { id } } });
   if (!a) notFound();
-  const { data: reviews } = await api.GET("/applications/{id}/reviews", {
-    params: { path: { id } },
-  });
+  const [{ data: reviews }, { data: documents }] = await Promise.all([
+    api.GET("/applications/{id}/reviews", { params: { path: { id } } }),
+    api.GET("/applications/{id}/documents", { params: { path: { id } } }),
+  ]);
   const canReview = REVIEWABLE.includes(a.status);
 
   return (
@@ -100,6 +102,8 @@ export default async function ApplicationPage({ params }: { params: Params }) {
               ))}
             </ol>
           </section>
+
+          <DocumentSection applicationId={a.id} initialItems={documents?.items ?? []} />
 
           <ReviewSection
             applicationId={a.id}
