@@ -5,6 +5,10 @@ import { notFound } from "next/navigation";
 import { ApplicationStatusChip } from "@/components/application/chips";
 import { DeadlineForm } from "@/components/application/DeadlineForm";
 import { ReviewSection } from "@/components/application/ReviewSection";
+import {
+  SubmissionSection,
+  type SubmittableVersion,
+} from "@/components/application/SubmissionSection";
 import { TransitionPanel } from "@/components/application/TransitionPanel";
 import { DocumentSection } from "@/components/document/DocumentSection";
 import { ButtonLink } from "@/components/ui/Button";
@@ -15,6 +19,9 @@ import { formatDateTime, formatDday } from "@/lib/format";
 import { applicationStatusLabel } from "@/lib/labels";
 
 type Params = Promise<{ id: string }>;
+
+/** Mirrors ApplicationStatus.acceptsSubmission; the API is the enforcer. */
+const SUBMITTABLE: readonly string[] = ["INTERESTED", "PREPARING", "SUBMITTED"];
 
 /** Mirrors ApplicationStatus.acceptsReview for showing the form; the API is the enforcer. */
 const REVIEWABLE: readonly string[] = [
@@ -36,11 +43,35 @@ export default async function ApplicationPage({ params }: { params: Params }) {
   const { id } = await params;
   const { data: a } = await api.GET("/applications/{id}", { params: { path: { id } } });
   if (!a) notFound();
-  const [{ data: reviews }, { data: documents }] = await Promise.all([
+  const [{ data: reviews }, { data: documents }, { data: submissions }] = await Promise.all([
     api.GET("/applications/{id}/reviews", { params: { path: { id } } }),
     api.GET("/applications/{id}/documents", { params: { path: { id } } }),
+    api.GET("/applications/{id}/submissions", { params: { path: { id } } }),
   ]);
   const canReview = REVIEWABLE.includes(a.status);
+  const canSubmit = SUBMITTABLE.includes(a.status);
+  const submittable: SubmittableVersion[] = canSubmit
+    ? (
+        await Promise.all(
+          (documents?.items ?? []).map(async (d) => {
+            const { data } = await api.GET("/documents/{id}/versions", {
+              params: { path: { id: d.id } },
+            });
+            return (data?.items ?? []).map((v) => ({
+              id: v.id,
+              documentTitle: d.title,
+              documentType: d.type,
+              label: v.label ?? null,
+              createdBy: v.createdBy,
+              createdAt: v.createdAt,
+              pendingApproval: v.blocks.filter(
+                (b) => b.certainty !== "SUPPORTED" && !b.approvedByUser,
+              ).length,
+            }));
+          }),
+        )
+      ).flat()
+    : [];
 
   return (
     <>
@@ -104,6 +135,14 @@ export default async function ApplicationPage({ params }: { params: Params }) {
           </section>
 
           <DocumentSection applicationId={a.id} initialItems={documents?.items ?? []} />
+
+          <SubmissionSection
+            applicationId={a.id}
+            initialItems={submissions?.items ?? []}
+            versions={submittable}
+            canSubmit={canSubmit}
+            isSubmitted={a.status === "SUBMITTED"}
+          />
 
           <ReviewSection
             applicationId={a.id}
