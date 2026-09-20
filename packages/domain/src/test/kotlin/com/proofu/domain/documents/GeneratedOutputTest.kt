@@ -5,6 +5,7 @@ import com.proofu.domain.common.DomainRuleViolation
 import com.proofu.domain.common.EvidenceId
 import com.proofu.domain.common.Fixtures
 import com.proofu.domain.common.RequirementId
+import com.proofu.domain.evidence.ClaimStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -74,5 +75,70 @@ class GeneratedOutputTest {
         assertThatThrownBy {
             GeneratedOutput(listOf(block("dup", Certainty.SUPPORTED), block("dup", Certainty.SUPPORTED)))
         }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `certainty is capped by the evidence level of the cited claims`() {
+        val weak = ClaimId(Fixtures.uuid(53))
+        val output =
+            GeneratedOutput(
+                listOf(
+                    block("ok", Certainty.SUPPORTED),
+                    block("weak", Certainty.SUPPORTED, claims = setOf(knownClaim, weak)),
+                    block("none", Certainty.SUPPORTED, claims = emptySet(), evidence = emptySet()),
+                    block("kept", Certainty.UNSUPPORTED),
+                    block("approved", Certainty.INFERRED, approved = true),
+                ),
+            )
+
+        val capped =
+            output.withCertaintyCeiling { id ->
+                when (id) {
+                    knownClaim -> ClaimStatus.SUPPORTED
+                    weak -> ClaimStatus.UNSUPPORTED
+                    else -> null
+                }
+            }
+
+        val byId = capped.blocks.associateBy { it.blockId }
+        assertThat(byId.getValue("ok").certainty).isEqualTo(Certainty.SUPPORTED)
+        assertThat(byId.getValue("ok").warnings).isEmpty()
+        assertThat(byId.getValue("weak").certainty).isEqualTo(Certainty.INFERRED)
+        assertThat(byId.getValue("weak").warnings).hasSize(1)
+        assertThat(byId.getValue("none").certainty).isEqualTo(Certainty.UNSUPPORTED)
+        assertThat(byId.getValue("kept").certainty).isEqualTo(Certainty.UNSUPPORTED)
+        assertThat(byId.getValue("approved").approvedByUser).isFalse()
+    }
+
+    @Test
+    fun `user revisions may approve and edit but not add references or raise certainty`() {
+        val parent = GeneratedOutput(listOf(block("a", Certainty.INFERRED), block("b", Certainty.SUPPORTED)))
+
+        val revised =
+            parent.userRevision(
+                listOf(
+                    block("a", Certainty.SUPPORTED, approved = true).copy(text = "edited"),
+                    GeneratedBlock("c", "typed by hand", certainty = Certainty.SUPPORTED),
+                ),
+            )
+
+        val byId = revised.blocks.associateBy { it.blockId }
+        assertThat(byId.getValue("a").certainty).isEqualTo(Certainty.INFERRED)
+        assertThat(byId.getValue("a").approvedByUser).isTrue()
+        assertThat(byId.getValue("a").text).isEqualTo("edited")
+        assertThat(byId.getValue("c").certainty).isEqualTo(Certainty.UNSUPPORTED)
+        assertThat(byId).doesNotContainKey("b")
+
+        val foreign = ClaimId(Fixtures.uuid(77))
+        assertThatThrownBy {
+            parent.userRevision(
+                listOf(block("b", Certainty.SUPPORTED, claims = setOf(knownClaim, foreign))),
+            )
+        }.isInstanceOf(DomainRuleViolation::class.java)
+        assertThatThrownBy {
+            parent.userRevision(
+                listOf(GeneratedBlock("new", "x", claimRefs = setOf(knownClaim), certainty = Certainty.SUPPORTED)),
+            )
+        }.isInstanceOf(DomainRuleViolation::class.java)
     }
 }

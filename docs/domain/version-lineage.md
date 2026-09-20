@@ -19,6 +19,9 @@ review: 도메인 변경 시
 - 원천 revision은 생성 후 변경되지 않습니다.
 - 모델이 반환한 식별자는 서버가 입력 집합에 대해 화이트리스트 검증합니다.
 - 블록 `certainty`: `SUPPORTED` | `INFERRED` | `UNSUPPORTED`. `INFERRED`와 `UNSUPPORTED`는 사용자 승인 없이 최종 내보내기에 포함되지 않습니다.
+- certainty 상한은 서버가 결정합니다 (`Certainty.ceiling`): 인용한 Claim이 없으면 `UNSUPPORTED`, 인용한 Claim 중 `SUPPORTED`가 아닌 것이 있으면 `INFERRED`, 모두 `SUPPORTED`일 때만 `SUPPORTED`. 모델의 라벨은 이를 낮출 수만 있고 (`GeneratedOutput.withCertaintyCeiling`), AI 초안은 승인 상태로 저장되지 않습니다.
+- 사용자 버전(`GeneratedOutput.userRevision`)은 문장 편집·삭제·재배열·승인만 할 수 있습니다. 부모 버전의 같은 블록에 없던 참조를 추가할 수 없고 certainty를 올릴 수 없으며, 손으로 추가한 블록은 `UNSUPPORTED`입니다.
+- 블록 id는 템플릿 섹션 id + 순번(`<section>-<n>`)이며 템플릿(`DocumentTemplate`, 현재 `ko-v1`)은 섹션 순서와 목적만 정하고 데이터를 바꾸지 않습니다.
 
 ## 내보내기 상태
 
