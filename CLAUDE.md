@@ -37,7 +37,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **도메인 불변식은 `packages/domain`에 한 번만** 구현하고 단위 테스트한다. API/워커/UI는 이를 호출한다 (예: `ApplicationStatus.transitionTo`, `GeneratedOutput.requireGrounded`). DB CHECK/트리거는 방어선이지 대체가 아니다.
 - **enum 값**은 domain Kotlin enum ↔ `migrations/` CHECK ↔ `openapi.yaml` ↔ `docs/domain` 네 곳이 항상 일치해야 한다. 하나를 바꾸면 넷을 바꾼다.
 - **스키마 변경**은 `migrations/V{n}__*.sql` 추가만 (expand → migrate → contract). 기존 파일 수정 금지. JPA 엔티티는 스키마를 만들지 않는다.
-- **불변 테이블** (`submission_snapshots`, `job_posting_snapshots`, `application_status_events`, `provenance_links`, `audit_events`)은 UPDATE/DELETE 하지 않는다. 정정은 새 행.
+- **불변 테이블** (`submission_snapshots`, `job_posting_snapshots`, `application_status_events`, `provenance_links`, `document_versions`, `audit_events`)은 UPDATE/DELETE 하지 않는다. 정정은 새 행.
 - **API 오류**는 항상 Problem Details + `code` (`ErrorCode`). 다른 workspace 리소스는 403이 아니라 404. 컨트롤러는 `WorkspaceContext` 파라미터로 호출자 workspace를 받는다.
 - **인증은 임시**: OIDC 확정 전까지 `X-Workspace-Id` 헤더 (`HeaderWorkspaceResolver`, production 프로필 제외). `local` 프로필이 시드하는 workspace `00000000-0000-7000-8000-000000000002`를 웹이 기본으로 보낸다. OIDC 도입 시 `WorkspaceResolver`만 교체.
 - **API 패턴** (`apps/api/.../career` 참고): 요청 DTO는 nullable + Bean Validation(400 fieldErrors) → 도메인 객체 생성(422) → JPA 엔티티(`from`/`apply`/`toDomain`). 목록은 keyset cursor, 변경은 row lock + revision 비교(409), 모든 변경은 `AuditLog`(해시만) + 도메인 이벤트 발행.
@@ -47,6 +47,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **회고**: `ApplicationStatus.acceptsReview` 상태에서만. 첫 회고 저장이 `REVIEW_PENDING → REVIEWED`를 유발한다(`ReviewService` → `ApplicationService.advance`). 원인 단정 표현은 `Review.definitiveLanguage()`가 경고만 하고 막지 않는다.
 - **요구사항**: `Requirement.manual`(사용자 입력, 즉시 APPROVED) / `Requirement.extracted`(AI, DRAFT)만으로 생성. 원문 구간은 `JobPostingSnapshot.excerpt`로 검증. 매칭·생성은 APPROVED만 사용. PATCH로 DRAFT를 만들 수 없다.
 - **매칭**: 점수는 `MatchFeatureCalculator`/`MatchScore`가 결정적으로 계산하고 AI(`MatchExplainer`)는 설명·인용 구간만 붙인다 — 모델은 점수를 만들거나 바꾸지 않는다. 필수 항목 판정은 `RequirementAssessor`(REQUIRED만, 후보 없음 → UNMET). `requirement_matches`는 `application.match` 재실행 시 upsert하되 `user_decision`(ACCEPTED/EXCLUDED)은 절대 덮어쓰지 않고, 결정된 행은 삭제하지 않는다. 채택된 후보만 문서 생성의 근거로 쓴다.
+- **문서**: `documents`(가변 식별) + `document_versions`(append-only, UPDATE 불가) + `provenance_links`. AI 초안(`document.generation` → `DocumentDrafter`)의 입력은 승인된 요구사항과 사용자가 **채택한** 매칭 후보뿐이고, 결과 블록의 참조는 컨텍스트에 대해 화이트리스트 검증, certainty는 인용 Claim 근거 상태로 상한(`GeneratedOutput.withCertaintyCeiling`), 승인 상태로 저장되지 않는다. 사용자 버전은 `GeneratedOutput.userRevision`만 통과(참조 추가·확신도 상향 불가, 손으로 쓴 블록은 UNSUPPORTED)하고 부모는 최신 버전이어야 한다(409). 블록 id는 `<section>-<n>`, 템플릿은 `DocumentTemplate`(`ko-v1`).
 - **비동기 AI 작업**: api는 `JobService.enqueue`로 `jobs`에 넣고 202 + jobId, 웹은 `GET /jobs/{id}`를 폴링, worker의 `JobHandler`(`type` 상수는 api `JobTypes`와 동일)가 실행. AI 결과는 항상 DRAFT/미승인 상태로 저장하고 사용자가 같은 UI에서 승인한다 (예: `posting.analysis` → `Requirement.extracted`).
 - **웹 패턴**: 서버 컴포넌트가 `@/lib/api`로 조회, 폼은 클라이언트 컴포넌트. enum 라벨은 `@/lib/labels` 조회표(알 수 없는 값은 코드 그대로). 페이지 헤더의 primary 버튼은 하나.
 - **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
