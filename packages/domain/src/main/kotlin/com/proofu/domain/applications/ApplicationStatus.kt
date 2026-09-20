@@ -44,6 +44,13 @@ enum class ApplicationStatus {
     /** Handoff to iterview requires DOCUMENT_PASSED lineage and explicit consent (checked by the caller). */
     val isHandoffEligible: Boolean get() = this == DOCUMENT_PASSED || this == HANDOFF_READY
 
+    /**
+     * A submission snapshot can be frozen while preparing (moving the application to SUBMITTED)
+     * or, as a correction, while already SUBMITTED. Nothing later accepts one.
+     */
+    val acceptsSubmission: Boolean
+        get() = this == INTERESTED || this == PREPARING || this == SUBMITTED
+
     /** A retrospective only makes sense once a document result (or silence) is in. */
     val acceptsReview: Boolean
         get() = this == DOCUMENT_REJECTED || this == NO_RESPONSE || this == REVIEW_PENDING || this == REVIEWED

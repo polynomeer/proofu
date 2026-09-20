@@ -29,6 +29,15 @@ DOCUMENT_REJECTED | NO_RESPONSE -> REVIEW_PENDING -> REVIEWED
 | 서류 탈락 | 결과일, 회고 상태      | 가설과 개선 행동 기록 |
 | 종료      | 종료 사유              | 보관, 재사용          |
 
+## 제출 스냅샷
+
+제출은 `POST /applications/{id}/submissions`로만 하며 `SubmissionSnapshot.freeze`가 유일한 생성 경로입니다 (ADR-0006).
+
+- 문서 버전은 같은 지원 건의 문서에 속해야 하고, `INFERRED`/`UNSUPPORTED` 블록이 승인되지 않았으면 거부합니다 (`UNSUPPORTED_CLAIM_IN_EXPORT`, 422).
+- `INTERESTED`/`PREPARING`에서 제출하면 지원은 `SUBMITTED`로 전이합니다(`INTERESTED`는 `PREPARING`을 거쳐 이력을 남김). 이미 `SUBMITTED`이면 정정 스냅샷을 추가로 만들 뿐 전이하지 않습니다. 그 이후 상태는 제출을 받지 않습니다 (`ApplicationStatus.acceptsSubmission`).
+- 제출 시각은 미래일 수 없습니다(5분 허용). `hash`는 버전 id·버전 내용 JSON·공고 스냅샷 해시를 정규화 없이 SHA-256한 값입니다.
+- 스냅샷과 그것이 가리키는 `document_versions`·`job_posting_snapshots`는 모두 불변이므로 제출 당시 문서는 원천이 바뀌어도 동일하게 열립니다 (US06).
+
 ## 서류 탈락 회고 모델
 
 | 필드      | 설명                            | 예시                                         |

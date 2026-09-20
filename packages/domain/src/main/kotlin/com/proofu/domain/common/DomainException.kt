@@ -21,6 +21,11 @@ class ImmutableSnapshotViolation(
     message: String,
 ) : DomainException(message)
 
+/** A document version with unapproved INFERRED/UNSUPPORTED blocks cannot leave the workspace. */
+class UnapprovedBlocksInExport(
+    val blockIds: List<String>,
+) : DomainException("blocks need user approval before export: $blockIds")
+
 /** Throws [DomainRuleViolation] when [condition] is false. */
 inline fun domainRequire(
     condition: Boolean,
