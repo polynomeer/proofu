@@ -40,3 +40,4 @@ review: 모델 또는 프롬프트 변경 시
 - 워크스페이스별 월간 예산과 요청 속도 제한을 적용합니다.
 - 제공자 장애 시 폴백 모델은 동일한 개인정보 지역 및 보존 조건을 충족해야 합니다.
 - 제공자·모델·예산·지역 결정: [ADR-0008](../architecture/adr/0008-ai-provider-anthropic-claude.md). 기본 `claude-opus-5`, 작업별 `effort`(추출 low · 매칭 medium · 생성 high). 요구사항 추출은 모델이 돌려준 원문 인용문을 서버가 원문에서 찾아 `source_span`을 채운다(`RequirementExtractor`, 프롬프트 `extract-v1`). 평가 세트: `fixtures/ai/postings/`.
+- 문서 생성(`DocumentDrafter`, 프롬프트 `draft-v1`)의 입력은 승인된 요구사항과 사용자가 **채택한** 매칭 후보 Claim(딸린 Evidence 포함)뿐이다. 모델은 섹션별 블록을 돌려주고, 서버가 블록 id(`<section>-<n>`)를 매기며 컨텍스트에 없는 id를 인용한 블록은 버린다(`dropped`). certainty는 인용 Claim의 근거 상태로 상한을 정한다(`GeneratedOutput.withCertaintyCeiling`).

@@ -29,6 +29,7 @@ class FakeModelClient(
                 when (request.purpose) {
                     AiPurpose.REQUIREMENT_EXTRACTION -> extractionHeuristic(request)
                     AiPurpose.MATCH_EXPLANATION -> explanationHeuristic(request)
+                    AiPurpose.DOCUMENT_GENERATION -> draftHeuristic(request)
                     else -> """{"fake":true,"purpose":"${request.purpose}"}"""
                 }
             return ModelOutcome.Completed(text, request.model, ModelUsage(100, 20, 0, 0), truncated = false)
@@ -79,6 +80,39 @@ class FakeModelClient(
         }
 
         private val PAIR = Regex("requirementId=([0-9a-f-]{36}) claimId=([0-9a-f-]{36}) \\(score (\\d+)\\)")
+
+        /**
+         * One UNSUPPORTED placeholder in the first section and one SUPPORTED block per claim
+         * document in the second, echoing the ids the documents carry, so the approval flow
+         * can be exercised without a key.
+         */
+        private fun draftHeuristic(request: ModelRequest): String {
+            val sections = SECTION.findAll(request.instruction).map { it.groupValues[1] }.toList()
+            if (sections.isEmpty()) return """{"blocks":[]}"""
+            val blocks = mutableListOf<String>()
+            blocks +=
+                """{"section":${json(sections.first())},"text":"(가짜 제공자) 실제 문장은 모델 연결 후 생성됩니다.",""" +
+                """"claimRefs":[],"evidenceRefs":[],"requirementRefs":[],"certainty":"UNSUPPORTED"}"""
+            val body = sections.getOrElse(1) { sections.first() }
+            request.documents.filter { it.sourceId.startsWith("claim:") }.forEach { doc ->
+                val claimId = doc.sourceId.removePrefix("claim:")
+                val text =
+                    doc.text
+                        .lines()
+                        .firstOrNull { it.startsWith("주장: ") }
+                        ?.removePrefix("주장: ") ?: ""
+                val evidence = EVIDENCE.findAll(doc.text).map { json(it.groupValues[1]) }.joinToString(",")
+                val requirements = REQUIREMENT.findAll(doc.text).map { json(it.groupValues[1]) }.joinToString(",")
+                blocks +=
+                    """{"section":${json(body)},"text":${json(text)},"claimRefs":[${json(claimId)}],""" +
+                    """"evidenceRefs":[$evidence],"requirementRefs":[$requirements],"certainty":"SUPPORTED"}"""
+            }
+            return """{"blocks":[${blocks.joinToString(",")}]}"""
+        }
+
+        private val SECTION = Regex("^- section=([a-z]+) ", RegexOption.MULTILINE)
+        private val EVIDENCE = Regex("evidenceId=([0-9a-f-]{36})")
+        private val REQUIREMENT = Regex("requirementId=([0-9a-f-]{36})")
 
         private fun isHeader(line: String) =
             line.startsWith("[") || line.endsWith(":") || (!line.startsWith("-") && !line.startsWith("•"))
