@@ -7,6 +7,7 @@ import com.proofu.ai.model.ModelProviderException
 import com.proofu.domain.common.DomainRuleViolation
 import com.proofu.domain.common.ImmutableSnapshotViolation
 import com.proofu.domain.common.InvalidStatusTransition
+import com.proofu.domain.common.UnapprovedBlocksInExport
 import com.proofu.domain.common.WorkspaceBoundaryViolation
 import org.slf4j.LoggerFactory
 import org.springframework.context.i18n.LocaleContextHolder
@@ -46,6 +47,13 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ImmutableSnapshotViolation::class)
     fun onImmutableSnapshot(e: ImmutableSnapshotViolation): ProblemDetail =
         problem(ErrorCode.SNAPSHOT_IMMUTABLE, e.message)
+
+    @ExceptionHandler(UnapprovedBlocksInExport::class)
+    fun onUnapprovedBlocks(e: UnapprovedBlocksInExport): ProblemDetail =
+        problem(
+            ErrorCode.UNSUPPORTED_CLAIM_IN_EXPORT,
+            "승인되지 않은 근거 없음·추론 문장이 있어 제출할 수 없습니다: ${e.blockIds.joinToString(", ")}",
+        )
 
     @ExceptionHandler(DomainRuleViolation::class)
     fun onDomainRule(e: DomainRuleViolation): ProblemDetail = problem(ErrorCode.DOMAIN_RULE_VIOLATION, e.message)
