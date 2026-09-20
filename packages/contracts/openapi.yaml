@@ -1216,23 +1216,54 @@ paths:
   /applications/{id}/submissions:
     parameters:
       - $ref: "#/components/parameters/Id"
+    get:
+      tags: [applications]
+      operationId: listSubmissions
+      summary: Submission snapshots of this application, newest first
+      responses:
+        "200":
+          description: Submissions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SubmissionSnapshot"
+        default:
+          $ref: "#/components/responses/Problem"
     post:
       tags: [applications]
       operationId: createSubmission
       summary: Freeze an immutable submission snapshot and move the application to SUBMITTED
+      description: |
+        The version must belong to a document of this application and every INFERRED/UNSUPPORTED
+        block must be approved (422 UNSUPPORTED_CLAIM_IN_EXPORT). From INTERESTED/PREPARING the
+        application moves to SUBMITTED (INTERESTED passes through PREPARING so the history is
+        honest); while already SUBMITTED a correction snapshot is added without a transition;
+        later statuses refuse (422 DOMAIN_RULE_VIOLATION). Snapshots are never updated or deleted
+        (ADR-0006).
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [documentVersionId, submittedAt]
+              required: [documentVersionId]
               properties:
                 documentVersionId:
                   $ref: "#/components/schemas/Uuid"
                 submittedAt:
+                  description: Defaults to now; may not be in the future
                   type: string
                   format: date-time
+                note:
+                  description: Recorded on the status event
+                  type: string
+                  maxLength: 500
       responses:
         "201":
           description: Submission snapshot
@@ -1240,6 +1271,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SubmissionSnapshot"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /submission-snapshots/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [applications]
+      operationId: getSubmission
+      summary: A submission snapshot with the frozen document version it points to
+      responses:
+        "200":
+          description: Submission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionDetail"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -2445,14 +2493,38 @@ components:
 
     SubmissionSnapshot:
       type: object
-      required: [id, applicationId, documentVersionId, postingSnapshotId, hash, submittedAt]
+      required:
+        [
+          id,
+          applicationId,
+          documentId,
+          documentTitle,
+          documentType,
+          documentVersionId,
+          versionCreatedBy,
+          postingSnapshotId,
+          hash,
+          submittedAt,
+          createdAt,
+        ]
       properties:
         id:
           $ref: "#/components/schemas/Uuid"
         applicationId:
           $ref: "#/components/schemas/Uuid"
+        documentId:
+          $ref: "#/components/schemas/Uuid"
+        documentTitle:
+          type: string
+        documentType:
+          $ref: "#/components/schemas/DocumentType"
         documentVersionId:
           $ref: "#/components/schemas/Uuid"
+        versionLabel:
+          type: string
+        versionCreatedBy:
+          type: string
+          enum: [USER, AI]
         postingSnapshotId:
           $ref: "#/components/schemas/Uuid"
         hash:
@@ -2460,6 +2532,22 @@ components:
         submittedAt:
           type: string
           format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    SubmissionDetail:
+      allOf:
+        - $ref: "#/components/schemas/SubmissionSnapshot"
+        - type: object
+          required: [version, company, roleTitle]
+          properties:
+            version:
+              $ref: "#/components/schemas/DocumentVersion"
+            company:
+              type: string
+            roleTitle:
+              type: string
 
     MatchDecision:
       type: string
