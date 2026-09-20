@@ -51,4 +51,5 @@ class JobController(
 object JobTypes {
     const val POSTING_ANALYSIS = "posting.analysis"
     const val APPLICATION_MATCH = "application.match"
+    const val DOCUMENT_GENERATION = "document.generation"
 }

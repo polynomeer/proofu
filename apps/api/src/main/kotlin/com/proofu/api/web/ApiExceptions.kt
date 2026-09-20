@@ -8,10 +8,11 @@ class ResourceNotFoundException(
 
 /** Optimistic locking failure: the client's revision/version is older than the stored one. */
 class StaleVersionException(
-    resource: String,
-    expected: Long,
-    actual: Long,
-) : RuntimeException("$resource has revision $actual, request carried $expected")
+    message: String,
+) : RuntimeException(message) {
+    constructor(resource: String, expected: Long, actual: Long) :
+        this("$resource has revision $actual, request carried $expected")
+}
 
 /** Malformed client input outside bean validation, e.g. an undecodable cursor or a source-dependent field. */
 class InvalidRequestException(

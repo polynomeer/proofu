@@ -1517,9 +1517,10 @@ paths:
           application/json:
             schema:
               type: object
-              required: [parentVersionId, blocks]
+              required: [blocks]
               properties:
                 parentVersionId:
+                  description: The document's latest version; omitted only while the document has none
                   $ref: "#/components/schemas/Uuid"
                 label:
                   type: string
