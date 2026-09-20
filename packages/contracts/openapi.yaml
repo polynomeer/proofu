@@ -1370,6 +1370,76 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /applications/{id}/documents:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [documents]
+      operationId: listApplicationDocuments
+      summary: Documents of an application, newest first
+      responses:
+        "200":
+          description: Documents
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Document"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [documents]
+      operationId: createDocument
+      summary: Create an empty document for an application
+      description: The document has no version until one is generated or saved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, title]
+              properties:
+                type:
+                  $ref: "#/components/schemas/DocumentType"
+                title:
+                  type: string
+                  maxLength: 200
+                language:
+                  type: string
+                  default: ko
+      responses:
+        "201":
+          description: Document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /documents/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [documents]
+      operationId: getDocument
+      summary: Document with its latest version and the template sections
+      responses:
+        "200":
+          description: Document detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentDetail"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /documents/{id}/generation-jobs:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -1377,16 +1447,23 @@ paths:
       tags: [documents, async]
       operationId: startDocumentGeneration
       summary: Generate a new AI-drafted version from selected sources (asynchronous)
+      description: |
+        Sources default to the application's approved requirements and the match candidates the
+        user ACCEPTED (F05); `claimIds`/`requirementIds` narrow that set and never widen it.
+        The model only phrases and arranges those facts. The server whitelists every reference,
+        caps each block's certainty at the evidence level of the claims it cites, and stores the
+        result as an unapproved AI version. Job type `document.generation`; the job result carries
+        `versionId`. Rejected with 422 when nothing has been accepted for the application.
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
-              required: [templateVersion]
               properties:
                 templateVersion:
                   type: string
+                  default: ko-v1
                 parentVersionId:
                   $ref: "#/components/schemas/Uuid"
                 claimIds:
@@ -1429,6 +1506,11 @@ paths:
       tags: [documents]
       operationId: createDocumentVersion
       summary: Save a user-edited version
+      description: |
+        Users may edit text, drop or reorder blocks and approve INFERRED/UNSUPPORTED ones. A block
+        may not cite a source its parent block did not, and its certainty can only go down; blocks
+        typed by hand are UNSUPPORTED. Violations are 422 DOMAIN_RULE_VIOLATION. The parent must be
+        the document's latest version (409 CONFLICT_STALE_VERSION otherwise).
       requestBody:
         required: true
         content:
@@ -1447,6 +1529,23 @@ paths:
                     $ref: "#/components/schemas/DocumentBlock"
       responses:
         "201":
+          description: Version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentVersion"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /document-versions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [documents]
+      operationId: getDocumentVersion
+      summary: Get a document version with its blocks and provenance
+      responses:
+        "200":
           description: Version
           content:
             application/json:
@@ -2523,11 +2622,73 @@ components:
               type: string
               format: date-time
 
+    DocumentType:
+      type: string
+      enum: [RESUME, COVER_LETTER, PORTFOLIO]
+
+    Document:
+      type: object
+      required: [id, applicationId, type, title, language, version, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        applicationId:
+          $ref: "#/components/schemas/Uuid"
+        type:
+          $ref: "#/components/schemas/DocumentType"
+        title:
+          type: string
+        language:
+          type: string
+        latestVersionId:
+          $ref: "#/components/schemas/Uuid"
+        latestVersionCreatedBy:
+          type: string
+          enum: [USER, AI]
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DocumentDetail:
+      allOf:
+        - $ref: "#/components/schemas/Document"
+        - type: object
+          required: [sections, pendingApprovalCount]
+          properties:
+            latestVersion:
+              $ref: "#/components/schemas/DocumentVersion"
+            sections:
+              description: Sections of the latest version's template (or the current template when there is no version)
+              type: array
+              items:
+                $ref: "#/components/schemas/TemplateSection"
+            pendingApprovalCount:
+              description: Blocks of the latest version that block an export until approved
+              type: integer
+
+    TemplateSection:
+      type: object
+      required: [id, title, guidance]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        guidance:
+          type: string
+
     DocumentBlock:
       type: object
       required: [blockId, text, certainty]
       properties:
         blockId:
+          description: "`<section id>-<n>`; stable across versions"
           type: string
         text:
           type: string
@@ -2581,6 +2742,29 @@ components:
         createdAt:
           type: string
           format: date-time
+        provenance:
+          description: Source revisions each block was derived from; never changes after the version is written
+          type: array
+          items:
+            $ref: "#/components/schemas/ProvenanceLink"
+
+    ProvenanceLink:
+      type: object
+      required: [blockId, sourceType, sourceId, sourceRevision, relation]
+      properties:
+        blockId:
+          type: string
+        sourceType:
+          type: string
+          enum: [CAREER_ENTRY, PROJECT, ACHIEVEMENT, CLAIM, EVIDENCE, REQUIREMENT]
+        sourceId:
+          $ref: "#/components/schemas/Uuid"
+        sourceRevision:
+          type: integer
+          format: int64
+        relation:
+          type: string
+          enum: [DERIVED_FROM, CITES, ADDRESSES]
 
     Job:
       type: object
