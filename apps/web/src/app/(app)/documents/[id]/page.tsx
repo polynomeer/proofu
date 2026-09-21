@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AtsPanel } from "@/components/document/AtsPanel";
 import { DocumentEditor } from "@/components/document/DocumentEditor";
 import { ExportPanel } from "@/components/document/ExportPanel";
 import { GenerateDraftButton } from "@/components/document/GenerateDraftButton";
@@ -35,9 +36,12 @@ export default async function DocumentPage({ params }: { params: Params }) {
     matches?.groups.flatMap((g) => g.candidates.filter((c) => c.userDecision === "ACCEPTED")) ?? [];
   const latest = doc.latestVersion ?? null;
   const blocks = latest?.blocks ?? [];
-  const { data: exports } = latest
-    ? await api.GET("/document-versions/{id}/exports", { params: { path: { id: latest.id } } })
-    : { data: undefined };
+  const [{ data: exports }, { data: ats }] = latest
+    ? await Promise.all([
+        api.GET("/document-versions/{id}/exports", { params: { path: { id: latest.id } } }),
+        api.GET("/document-versions/{id}/ats-check", { params: { path: { id: latest.id } } }),
+      ])
+    : [{ data: undefined }, { data: undefined }];
 
   return (
     <>
@@ -146,6 +150,7 @@ export default async function DocumentPage({ params }: { params: Params }) {
               공고 매칭에서 바꾸기
             </Link>
           </div>
+          <AtsPanel report={ats ?? null} />
           <ExportPanel
             versionId={latest?.id ?? null}
             pendingApproval={doc.pendingApprovalCount}

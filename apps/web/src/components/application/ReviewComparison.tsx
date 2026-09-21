@@ -4,11 +4,13 @@ import Link from "next/link";
 
 import type { Schema } from "@proofu/contracts";
 
+import { atsTone } from "@/components/document/AtsPanel";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { formatDateTime } from "@/lib/format";
 import {
   assessmentLabel,
+  atsSeverityLabel,
   documentTypeLabel,
   requirementCategoryLabel,
   versionAuthorLabel,
@@ -151,7 +153,32 @@ export function ReviewComparison({
         ) : null}
 
         <dt className="text-text-600">ATS 검사</dt>
-        <dd className="text-text-600">아직 제공되지 않습니다.</dd>
+        <dd>
+          {context.ats ? (
+            <ul className="flex flex-col gap-1">
+              {context.ats.findings
+                .filter((f) => f.severity !== "PASS")
+                .map((f) => (
+                  <li key={f.code} className="flex flex-wrap items-center gap-2">
+                    <Chip tone={atsTone(f.severity)}>{atsSeverityLabel(f.severity)}</Chip>
+                    <span>{f.message}</span>
+                    {f.details.length > 0 ? (
+                      <span className="text-caption text-text-600">{f.details.join(" · ")}</span>
+                    ) : null}
+                    <QuoteButton
+                      onQuote={onQuote}
+                      line={`ATS 검사 ${f.code}: ${f.message}${f.details.length > 0 ? ` (${f.details.join(", ")})` : ""}`}
+                    />
+                  </li>
+                ))}
+              {context.ats.findings.every((f) => f.severity === "PASS") ? (
+                <li className="text-text-600">모든 항목 통과</li>
+              ) : null}
+            </ul>
+          ) : (
+            <span className="text-text-600">제출 스냅샷이 없어 검사할 문서가 없습니다.</span>
+          )}
+        </dd>
       </dl>
 
       {context.requirements.length > 0 ? (

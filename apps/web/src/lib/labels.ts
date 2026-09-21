@@ -225,3 +225,9 @@ export const exportStatusLabel = labelsOf<Schema<"ExportStatus">>({
   FAILED: "실패",
   EXPIRED: "만료",
 });
+
+export const atsSeverityLabel = labelsOf<Schema<"AtsSeverity">>({
+  PASS: "통과",
+  INFO: "참고",
+  WARN: "주의",
+});
