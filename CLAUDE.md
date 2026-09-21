@@ -6,16 +6,17 @@
 
 ## 구조
 
-| 경로                  | 내용                                                                                                                                    | 도구                 |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| `apps/web`            | Next.js 16 App Router, Tailwind 4, 디자인 토큰 `src/styles/tokens.css`                                                                  | pnpm                 |
-| `apps/api`            | Spring Boot 4.1 REST API `/api/v1`, JPA(`ddl-auto=validate`), Flyway, springdoc                                                         | Gradle `:api`        |
-| `apps/worker`         | 헤드리스 Spring Boot, `jobs` 테이블 폴링 (SKIP LOCKED), `JobHandler` 빈 등록                                                            | Gradle `:worker`     |
-| `packages/domain`     | 순수 Kotlin 도메인 모델·불변식. **Spring 의존 금지**                                                                                    | Gradle `:domain`     |
-| `packages/ai-gateway` | 모델 제공자로 가는 유일한 문. 컨텍스트 정책·예산·스키마 검증·비용·`ai_executions` 기록. api/worker가 `AiGatewayFactory`로 동일하게 구성 | Gradle `:ai-gateway` |
-| `packages/contracts`  | `openapi.yaml` (단일 원천) → `generated/api.d.ts`                                                                                       | pnpm                 |
-| `migrations/`         | Flyway SQL 단일 원천. api 빌드 시 `db/migration`으로 복사                                                                               | —                    |
-| `docs/`               | 제품·도메인·디자인·아키텍처·ADR                                                                                                         | —                    |
+| 경로                         | 내용                                                                                                                                    | 도구                        |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `apps/web`                   | Next.js 16 App Router, Tailwind 4, 디자인 토큰 `src/styles/tokens.css`                                                                  | pnpm                        |
+| `apps/api`                   | Spring Boot 4.1 REST API `/api/v1`, JPA(`ddl-auto=validate`), Flyway, springdoc                                                         | Gradle `:api`               |
+| `apps/worker`                | 헤드리스 Spring Boot, `jobs` 테이블 폴링 (SKIP LOCKED), `JobHandler` 빈 등록                                                            | Gradle `:worker`            |
+| `packages/domain`            | 순수 Kotlin 도메인 모델·불변식. **Spring 의존 금지**                                                                                    | Gradle `:domain`            |
+| `packages/ai-gateway`        | 모델 제공자로 가는 유일한 문. 컨텍스트 정책·예산·스키마 검증·비용·`ai_executions` 기록. api/worker가 `AiGatewayFactory`로 동일하게 구성 | Gradle `:ai-gateway`        |
+| `packages/document-renderer` | DOCX(Apache POI)·Markdown·JSON 렌더러와 텍스트 재추출 검증(`ExportValidator`). Spring 의존 금지 (ADR-0009)                              | Gradle `:document-renderer` |
+| `packages/contracts`         | `openapi.yaml` (단일 원천) → `generated/api.d.ts`                                                                                       | pnpm                        |
+| `migrations/`                | Flyway SQL 단일 원천. api 빌드 시 `db/migration`으로 복사                                                                               | —                           |
+| `docs/`                      | 제품·도메인·디자인·아키텍처·ADR                                                                                                         | —                           |
 
 ## 명령
 

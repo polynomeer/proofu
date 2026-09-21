@@ -7,6 +7,7 @@ ktlint-gradle = "14.2.0"
 uuid-generator = "5.2.0"
 anthropic = "2.63.0"
 json-schema-validator = "3.0.7"
+poi = "5.5.1"
 
 [libraries]
 # BOM
@@ -39,6 +40,7 @@ anthropic-java = { module = "com.anthropic:anthropic-java", version.ref = "anthr
 json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
 spring-jdbc = { module = "org.springframework:spring-jdbc" }
 jackson-databind = { module = "tools.jackson.core:jackson-databind" }
+poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 
 # Test
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
