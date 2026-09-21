@@ -231,3 +231,11 @@ export const atsSeverityLabel = labelsOf<Schema<"AtsSeverity">>({
   INFO: "참고",
   WARN: "주의",
 });
+
+export const revisionModeLabel = labelsOf<Schema<"RevisionMode">>({
+  SHORTEN: "짧게",
+  CLARIFY: "명확하게",
+  FORMAL: "격식체로",
+});
+
+export const REVISION_MODES: readonly Schema<"RevisionMode">[] = ["SHORTEN", "CLARIFY", "FORMAL"];

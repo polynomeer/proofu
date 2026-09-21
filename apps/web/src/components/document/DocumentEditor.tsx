@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import type { Schema } from "@proofu/contracts";
 
+import { ReviseSentence } from "@/components/document/ReviseSentence";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -212,6 +213,15 @@ export function DocumentEditor({
                         ))}
                       </ul>
                     ) : null}
+                    <ReviseSentence
+                      documentId={documentId}
+                      versionId={
+                        initialBlocks.some((x) => x.blockId === b.blockId) ? parentVersionId : null
+                      }
+                      blockId={b.blockId}
+                      currentText={b.text}
+                      onApply={(text) => update(b.blockId, { text })}
+                    />
                   </li>
                 ))}
               </ul>

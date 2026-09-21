@@ -36,6 +36,9 @@ export function AsyncJobButton({
   disabled,
   title,
   variant = "secondary",
+  onDone,
+  refreshOnDone = true,
+  className,
 }: {
   start: () => Promise<{ jobId?: string; error?: string }>;
   label: string;
@@ -45,7 +48,11 @@ export function AsyncJobButton({
   errors?: Record<string, string>;
   disabled?: boolean;
   title?: string;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "tertiary";
+  /** Receives the job result; use with refreshOnDone=false when the page holds unsaved state. */
+  onDone?: (result: Record<string, unknown>) => void;
+  refreshOnDone?: boolean;
+  className?: string;
 }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
@@ -65,8 +72,10 @@ export function AsyncJobButton({
       return;
     }
     if (data.status === "SUCCEEDED") {
-      setPhase({ kind: "done", result: (data.result ?? {}) as Record<string, unknown> });
-      router.refresh();
+      const result = (data.result ?? {}) as Record<string, unknown>;
+      setPhase({ kind: "done", result });
+      onDone?.(result);
+      if (refreshOnDone) router.refresh();
       return;
     }
     if (data.status === "FAILED" || data.status === "CANCELLED") {
@@ -108,6 +117,7 @@ export function AsyncJobButton({
         loading={phase.kind === "queued"}
         disabled={disabled}
         title={title}
+        className={className}
       >
         {icon}
         {label}
