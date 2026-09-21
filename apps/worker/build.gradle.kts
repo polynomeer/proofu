@@ -18,6 +18,7 @@ kotlin {
 dependencies {
     implementation(project(":domain"))
     implementation(project(":ai-gateway"))
+    implementation(project(":document-renderer"))
 
     implementation(libs.spring.boot.starter)
     implementation(libs.spring.boot.starter.jackson)
