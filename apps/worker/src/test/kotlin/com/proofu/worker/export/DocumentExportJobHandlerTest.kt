@@ -31,7 +31,7 @@ class DocumentExportJobHandlerTest {
 
         val export = jdbc.queryForMap("select * from exports where id = ?", first.export)
         assertThat(export["status"]).isEqualTo("READY")
-        assertThat(export["renderer_version"]).isEqualTo("docx-poi-1")
+        assertThat(export["renderer_version"]).isEqualTo("docx-poi-2")
         assertThat(export["object_key"]).isEqualTo("pg:${first.export}")
         assertThat(export["mime_type"].toString()).contains("wordprocessingml")
         assertThat((export["sha256"] as String)).hasSize(64)
@@ -42,7 +42,7 @@ class DocumentExportJobHandlerTest {
                 "pg:${first.export}",
             )!!
         assertThat(bytes.size.toLong()).isEqualTo(export["size_bytes"])
-        val text = ExportValidator.extractText(Rendered(bytes, ExportFormat.DOCX, "docx-poi-1", null))
+        val text = ExportValidator.extractText(Rendered(bytes, ExportFormat.DOCX, "docx-poi-2", null))
         assertThat(
             text,
         ).contains("이력서").contains("요약 문장").contains("경력 문장").doesNotContain("summary-1").doesNotContain("UNSUPPORTED")
@@ -65,6 +65,30 @@ class DocumentExportJobHandlerTest {
             jdbc.queryForObject("select result ->> 'reused' from jobs where id = ?", String::class.java, second.job),
         ).isEqualTo("true")
 
+        // A saved profile changes the header, so the next export renders a fresh file instead of reusing.
+        jdbc.update(
+            "insert into user_profiles (user_id, full_name, email, phone) values (?, '홍길동', 'hong@example.com', '010-1234-5678')",
+            s.userId,
+        )
+        val withHeader = requestExport(s, "DOCX")
+        awaitStatus(withHeader.job, "SUCCEEDED")
+        val headerRow =
+            jdbc.queryForMap(
+                "select object_key, profile_version from exports where id = ?",
+                withHeader.export,
+            )
+        assertThat(headerRow["object_key"]).isEqualTo("pg:${withHeader.export}")
+        assertThat(headerRow["profile_version"]).isEqualTo(1L)
+        val headerBytes =
+            jdbc.queryForObject(
+                "select content from export_files where object_key = ?",
+                ByteArray::class.java,
+                "pg:${withHeader.export}",
+            )!!
+        val headerText = ExportValidator.extractText(Rendered(headerBytes, ExportFormat.DOCX, "docx-poi-2", null))
+        assertThat(headerText.indexOf("홍길동")).isNotNegative().isLessThan(headerText.indexOf("이력서"))
+        assertThat(headerText).contains("hong@example.com · 010-1234-5678")
+
         // PDF: embedded Korean font, page count recorded.
         val pdf = requestExport(s, "PDF")
         awaitStatus(pdf.job, "SUCCEEDED")
@@ -76,7 +100,7 @@ class DocumentExportJobHandlerTest {
         assertThat(pdfRow["status"]).isEqualTo("READY")
         assertThat(pdfRow["page_count"]).isEqualTo(1)
         assertThat(pdfRow["mime_type"]).isEqualTo("application/pdf")
-        assertThat(pdfRow["renderer_version"]).isEqualTo("pdf-openpdf-1")
+        assertThat(pdfRow["renderer_version"]).isEqualTo("pdf-openpdf-2")
 
         // An unapproved version fails at the gate and the export records why.
         val pending = version(s.documentId, approved = false)
@@ -89,6 +113,7 @@ class DocumentExportJobHandlerTest {
 
     private data class Seed(
         val workspaceId: UUID,
+        val userId: UUID,
         val documentId: UUID,
         val versionId: UUID,
     )
@@ -135,7 +160,7 @@ class DocumentExportJobHandlerTest {
             ws,
             applicationId,
         )
-        return Seed(ws, documentId, version(documentId, approved = true))
+        return Seed(ws, userId, documentId, version(documentId, approved = true))
     }
 
     private fun version(

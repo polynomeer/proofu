@@ -32,6 +32,7 @@ class DocumentExportJobHandler(
     private val tx: TransactionTemplate,
     private val mapper: ObjectMapper,
     private val content: VersionContentReader,
+    private val profiles: ProfileReader,
 ) : JobHandler {
     private val log = LoggerFactory.getLogger(DocumentExportJobHandler::class.java)
 
@@ -78,7 +79,8 @@ class DocumentExportJobHandler(
 
         transition(export.id, ExportStatus.RENDERING)
         try {
-            val reused = reuse(export)
+            val profile = profiles.forWorkspace(job.workspaceId)
+            val reused = reuse(export, profile?.version)
             if (reused) return result(export.id, "READY", reused = true)
 
             val renderer = Renderers.forFormat(export.format) ?: fail(export.id, "FORMAT_NOT_IMPLEMENTED")
@@ -99,6 +101,7 @@ class DocumentExportJobHandler(
                     roleTitle = export.roleTitle,
                     template = template,
                     output = output,
+                    profile = profile,
                 )
             val rendered = renderer.render(document)
             if (rendered.bytes.size > MAX_BYTES) fail(export.id, "EXPORT_TOO_LARGE")
@@ -121,7 +124,7 @@ class DocumentExportJobHandler(
                 jdbc.update(
                     """
                     update exports set status = 'READY', renderer_version = ?, object_key = ?, sha256 = ?, size_bytes = ?,
-                                       page_count = ?, mime_type = ?, error_code = null
+                                       page_count = ?, mime_type = ?, profile_version = ?, error_code = null
                     where id = ?
                     """.trimIndent(),
                     rendered.rendererVersion,
@@ -130,6 +133,7 @@ class DocumentExportJobHandler(
                     rendered.bytes.size.toLong(),
                     rendered.pageCount,
                     export.format.mimeType,
+                    profile?.version,
                     export.id,
                 )
             }
@@ -148,14 +152,18 @@ class DocumentExportJobHandler(
         }
     }
 
-    /** ADR-0009 §5: a READY export of the same version, format and template points at the same file. */
-    private fun reuse(export: ExportRow): Boolean {
+    /** ADR-0009 §5: a READY export of the same version, format, template and profile points at the same file. */
+    private fun reuse(
+        export: ExportRow,
+        profileVersion: Long?,
+    ): Boolean {
         val ready =
             jdbc
                 .query(
                     """
                     select object_key, sha256, size_bytes, page_count, mime_type, renderer_version from exports
                     where document_version_id = ? and format = ? and template_version = ? and status = 'READY' and id <> ?
+                      and profile_version is not distinct from ?
                     order by created_at desc limit 1
                     """.trimIndent(),
                     { rs, _ ->
@@ -172,11 +180,12 @@ class DocumentExportJobHandler(
                     export.format.name,
                     export.templateVersion,
                     export.id,
+                    profileVersion,
                 ).firstOrNull() ?: return false
         jdbc.update(
             """
             update exports set status = 'READY', object_key = ?, sha256 = ?, size_bytes = ?, page_count = ?, mime_type = ?,
-                               renderer_version = ?, error_code = null
+                               renderer_version = ?, profile_version = ?, error_code = null
             where id = ?
             """.trimIndent(),
             ready[0],
@@ -185,6 +194,7 @@ class DocumentExportJobHandler(
             ready[3],
             ready[4],
             ready[5],
+            profileVersion,
             export.id,
         )
         return true
