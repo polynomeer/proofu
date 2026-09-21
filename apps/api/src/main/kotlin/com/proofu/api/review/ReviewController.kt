@@ -20,7 +20,14 @@ import java.util.UUID
 @RequestMapping(ApiPaths.V1)
 class ReviewController(
     private val service: ReviewService,
+    private val context: ReviewContextService,
 ) {
+    @GetMapping("/applications/{applicationId}/review-context")
+    fun context(
+        workspace: WorkspaceContext,
+        @PathVariable applicationId: UUID,
+    ): ReviewContext = context.context(workspace, applicationId)
+
     @GetMapping("/applications/{applicationId}/reviews")
     fun list(
         workspace: WorkspaceContext,
