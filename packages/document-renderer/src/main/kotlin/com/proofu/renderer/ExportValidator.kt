@@ -1,5 +1,7 @@
 package com.proofu.renderer
 
+import com.lowagie.text.pdf.PdfReader
+import com.lowagie.text.pdf.parser.PdfTextExtractor
 import com.proofu.domain.documents.ExportFormat
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor
 import org.apache.poi.xwpf.usermodel.XWPFDocument
@@ -38,7 +40,15 @@ object ExportValidator {
                     XWPFWordExtractor(doc).use { normalize(it.text) }
                 }
             ExportFormat.MARKDOWN, ExportFormat.JSON -> normalize(String(rendered.bytes, Charsets.UTF_8))
-            ExportFormat.PDF -> throw UnsupportedOperationException("PDF validation is not implemented")
+            ExportFormat.PDF -> {
+                val reader = PdfReader(rendered.bytes)
+                try {
+                    val extractor = PdfTextExtractor(reader)
+                    normalize((1..reader.numberOfPages).joinToString(" ") { extractor.getTextFromPage(it) })
+                } finally {
+                    reader.close()
+                }
+            }
         }
 
     /** Whitespace-insensitive comparison; JSON escapes are undone so quoted text still matches. */

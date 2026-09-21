@@ -6,11 +6,11 @@ import com.proofu.domain.common.UnapprovedBlocksInExport
 enum class ExportFormat(
     val mimeType: String,
     val extension: String,
-    /** PDF waits for the font bundle (ADR-0009 §3). */
+    /** False for a format the renderer module does not produce yet. */
     val implemented: Boolean,
 ) {
     DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx", true),
-    PDF("application/pdf", "pdf", false),
+    PDF("application/pdf", "pdf", true),
     MARKDOWN("text/markdown; charset=utf-8", "md", true),
     JSON("application/json", "json", true),
 }

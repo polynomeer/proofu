@@ -59,7 +59,14 @@ class RendererTest {
             assertThat(text).contains("40% 개선").contains("예시 주식회사")
             assertThat(text).doesNotContain("experience-1").doesNotContain("SUPPORTED").doesNotContain("내부 경고")
         }
-        assertThat(Renderers.forFormat(ExportFormat.PDF)).isNull()
+    }
+
+    @Test
+    fun `pdf embeds the korean font and reports its page count`() {
+        val rendered = PdfRenderer().render(document)
+        assertThat(rendered.pageCount).isEqualTo(1)
+        assertThat(String(rendered.bytes, Charsets.ISO_8859_1)).contains("NotoSansKR")
+        assertThat(ExportValidator.extractText(rendered)).contains("자기소개서").contains("40% 개선")
     }
 
     @Test

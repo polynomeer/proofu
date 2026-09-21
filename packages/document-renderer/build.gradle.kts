@@ -18,6 +18,7 @@ dependencies {
     api(project(":domain"))
 
     implementation(libs.poi.ooxml)
+    implementation(libs.openpdf)
     implementation(libs.jackson.databind)
 
     testImplementation(libs.junit.jupiter)

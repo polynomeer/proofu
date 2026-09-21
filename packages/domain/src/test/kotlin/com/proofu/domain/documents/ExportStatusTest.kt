@@ -35,7 +35,7 @@ class ExportStatusTest {
         assertThatThrownBy { ExportGate.requireExportable(GeneratedOutput(listOf(ok, pending))) }
             .isInstanceOf(UnapprovedBlocksInExport::class.java)
         assertThat(ExportGate.requireExportable(GeneratedOutput(listOf(ok, approved))).blocks).hasSize(2)
-        assertThat(ExportFormat.PDF.implemented).isFalse()
+        assertThat(ExportFormat.entries).allMatch { it.implemented }
         assertThat(ExportFormat.DOCX.extension).isEqualTo("docx")
     }
 }
