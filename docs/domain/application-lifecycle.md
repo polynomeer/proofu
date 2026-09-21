@@ -49,6 +49,8 @@ DOCUMENT_REJECTED | NO_RESPONSE -> REVIEW_PENDING -> REVIEWED
 | 개선 행동 | 다음 지원에서 실행할 변경       | 유사 공고에는 운영 성과 Evidence를 우선 추가 |
 | 검증 계획 | 가설을 확인할 다음 관찰         | 다음 3건의 서류 결과와 채택 문장 비교        |
 
+회고 화면은 비교 대상으로 공고 스냅샷, 마지막 제출 스냅샷, 제출 문서의 관찰 사실(`SubmissionFacts`: 블록 수, 주장을 인용한 블록 비율, 근거 없이 승인한 블록 수, 승인된 요구사항 커버리지와 다루지 않은 요구사항), 매칭 판정(`RequirementAssessment`)을 제공합니다. 이 값들은 문서를 설명할 뿐 탈락 원인을 말하지 않으며, 사용자는 이를 회고의 "근거" 필드에 인용할 수 있습니다. ATS 검사는 아직 제공하지 않습니다.
+
 시스템은 탈락 원인을 사실처럼 단정하지 않습니다. 가설·근거에 원인 단정 표현("때문에 탈락", "확실히", "분명히", "원인은" 등, `Review.DEFINITIVE_PHRASES`)이 있으면 저장은 허용하되 경고합니다.
 
 회고는 `DOCUMENT_REJECTED`, `NO_RESPONSE`, `REVIEW_PENDING`, `REVIEWED` 상태에서만 작성할 수 있고(`ApplicationStatus.acceptsReview`), 첫 회고를 저장하면 지원은 `REVIEW_PENDING`을 거쳐 `REVIEWED`로 전이합니다.
