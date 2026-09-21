@@ -190,24 +190,23 @@ class LivePromptEvalTest {
             ).describedAs("model never claimed more certainty than the claims allow")
             .isEmpty()
         soft.assertThat(result.truncated).isFalse()
-        // Numbers in the draft must come from the claims or the posting (no invented figures).
+        // Figures in the draft must come from the claims (dates may be respelled; nothing new).
         val allowed =
-            (
-                f.get("claims").items().flatMap {
-                    RevisionGuard.numbers(
-                        it.get("text").asString() + " " + it.get("sourceText").asString(),
-                    )
-                }
-            ).toSet()
+            f
+                .get("claims")
+                .items()
+                .flatMap { RevisionGuard.numbers(it.get("text").asString() + " " + it.get("sourceText").asString()) }
+                .toSet()
         val invented =
             result.output.blocks
-                .flatMap {
-                    RevisionGuard.numbers(
-                        it.text,
-                    )
-                }.filter { it !in allowed }
+                .flatMap { RevisionGuard.newNumbers(it.text, allowed) }
                 .distinct()
         soft.assertThat(invented).describedAs("numbers not present in any claim").isEmpty()
+        // The body speaks to a recruiter; evidence bookkeeping stays in the refs.
+        soft
+            .assertThat(result.output.blocks.map { it.text })
+            .describedAs("no evidence meta-commentary in the text")
+            .noneMatch { it.contains("증빙") || it.contains("확인할 수 있습니다") || it.contains("Evidence") }
     }
 
     private fun revise(

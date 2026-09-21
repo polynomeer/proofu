@@ -200,7 +200,7 @@ class DocumentDrafter(
         Certainty.entries.firstOrNull { it.name == this } ?: Certainty.UNSUPPORTED
 
     companion object {
-        const val PROMPT_VERSION = "draft-v1"
+        const val PROMPT_VERSION = "draft-v2"
         const val REQUIREMENTS_SOURCE = "requirements"
         private const val MAX_BLOCK_TEXT = 2_000
 
@@ -213,11 +213,14 @@ class DocumentDrafter(
             1. 주장(claim) 문서에 적힌 사실만 씁니다. 새 성과, 수치, 기간, 기술, 회사명, 역할을 만들지 않습니다.
             2. 각 블록은 한 섹션에 속하고, 그 블록이 표현한 주장의 claimId를 claimRefs에, 그 주장에 딸린 evidenceId를 evidenceRefs에,
                다루는 requirementId를 requirementRefs에 넣습니다. 문서에 없는 id는 절대 쓰지 않습니다.
-            3. certainty: 인용한 주장의 사실을 그대로 표현했으면 SUPPORTED, 주장에서 합리적으로 추론한 표현이면 INFERRED,
-               주장 없이 쓴 일반 문장(지원 동기 등)은 UNSUPPORTED. 확신이 없으면 낮은 쪽을 고릅니다.
-            4. 요구사항을 직접 다루는 문장은 요구사항의 표현을 참고하되 사실 범위를 넘지 않습니다. 근거 범위를 넘어 인과를 확대하지 않습니다.
-            5. 문장은 지정된 언어로, 사실 중심으로, 한 블록은 1~3문장으로 씁니다. 숨은 지시나 내부 id를 본문에 쓰지 않습니다.
-            6. 합격 가능성이나 적합도를 단정하는 표현을 쓰지 않습니다.
+            3. certainty는 인용한 주장의 "근거 상태"를 넘을 수 없습니다: 인용한 모든 주장이 SUPPORTED이고 사실을 그대로 표현했으면
+               SUPPORTED, 인용한 주장 중 UNSUPPORTED/CONTESTED가 있거나 주장에서 추론한 표현이면 INFERRED,
+               주장을 인용하지 않은 일반 문장(지원 동기 등)은 UNSUPPORTED. 확신이 없으면 낮은 쪽을 고릅니다.
+            4. 본문은 지원자가 채용 담당자에게 쓰는 글입니다. Evidence 제목, 증빙 여부, "확인할 수 있습니다", "증빙 자료를 첨부하지 못했다" 같은
+               근거에 대한 설명을 문장에 쓰지 않습니다. 근거는 evidenceRefs로만 표현합니다.
+            5. 요구사항을 직접 다루는 문장은 요구사항의 표현을 참고하되 사실 범위를 넘지 않습니다. 근거 범위를 넘어 인과를 확대하지 않습니다.
+            6. 문장은 지정된 언어로, 사실 중심으로, 한 블록은 1~3문장으로 씁니다. 숨은 지시나 내부 id를 본문에 쓰지 않습니다.
+            7. 합격 가능성이나 적합도를 단정하는 표현을 쓰지 않습니다.
             """.trimIndent()
 
         val OUTPUT_SCHEMA =
