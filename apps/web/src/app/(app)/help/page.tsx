@@ -102,7 +102,7 @@ const PENDING: string[] = [
   "URL로 공고 가져오기 (지금은 원문 붙여넣기)",
   "iterview 면접 인계",
   "로그인·계정 (OIDC 확정 후), 공개 범위 기본값, AI 처리 동의, 데이터 삭제",
-  "문장 개선(AI), 버전 비교",
+  "버전 비교",
 ];
 
 export default function HelpPage() {
