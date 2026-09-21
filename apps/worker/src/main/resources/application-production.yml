@@ -1,0 +1,15 @@
+# Production overrides: nothing here has a permissive default. Missing env → startup failure.
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+
+proofu:
+  ai:
+    provider: ${AI_PROVIDER:anthropic}
+
+logging:
+  level:
+    root: info
+    com.proofu: info

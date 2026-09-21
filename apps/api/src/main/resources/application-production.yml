@@ -1,0 +1,28 @@
+# Production overrides: nothing here has a permissive default. Missing env → startup failure.
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+
+proofu:
+  ai:
+    # The fake provider is refused under this profile (AiGatewayConfig); a key is mandatory.
+    provider: ${AI_PROVIDER:anthropic}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: info
+    com.proofu: info
+    org.hibernate.SQL: off

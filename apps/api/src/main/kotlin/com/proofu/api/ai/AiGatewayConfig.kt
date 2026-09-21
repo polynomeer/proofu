@@ -15,6 +15,8 @@ import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.core.env.Profiles
 import org.springframework.jdbc.core.JdbcTemplate
 import java.time.Clock
 
@@ -39,8 +41,10 @@ class AiGatewayConfig {
         ids: IdGenerator,
         /** Tests register a scripted ModelClient bean; production relies on the settings. */
         clientOverride: ObjectProvider<ModelClient>,
+        environment: Environment,
     ): AiGateway {
-        val settings = properties.toSettings()
+        val settings =
+            properties.toSettings().requireRealProviderWhen(environment.acceptsProfiles(Profiles.of("production")))
         if (settings.provider == "fake") {
             log.warn("AI provider is 'fake': model calls return placeholder JSON and never leave this process")
         }
