@@ -30,6 +30,7 @@ class FakeModelClient(
                     AiPurpose.REQUIREMENT_EXTRACTION -> extractionHeuristic(request)
                     AiPurpose.MATCH_EXPLANATION -> explanationHeuristic(request)
                     AiPurpose.DOCUMENT_GENERATION -> draftHeuristic(request)
+                    AiPurpose.SENTENCE_REVISION -> revisionHeuristic(request)
                     else -> """{"fake":true,"purpose":"${request.purpose}"}"""
                 }
             return ModelOutcome.Completed(text, request.model, ModelUsage(100, 20, 0, 0), truncated = false)
@@ -108,6 +109,13 @@ class FakeModelClient(
                     """"evidenceRefs":[$evidence],"requirementRefs":[$requirements],"certainty":"SUPPORTED"}"""
             }
             return """{"blocks":[${blocks.joinToString(",")}]}"""
+        }
+
+        /** Collapses whitespace and marks the proposal so the compare-and-apply flow can be exercised. */
+        private fun revisionHeuristic(request: ModelRequest): String {
+            val original = request.documents.firstOrNull { it.sourceId.startsWith("block:") }?.text ?: ""
+            val revised = original.replace(Regex("\\s+"), " ").trim() + " (가짜 제공자 제안)"
+            return """{"revised":${json(revised)},"changes":["공백을 정리했습니다 (가짜 제공자)"]}"""
         }
 
         private val SECTION = Regex("^- section=([a-z]+) ", RegexOption.MULTILINE)
