@@ -119,4 +119,17 @@ class AiGatewayTest {
         gateway.execute(workspace, call(doc.copy(text = "changed text")))
         assertThat(recorded[0].inputHash).isNotEqualTo(recorded[1].inputHash).hasSize(64)
     }
+
+    @Test
+    fun `the fake provider is refused under production`() {
+        val fakeSettings = AiGatewaySettings(provider = "fake")
+        assertThat(fakeSettings.requireRealProviderWhen(production = false)).isSameAs(fakeSettings)
+        assertThatThrownBy { fakeSettings.requireRealProviderWhen(production = true) }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("production")
+        val real = AiGatewaySettings(provider = "anthropic", apiKey = "k")
+        assertThat(real.requireRealProviderWhen(production = true)).isSameAs(real)
+        assertThatThrownBy { AiGatewayFactory.clientFor(AiGatewaySettings(provider = "anthropic", apiKey = "")) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+    }
 }

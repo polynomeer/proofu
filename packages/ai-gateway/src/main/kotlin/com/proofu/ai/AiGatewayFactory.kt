@@ -19,6 +19,17 @@ data class AiGatewaySettings(
     val deploymentDailyBudgetUsd: Double = 50.0,
     val maxInputTokens: Int = 50_000,
 ) {
+    /**
+     * Production may never run on the fake provider: placeholder JSON would flow into
+     * requirements and documents as if a model had produced it.
+     */
+    fun requireRealProviderWhen(production: Boolean): AiGatewaySettings {
+        check(!production || provider != "fake") {
+            "AI_PROVIDER=fake is not allowed under the production profile; set AI_PROVIDER=anthropic and ANTHROPIC_API_KEY"
+        }
+        return this
+    }
+
     fun limits() =
         AiLimits(
             workspaceMonthlyBudgetMicros = (workspaceMonthlyBudgetUsd * 1_000_000).toLong(),
