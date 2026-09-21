@@ -10,6 +10,7 @@ import com.proofu.ai.jdbc.JdbcAiExecutionRecorder
 import com.proofu.ai.jdbc.JdbcAiUsageSource
 import com.proofu.ai.matching.MatchExplainer
 import com.proofu.ai.model.ModelClient
+import com.proofu.ai.revision.SentenceReviser
 import com.proofu.domain.common.IdGenerator
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
@@ -54,6 +55,9 @@ class AiGatewayConfig {
 
     @Bean
     fun documentDrafter(gateway: AiGateway) = DocumentDrafter(gateway)
+
+    @Bean
+    fun sentenceReviser(gateway: AiGateway) = SentenceReviser(gateway)
 
     @Bean
     fun requirementExtractor(
