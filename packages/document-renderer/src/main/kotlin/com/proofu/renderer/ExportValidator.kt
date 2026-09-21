@@ -19,7 +19,7 @@ object ExportValidator {
         val text = extractText(rendered)
         val problems = mutableListOf<String>()
         var cursor = 0
-        (listOf(document.title) + document.sections.flatMap { listOf(it.title) + it.paragraphs }).forEach { expected ->
+        document.expectedText.forEach { expected ->
             val needle = normalize(expected)
             if (needle.isEmpty()) return@forEach
             val at = text.indexOf(needle, cursor)

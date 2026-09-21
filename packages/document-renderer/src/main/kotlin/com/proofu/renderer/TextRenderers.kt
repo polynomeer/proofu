@@ -6,17 +6,26 @@ import tools.jackson.databind.json.JsonMapper
 
 class MarkdownRenderer : Renderer {
     override val format = ExportFormat.MARKDOWN
-    override val version = "md-1"
+    override val version = "md-2"
 
     override fun render(document: RenderableDocument): Rendered {
         val text =
             buildString {
-                appendLine("# ${document.title}")
+                document.contact?.let { c ->
+                    appendLine("# ${c.name}")
+                    c.headline?.let { appendLine(it) }
+                    c.contactLine?.let { appendLine(it) }
+                    c.links.forEach { appendLine("- $it") }
+                    appendLine()
+                    appendLine("---")
+                    appendLine()
+                    appendLine("## ${document.title}")
+                } ?: appendLine("# ${document.title}")
                 appendLine()
                 appendLine("${document.company} · ${document.roleTitle}")
                 document.sections.forEach { section ->
                     appendLine()
-                    appendLine("## ${section.title}")
+                    appendLine(if (document.contact == null) "## ${section.title}" else "### ${section.title}")
                     section.paragraphs.forEach { p ->
                         appendLine()
                         appendLine(p)
@@ -32,11 +41,20 @@ class JsonRenderer(
     private val mapper: ObjectMapper = JsonMapper.builder().build(),
 ) : Renderer {
     override val format = ExportFormat.JSON
-    override val version = "json-1"
+    override val version = "json-2"
 
     override fun render(document: RenderableDocument): Rendered {
         val body =
             mapOf(
+                "contact" to
+                    document.contact?.let {
+                        mapOf(
+                            "name" to it.name,
+                            "headline" to it.headline,
+                            "contactLine" to it.contactLine,
+                            "links" to it.links,
+                        )
+                    },
                 "title" to document.title,
                 "type" to document.type.name,
                 "language" to document.language,

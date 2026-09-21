@@ -1,6 +1,7 @@
 package com.proofu.renderer
 
 import com.proofu.domain.documents.ExportFormat
+import org.apache.poi.xwpf.usermodel.Borders
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment
 import org.apache.poi.xwpf.usermodel.XWPFDocument
 import org.apache.poi.xwpf.usermodel.XWPFParagraph
@@ -16,10 +17,38 @@ class DocxRenderer : Renderer {
 
     override fun render(document: RenderableDocument): Rendered {
         XWPFDocument().use { doc ->
+            document.contact?.let { contact ->
+                doc.createParagraph().apply {
+                    spacingAfter = 40
+                    run(contact.name, size = TITLE_PT, bold = true)
+                }
+                contact.headline?.let {
+                    doc.createParagraph().apply {
+                        spacingAfter = 40
+                        run(it, size = META_PT, color = "555555")
+                    }
+                }
+                contact.contactLine?.let {
+                    doc.createParagraph().apply {
+                        spacingAfter = 40
+                        run(it, size = META_PT)
+                    }
+                }
+                contact.links.forEach {
+                    doc.createParagraph().apply {
+                        spacingAfter = 40
+                        run(it, size = META_PT)
+                    }
+                }
+                doc.createParagraph().apply {
+                    spacingAfter = 160
+                    borderBottom = Borders.SINGLE
+                }
+            }
             doc.createParagraph().apply {
                 alignment = ParagraphAlignment.LEFT
                 spacingAfter = 120
-                run(document.title, size = TITLE_PT, bold = true)
+                run(document.title, size = if (document.contact == null) TITLE_PT else HEADING_PT, bold = true)
             }
             doc.createParagraph().apply {
                 spacingAfter = 240
@@ -63,7 +92,7 @@ class DocxRenderer : Renderer {
     }
 
     companion object {
-        const val VERSION = "docx-poi-1"
+        const val VERSION = "docx-poi-2"
         const val FONT = "Malgun Gothic"
         const val TITLE_PT = 18
         const val HEADING_PT = 13

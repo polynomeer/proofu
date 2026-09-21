@@ -1,12 +1,15 @@
 package com.proofu.renderer
 
 import com.proofu.domain.common.ClaimId
+import com.proofu.domain.common.UserId
 import com.proofu.domain.documents.Certainty
 import com.proofu.domain.documents.DocumentTemplate
 import com.proofu.domain.documents.DocumentType
 import com.proofu.domain.documents.ExportFormat
 import com.proofu.domain.documents.GeneratedBlock
 import com.proofu.domain.documents.GeneratedOutput
+import com.proofu.domain.identity.Profile
+import com.proofu.domain.identity.ProfileLink
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.UUID
@@ -76,5 +79,32 @@ class RendererTest {
         assertThat(ExportValidator.validate(rendered, tampered)).anyMatch { it.startsWith("out of order") }
         val extra = document.copy(sections = document.sections + RenderableSection("기여 계획", listOf("없는 문장")))
         assertThat(ExportValidator.validate(rendered, extra)).anyMatch { it.startsWith("missing") }
+    }
+
+    @Test
+    fun `a profile becomes a parseable header in every format, before the title`() {
+        val profile =
+            Profile(
+                UserId(UUID.randomUUID()),
+                "홍길동",
+                headline = "B2B SaaS 프로덕트 매니저",
+                email = "hong@example.com",
+                phone = "010-1234-5678",
+                links = listOf(ProfileLink("GitHub", "https://github.com/hong")),
+            )
+        val withHeader = document.copy(contact = RenderableContact.of(profile))
+        assertThat(withHeader.expectedText.take(4))
+            .containsExactly(
+                "홍길동",
+                "B2B SaaS 프로덕트 매니저",
+                "hong@example.com · 010-1234-5678",
+                "GitHub: https://github.com/hong",
+            )
+        ExportFormat.entries.forEach { format ->
+            val rendered = Renderers.forFormat(format)!!.render(withHeader)
+            assertThat(ExportValidator.validate(rendered, withHeader)).describedAs(format.name).isEmpty()
+            val text = ExportValidator.extractText(rendered)
+            assertThat(text.indexOf("홍길동")).isLessThan(text.indexOf("자기소개서"))
+        }
     }
 }

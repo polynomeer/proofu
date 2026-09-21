@@ -26,7 +26,32 @@ class PdfRenderer : Renderer {
         pdf.addTitle(document.title)
         pdf.addCreator("ProofU $VERSION")
         pdf.open()
-        pdf.add(paragraph(document.title, Fonts.bold(TITLE_PT), after = 6f))
+        document.contact?.let { contact ->
+            pdf.add(paragraph(contact.name, Fonts.bold(TITLE_PT), after = 2f))
+            contact.headline?.let {
+                pdf.add(
+                    paragraph(it, Fonts.regular(META_PT, Color(0x55, 0x55, 0x55)), after = 2f),
+                )
+            }
+            contact.contactLine?.let { pdf.add(paragraph(it, Fonts.regular(META_PT), after = 2f)) }
+            contact.links.forEach { pdf.add(paragraph(it, Fonts.regular(META_PT), after = 2f)) }
+            pdf.add(paragraph(" ", Fonts.regular(META_PT), after = 10f))
+        }
+        pdf.add(
+            paragraph(
+                document.title,
+                Fonts.bold(
+                    if (document.contact ==
+                        null
+                    ) {
+                        TITLE_PT
+                    } else {
+                        HEADING_PT
+                    },
+                ),
+                after = 6f,
+            ),
+        )
         pdf.add(
             paragraph(
                 "${document.company} · ${document.roleTitle}",
@@ -77,7 +102,7 @@ class PdfRenderer : Renderer {
     }
 
     companion object {
-        const val VERSION = "pdf-openpdf-1"
+        const val VERSION = "pdf-openpdf-2"
         const val TITLE_PT = 18
         const val HEADING_PT = 13
         const val META_PT = 10
