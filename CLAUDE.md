@@ -34,7 +34,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 
 ## 규칙
 
-- **커밋**: Conventional Commits (`feat|fix|docs|refactor|test|chore|ci|perf(scope): subject`), 한 커밋 = 한 논리 변경. scope: `web`, `api`, `worker`, `domain`, `contracts`, `db`, `infra`, `docs`. 커밋 전 해당 영역 검사 통과.
+- **커밋**: Conventional Commits (`feat|fix|docs|refactor|test|chore|ci|perf(scope): subject`), 한 커밋 = 한 논리 변경. scope: `web`, `api`, `worker`, `domain`, `ai`, `renderer`, `contracts`, `db`, `infra`, `docs`. 커밋 전 해당 영역 검사 통과.
 - **도메인 불변식은 `packages/domain`에 한 번만** 구현하고 단위 테스트한다. API/워커/UI는 이를 호출한다 (예: `ApplicationStatus.transitionTo`, `GeneratedOutput.requireGrounded`). DB CHECK/트리거는 방어선이지 대체가 아니다.
 - **enum 값**은 domain Kotlin enum ↔ `migrations/` CHECK ↔ `openapi.yaml` ↔ `docs/domain` 네 곳이 항상 일치해야 한다. 하나를 바꾸면 넷을 바꾼다.
 - **스키마 변경**은 `migrations/V{n}__*.sql` 추가만 (expand → migrate → contract). 기존 파일 수정 금지. JPA 엔티티는 스키마를 만들지 않는다.
@@ -50,6 +50,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **요구사항**: `Requirement.manual`(사용자 입력, 즉시 APPROVED) / `Requirement.extracted`(AI, DRAFT)만으로 생성. 원문 구간은 `JobPostingSnapshot.excerpt`로 검증. 매칭·생성은 APPROVED만 사용. PATCH로 DRAFT를 만들 수 없다.
 - **매칭**: 점수는 `MatchFeatureCalculator`/`MatchScore`가 결정적으로 계산하고 AI(`MatchExplainer`)는 설명·인용 구간만 붙인다 — 모델은 점수를 만들거나 바꾸지 않는다. 필수 항목 판정은 `RequirementAssessor`(REQUIRED만, 후보 없음 → UNMET). `requirement_matches`는 `application.match` 재실행 시 upsert하되 `user_decision`(ACCEPTED/EXCLUDED)은 절대 덮어쓰지 않고, 결정된 행은 삭제하지 않는다. 채택된 후보만 문서 생성의 근거로 쓴다.
 - **문서**: `documents`(가변 식별) + `document_versions`(append-only, UPDATE 불가) + `provenance_links`. AI 초안(`document.generation` → `DocumentDrafter`)의 입력은 승인된 요구사항과 사용자가 **채택한** 매칭 후보뿐이고, 결과 블록의 참조는 컨텍스트에 대해 화이트리스트 검증, certainty는 인용 Claim 근거 상태로 상한(`GeneratedOutput.withCertaintyCeiling`), 승인 상태로 저장되지 않는다. 사용자 버전은 `GeneratedOutput.userRevision`만 통과(참조 추가·확신도 상향 불가, 손으로 쓴 블록은 UNSUPPORTED)하고 부모는 최신 버전이어야 한다(409). 블록 id는 `<section>-<n>`, 템플릿은 `DocumentTemplate`(`ko-v1`).
+- **내보내기 (ADR-0009)**: `POST /document-versions/{id}/exports` → `document.export` 잡. 게이트는 `ExportGate.requireExportable`(API 접수 시와 worker 렌더 직전 두 번). 파일에는 제목·섹션 제목·승인된 문장만 들어가고 id·certainty·경고는 절대 쓰지 않는다(`RenderableDocument`). 렌더 후 `ExportValidator`가 텍스트를 재추출해 순서까지 검사하고 실패하면 `FAILED`. 산출물은 `export_files`(`object_key = pg:<id>`)에 저장하며 같은 버전·형식·템플릿의 READY 파일은 재사용한다. PDF는 폰트 번들 전까지 501. 다운로드는 `GET /exports/{id}/file`뿐(웹은 blob으로 받아 저장).
 - **비동기 AI 작업**: api는 `JobService.enqueue`로 `jobs`에 넣고 202 + jobId, 웹은 `GET /jobs/{id}`를 폴링, worker의 `JobHandler`(`type` 상수는 api `JobTypes`와 동일)가 실행. AI 결과는 항상 DRAFT/미승인 상태로 저장하고 사용자가 같은 UI에서 승인한다 (예: `posting.analysis` → `Requirement.extracted`).
 - **웹 패턴**: 서버 컴포넌트가 `@/lib/api`로 조회, 폼은 클라이언트 컴포넌트. enum 라벨은 `@/lib/labels` 조회표(알 수 없는 값은 코드 그대로). 페이지 헤더의 primary 버튼은 하나.
 - **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
@@ -61,4 +62,4 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 
 ## 미확정 (TBD)
 
-OIDC 제공자, 클라우드/리전, 객체 저장소, DOCX 렌더링 라이브러리, 큐 브로커 교체 시점 → `docs/project/open-decisions.md`. 결정 시 ADR 추가 (`docs/architecture/adr/`).
+OIDC 제공자, 클라우드/리전, 객체 저장소(내보내기·파일 Evidence), PDF 폰트 번들, 큐 브로커 교체 시점 → `docs/project/open-decisions.md`. 결정 시 ADR 추가 (`docs/architecture/adr/`).
