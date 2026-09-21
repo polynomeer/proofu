@@ -33,8 +33,49 @@ tags:
     description: Resume and cover letter versions, provenance and exports
   - name: async
     description: Long-running work accepted with 202 and polled via /jobs/{id}
+  - name: account
+    description: "The caller's own settings (S01): profile used in document headers"
 
 paths:
+  /me/profile:
+    get:
+      tags: [account]
+      operationId: getMyProfile
+      summary: The caller's profile (document header data)
+      description: 404 NOT_FOUND until a profile is saved. Never sent to an AI provider.
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      tags: [account]
+      operationId: saveMyProfile
+      summary: Create or replace the caller's profile
+      description: |
+        Send `version` when replacing an existing profile (409 CONFLICT_STALE_VERSION on
+        mismatch). Saving bumps `version`, which makes exports of every document render a fresh
+        file next time instead of reusing one made with the old header.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileInput"
+      responses:
+        "200":
+          description: Saved profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /dashboard:
     get:
       tags: [dashboard]
@@ -2151,6 +2192,66 @@ components:
               $ref: "#/components/schemas/CareerEntryStatus"
             revision:
               $ref: "#/components/schemas/Revision"
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    ProfileLink:
+      type: object
+      required: [label, url]
+      properties:
+        label:
+          type: string
+          maxLength: 80
+        url:
+          type: string
+          format: uri
+
+    ProfileInput:
+      type: object
+      required: [fullName]
+      properties:
+        fullName:
+          type: string
+          maxLength: 120
+        headline:
+          type: [string, "null"]
+          maxLength: 200
+        email:
+          type: [string, "null"]
+          maxLength: 320
+        phone:
+          type: [string, "null"]
+          maxLength: 40
+        location:
+          type: [string, "null"]
+          maxLength: 120
+        links:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/ProfileLink"
+        version:
+          type: integer
+          format: int64
+
+    Profile:
+      allOf:
+        - $ref: "#/components/schemas/ProfileInput"
+        - type: object
+          required: [userId, version, contactLine, createdAt, updatedAt]
+          properties:
+            userId:
+              $ref: "#/components/schemas/Uuid"
+            version:
+              type: integer
+              format: int64
+            contactLine:
+              description: "`email · phone · location`, only the parts that exist"
+              type: string
             createdAt:
               type: string
               format: date-time
