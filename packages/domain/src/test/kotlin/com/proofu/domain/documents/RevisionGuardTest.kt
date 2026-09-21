@@ -17,6 +17,14 @@ class RevisionGuardTest {
         assertThat(RevisionGuard.check(original, "활성화율을 45% 개선했습니다.")).anyMatch { it.contains("[45]") }
         assertThat(RevisionGuard.check(original, "   ")).contains("empty revision")
         assertThat(RevisionGuard.check("짧다", "아".repeat(200))).anyMatch { it.contains("longer") }
-        assertThat(RevisionGuard.numbers("1,200명, 2024.03, 40%")).containsExactly("1200", "202403", "40")
+        assertThat(
+            RevisionGuard.numbers("1,200명, 2024.03, 40%"),
+        ).containsExactly("1200", "1", "200", "202403", "2024", "3", "40")
+    }
+
+    @Test
+    fun `reformatted dates and thousands are not new numbers`() {
+        assertThat(RevisionGuard.check("2024.03부터 2024-12까지 1,200명", "2024년 3월부터 12월까지 1200명")).isEmpty()
+        assertThat(RevisionGuard.check("2019.04 입사", "2019년 4월 입사 (경력 6년)")).anyMatch { it.contains("6") }
     }
 }

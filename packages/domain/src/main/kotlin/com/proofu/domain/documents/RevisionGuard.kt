@@ -27,13 +27,36 @@ object RevisionGuard {
             problems += "revision is much longer than the original"
         }
         val allowed = (listOf(original) + facts).flatMap(::numbers).toSet()
-        val added = numbers(text).filter { it !in allowed }.distinct()
+        val added = newNumbers(text, allowed)
         if (added.isNotEmpty()) problems += "revision adds numbers not in the sources: $added"
         return problems
     }
 
-    /** Digit runs with separators (40%, 1,200, 2024.03, 7일) normalised to bare digits. */
-    fun numbers(text: String): List<String> = NUMBER.findAll(text).map { it.value.replace(Regex("[,.]"), "") }.toList()
+    /**
+     * Every number a text states, in two spellings so date and thousands reformatting is not
+     * mistaken for a new figure: the joined form (`2024.03` → `202403`, `1,200` → `1200`) and each
+     * digit run without leading zeros (`2024.03` → `2024`, `3`; `2024년 3월` → `2024`, `3`).
+     */
+    fun numbers(text: String): List<String> =
+        NUMBER
+            .findAll(text)
+            .flatMap { m ->
+                val joined = m.value.replace(Regex("[,.]"), "")
+                val runs = m.value.split(Regex("[,.]")).map { it.trimStart('0').ifEmpty { "0" } }
+                (listOf(joined) + runs).distinct()
+            }.toList()
+
+    /** Figures in [text] that appear in none of their spellings among [allowed]. */
+    fun newNumbers(
+        text: String,
+        allowed: Set<String>,
+    ): List<String> =
+        NUMBER
+            .findAll(text)
+            .map { it.value }
+            .filter { value -> numbers(value).none { it in allowed } }
+            .distinct()
+            .toList()
 
     private const val MAX_GROWTH = 3
     private const val SLACK = 40
