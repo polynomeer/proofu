@@ -29,6 +29,7 @@ export function DocumentSection({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<DocumentType>("COVER_LETTER");
+  const [language, setLanguage] = useState<"ko" | "en">("ko");
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -39,7 +40,7 @@ export function DocumentSection({
     setError(null);
     const { data, error: problem } = await api.POST("/applications/{id}/documents", {
       params: { path: { id: applicationId } },
-      body: { type, title: title.trim() || documentTypeLabel(type) },
+      body: { type, language, title: title.trim() || documentTypeLabel(type) },
     });
     setSubmitting(false);
     if (!data) {
@@ -66,7 +67,7 @@ export function DocumentSection({
           className="mb-4 flex flex-col gap-3 rounded-md border border-primary-600/40 bg-surface-050 p-4"
         >
           {error ? <ErrorState title="만들 수 없습니다" description={error} /> : null}
-          <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
+          <div className="grid gap-3 sm:grid-cols-[180px_120px_1fr]">
             <Field id="doc-type" label="유형" required>
               <select
                 id="doc-type"
@@ -79,6 +80,17 @@ export function DocumentSection({
                     {documentTypeLabel(t)}
                   </option>
                 ))}
+              </select>
+            </Field>
+            <Field id="doc-language" label="언어" help="템플릿·초안 언어">
+              <select
+                id="doc-language"
+                className={inputClass}
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as "ko" | "en")}
+              >
+                <option value="ko">한국어</option>
+                <option value="en">English</option>
               </select>
             </Field>
             <Field id="doc-title" label="제목" help="비우면 유형 이름을 씁니다">
@@ -111,6 +123,7 @@ export function DocumentSection({
           {initialItems.map((d) => (
             <li key={d.id} className="flex flex-wrap items-center gap-3 py-3">
               <Chip tone="neutral">{documentTypeLabel(d.type)}</Chip>
+              {d.language === "en" ? <Chip tone="neutral">EN</Chip> : null}
               <Link href={`/documents/${d.id}`} className="text-body font-semibold hover:underline">
                 {d.title}
               </Link>

@@ -43,6 +43,7 @@ function Row({ d }: { d: Document }) {
         <span className="flex min-w-0 flex-col gap-1">
           <span className="flex flex-wrap items-center gap-2">
             <Chip tone="neutral">{documentTypeLabel(d.type)}</Chip>
+            {d.language === "en" ? <Chip tone="neutral">EN</Chip> : null}
             <span className="text-card-title">{d.title}</span>
           </span>
           <span className="text-body text-text-600">
