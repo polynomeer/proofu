@@ -34,7 +34,10 @@ OIDC 제공자가 확정될 때까지 `X-Workspace-Id: <uuid>` 헤더로 workspa
 | `UNSUPPORTED_CLAIM_IN_EXPORT` | 422    | 승인되지 않은 unsupported 문장 내보내기                              |
 | `EXPORT_NOT_READY`            | 409    | 아직 렌더링되지 않았거나 실패한 내보내기 다운로드 시도               |
 | `RATE_LIMITED`                | 429    | 속도 제한                                                            |
-| `AI_PROVIDER_UNAVAILABLE`     | 503    | 모델 제공자 장애                                                     |
+| `AI_PROVIDER_UNAVAILABLE`     | 503    | 모델 제공자 장애·과부하 (재시도 가능)                                |
+| `AI_RATE_LIMITED`             | 429    | 모델 제공자 요청 한도 (재시도 가능)                                  |
+| `AI_BILLING_BLOCKED`          | 503    | 모델 제공자 계정 크레딧 부족 — 운영자 조치 (`OPERATOR_ACTION` 로그)  |
+| `AI_CONFIGURATION_ERROR`      | 503    | 모델 제공자 인증·요청 형식 오류 — 운영자 조치 (`OPERATOR_ACTION`)    |
 | `AI_REFUSED`                  | 422    | 모델 제공자가 정책상 요청을 거절                                     |
 | `AI_OUTPUT_INVALID`           | 502    | 모델 출력이 스키마·참조 검증에 실패해 채택하지 않음                  |
 | `AI_BUDGET_EXCEEDED`          | 429    | 워크스페이스 월 예산·시간당 한도 또는 배포 일일 예산 초과 (ADR-0008) |
