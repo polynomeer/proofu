@@ -55,7 +55,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **웹 패턴**: 서버 컴포넌트가 `@/lib/api`로 조회, 폼은 클라이언트 컴포넌트. enum 라벨은 `@/lib/labels` 조회표(알 수 없는 값은 코드 그대로). 페이지 헤더의 primary 버튼은 하나.
 - **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
 - **민감도** `CONFIDENTIAL`/`RESTRICTED`는 동의 없이 AI 컨텍스트에 넣지 않는다. 로그에 본문·프롬프트·토큰 금지.
-- **디자인**: 색상·간격은 `tokens.css` 토큰만 사용. 상태는 색상 + 텍스트/아이콘. 점수는 숫자 + 낮음/보통/높음 라벨, 합격 확률로 표현 금지. 탈락 원인은 단정하지 않는다.
+- **디자인**: 색상·간격은 `tokens.css` 토큰만 사용. 상태는 색상 + 텍스트/아이콘. 점수는 숫자 + 낮음/보통/높음 라벨, 합격 확률로 표현 금지. 탈락 원인은 단정하지 않는다. ATS 검사(`AtsChecker`)도 항목별 PASS/INFO/WARN 사실만 — 점수·확률 없음.
 - **테스트 데이터**는 합성 데이터만 (`fixtures/`).
 
 - **AI (ADR-0008)**: Anthropic Claude, 기본 `claude-opus-5` + 작업별 `effort`. 모든 호출은 `AiGateway.execute(workspace, AiCall)`로만 (기능 코드는 `ModelClient`를 직접 쓰지 않는다). 결과 JSON의 참조 id는 호출자가 `AiResult.context.includedSourceIds`로 화이트리스트 검증한다. 로컬 기본 `AI_PROVIDER=fake`. 실제 호출 스모크 테스트는 `ANTHROPIC_API_KEY`가 있을 때만 실행된다. 구조화 출력은 `strict` 스키마 + `GeneratedOutput.requireGrounded` 이중 검증, 추출의 원문 구간은 모델 인용문을 서버가 `RequirementExtractor.locate`로 찾아 채운다(`citations`는 구조화 출력과 병용 불가). 원문은 `document` 블록으로 격리, 프리필 금지, thinking은 adaptive 유지. 예산: 워크스페이스 월 $5, 30건/시간, 배포 일일 $50.
