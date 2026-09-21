@@ -17,6 +17,8 @@ data class DocumentTemplate(
     val version: String,
     val type: DocumentType,
     val sections: List<TemplateSection>,
+    /** BCP 47 primary tag of the section titles and guidance (`ko`, `en`). */
+    val language: String = "ko",
 ) {
     init {
         require(sections.isNotEmpty()) { "template needs at least one section" }
@@ -68,13 +70,76 @@ data class DocumentTemplate(
                 ),
             )
 
-        private val ALL = listOf(RESUME_KO, COVER_LETTER_KO, PORTFOLIO_KO)
+        const val EN_V1 = "en-v1"
+
+        private val RESUME_EN =
+            DocumentTemplate(
+                EN_V1,
+                DocumentType.RESUME,
+                listOf(
+                    TemplateSection(
+                        "summary",
+                        "Summary",
+                        "Two or three sentences tying the strongest facts to the role",
+                    ),
+                    TemplateSection(
+                        "skills",
+                        "Core Skills",
+                        "One line per skill that maps to a requirement, with the fact behind it",
+                    ),
+                    TemplateSection("career", "Experience", "Role and facts per career entry"),
+                    TemplateSection("projects", "Projects", "Problem, action and result per project"),
+                    TemplateSection("techs", "Technologies", "Only technologies actually used"),
+                    TemplateSection("education", "Education", "Only recorded education"),
+                ),
+                language = "en",
+            )
+        private val COVER_LETTER_EN =
+            DocumentTemplate(
+                EN_V1,
+                DocumentType.COVER_LETTER,
+                listOf(
+                    TemplateSection(
+                        "motivation",
+                        "Why this role",
+                        "Where the posting's requirements meet the candidate's record",
+                    ),
+                    TemplateSection(
+                        "experience",
+                        "Relevant experience",
+                        "Experience that supports each requirement, with the facts",
+                    ),
+                    TemplateSection(
+                        "contribution",
+                        "How I would contribute",
+                        "Plans that follow from recorded facts only",
+                    ),
+                ),
+                language = "en",
+            )
+        private val PORTFOLIO_EN =
+            DocumentTemplate(
+                EN_V1,
+                DocumentType.PORTFOLIO,
+                listOf(
+                    TemplateSection("intro", "About", "Role and areas of interest"),
+                    TemplateSection("cases", "Case studies", "Problem, action and result per case"),
+                    TemplateSection("links", "Links", "Publicly shareable evidence only"),
+                ),
+                language = "en",
+            )
+
+        private val ALL = listOf(RESUME_KO, COVER_LETTER_KO, PORTFOLIO_KO, RESUME_EN, COVER_LETTER_EN, PORTFOLIO_EN)
 
         fun find(
             version: String,
             type: DocumentType,
         ): DocumentTemplate? = ALL.firstOrNull { it.version == version && it.type == type }
 
-        fun latest(type: DocumentType): DocumentTemplate = find(KO_V1, type)!!
+        /** The current template for a document language; unknown languages get the Korean one. */
+        fun latest(
+            type: DocumentType,
+            language: String = "ko",
+        ): DocumentTemplate = find(if (language.lowercase().startsWith("en")) EN_V1 else KO_V1, type)!!
     }
 }
