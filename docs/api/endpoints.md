@@ -41,6 +41,7 @@ review: API 릴리스 시
 | GET, POST ✅          | `/applications/{id}/documents`                | 지원 건의 문서 목록·생성                                |
 | GET ✅                | `/documents/{id}`                             | 문서 상세(최신 버전, 템플릿 섹션)                       |
 | POST ✅               | `/documents/{id}/generation-jobs`             | 문서 버전 생성 (202, `document.generation`)             |
+| POST ✅               | `/documents/{id}/revision-jobs`               | 문장 개선 제안 (202, `document.revision`; 저장 안 함)   |
 | GET, POST ✅          | `/documents/{id}/versions`                    | 버전 조회와 사용자 버전 생성                            |
 | GET ✅                | `/document-versions/{id}`                     | 버전 상세(블록, provenance)                             |
 | GET, POST ✅          | `/document-versions/{id}/exports`             | 내보내기 목록·시작 (202, `document.export`; PDF는 501)  |

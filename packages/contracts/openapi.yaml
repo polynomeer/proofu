@@ -1625,6 +1625,38 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /documents/{id}/revision-jobs:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [documents, async]
+      operationId: startSentenceRevision
+      summary: Ask for a rewrite of one block (length, clarity or register) — asynchronous
+      description: |
+        The model sees only the block and the claims it cites; a proposal that changes numbers
+        is refused by the domain guard. Nothing is stored: the job result carries
+        `{blockId, original, revised|null, changes[], rejected[]}` and the user applies it in
+        the editor and saves a version. Job type `document.revision`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [versionId, blockId, mode]
+              properties:
+                versionId:
+                  $ref: "#/components/schemas/Uuid"
+                blockId:
+                  type: string
+                mode:
+                  $ref: "#/components/schemas/RevisionMode"
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /documents/{id}/versions:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -2102,6 +2134,9 @@ components:
     Certainty:
       type: string
       enum: [SUPPORTED, INFERRED, UNSUPPORTED]
+    RevisionMode:
+      type: string
+      enum: [SHORTEN, CLARIFY, FORMAL]
     ExportFormat:
       type: string
       enum: [DOCX, PDF, MARKDOWN, JSON]
