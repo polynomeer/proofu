@@ -66,4 +66,18 @@ class AtsCheckTest {
         assertThat(report.findings.single { it.code == "LENGTH" }.severity).isEqualTo(AtsSeverity.INFO)
         assertThat(report.findings.single { it.code == "FILE_FORMAT" }.details).containsExactly("PDF")
     }
+
+    @Test
+    fun `contact may come from the profile header instead of the body`() {
+        val output = GeneratedOutput(listOf(block("summary-1", "연락처 없는 본문")))
+        val report =
+            AtsChecker.check(
+                template,
+                output,
+                emptyList(),
+                emptySet(),
+                headerText = "hong@example.com · 010-1234-5678",
+            )
+        assertThat(report.findings.single { it.code == "CONTACT" }.severity).isEqualTo(AtsSeverity.PASS)
+    }
 }

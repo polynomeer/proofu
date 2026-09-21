@@ -2,6 +2,7 @@ package com.proofu.api.document
 
 import com.proofu.api.export.ExportService
 import com.proofu.api.identity.WorkspaceContext
+import com.proofu.api.profile.ProfileService
 import com.proofu.api.requirement.RequirementService
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.domain.documents.AtsChecker
@@ -36,6 +37,7 @@ class AtsCheckService(
     private val documents: DocumentRepository,
     private val requirements: RequirementService,
     private val exports: ExportService,
+    private val profiles: ProfileService,
     private val jdbc: JdbcTemplate,
 ) {
     @Transactional(readOnly = true)
@@ -71,6 +73,7 @@ class AtsCheckService(
                 approvedRequirements = approved,
                 readyFormats = ready.map { it.format }.toSet(),
                 pageCount = ready.firstOrNull { it.format == ExportFormat.PDF }?.pageCount,
+                headerText = profiles.findDomain(workspace.userId.value)?.contactLine ?: "",
             )
         return AtsReportResponse(
             documentVersionId = versionId,

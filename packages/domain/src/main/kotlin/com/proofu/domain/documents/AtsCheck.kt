@@ -32,6 +32,8 @@ object AtsChecker {
         approvedRequirements: List<String>,
         readyFormats: Set<ExportFormat>,
         pageCount: Int? = null,
+        /** The profile header exports carry (Profile.contactLine); contact parsing looks there first. */
+        headerText: String = "",
     ): AtsReport {
         val blocks = ExportGate.exportableBlocks(output)
         val text = blocks.joinToString("\n") { it.text }
@@ -39,7 +41,7 @@ object AtsChecker {
             listOf(
                 sectionStructure(template, blocks),
                 keywords(approvedRequirements, text),
-                contact(text),
+                contact(headerText + "\n" + text),
                 dateFormat(text),
                 AtsFinding("LAYOUT", AtsSeverity.PASS, "단일 열 레이아웃이며 표·이미지·텍스트 상자를 쓰지 않습니다 (렌더러 보장)."),
                 fileFormat(readyFormats),
@@ -87,7 +89,7 @@ object AtsChecker {
             email && phone -> AtsFinding("CONTACT", AtsSeverity.PASS, "이메일과 전화번호를 찾았습니다.")
             email -> AtsFinding("CONTACT", AtsSeverity.WARN, "전화번호를 찾지 못했습니다.")
             phone -> AtsFinding("CONTACT", AtsSeverity.WARN, "이메일을 찾지 못했습니다.")
-            else -> AtsFinding("CONTACT", AtsSeverity.WARN, "이메일과 전화번호를 찾지 못했습니다. 파싱 가능한 연락처 문장을 추가하세요.")
+            else -> AtsFinding("CONTACT", AtsSeverity.WARN, "이메일과 전화번호를 찾지 못했습니다. 설정의 프로필에 연락처를 입력하세요.")
         }
     }
 
