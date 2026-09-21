@@ -3396,7 +3396,8 @@ components:
       description: |
         Poll until status is SUCCEEDED, FAILED or CANCELLED. errorCode is one of the API
         ErrorCode values (e.g. AI_BUDGET_EXCEEDED, AI_REFUSED, AI_OUTPUT_INVALID,
-        AI_PROVIDER_UNAVAILABLE) or a job-specific code.
+        AI_PROVIDER_UNAVAILABLE, AI_RATE_LIMITED, AI_BILLING_BLOCKED, AI_CONFIGURATION_ERROR)
+        or a job-specific code.
       properties:
         id:
           $ref: "#/components/schemas/Uuid"

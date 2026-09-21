@@ -4,12 +4,14 @@ import com.proofu.ai.AiBudgetExceeded
 import com.proofu.ai.AiCallFailed
 import com.proofu.ai.BudgetBlock
 import com.proofu.ai.model.ModelProviderException
+import com.proofu.ai.model.ProviderFailure
 import com.proofu.domain.common.DomainRuleViolation
 import com.proofu.domain.common.ImmutableSnapshotViolation
 import com.proofu.domain.common.InvalidStatusTransition
 import com.proofu.domain.common.UnapprovedBlocksInExport
 import com.proofu.domain.common.WorkspaceBoundaryViolation
 import org.slf4j.LoggerFactory
+import org.slf4j.MarkerFactory
 import org.springframework.context.i18n.LocaleContextHolder
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatusCode
@@ -34,6 +36,7 @@ import java.net.URI
 @RestControllerAdvice
 class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     private val log = LoggerFactory.getLogger(ApiExceptionHandler::class.java)
+    private val operatorAction = MarkerFactory.getMarker("OPERATOR_ACTION")
 
     @ExceptionHandler(WorkspaceBoundaryViolation::class)
     fun onWorkspaceBoundary(e: WorkspaceBoundaryViolation): ProblemDetail =
@@ -102,9 +105,23 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     fun onAiInvalidOutput(e: AiCallFailed.InvalidOutput): ProblemDetail =
         problem(ErrorCode.AI_OUTPUT_INVALID, "AI 응답이 검증을 통과하지 못해 채택하지 않았습니다. 다시 시도하세요.")
 
+    /** Provider failures that need a person are logged with OPERATOR_ACTION so alerting can key on it. */
     @ExceptionHandler(ModelProviderException::class)
-    fun onAiProvider(e: ModelProviderException): ProblemDetail =
-        problem(ErrorCode.AI_PROVIDER_UNAVAILABLE, "AI 제공자에 연결하지 못했습니다. 잠시 후 다시 시도하세요.")
+    fun onAiProvider(e: ModelProviderException): ProblemDetail {
+        if (e.failure.operatorAction) {
+            log.error(operatorAction, "AI provider failure needs an operator: kind={}", e.failure)
+        }
+        return when (e.failure) {
+            ProviderFailure.BILLING ->
+                problem(ErrorCode.AI_BILLING_BLOCKED, "AI 제공자 계정 문제로 실행할 수 없습니다. 운영자에게 전달되었습니다.")
+            ProviderFailure.AUTHENTICATION, ProviderFailure.INVALID_REQUEST ->
+                problem(ErrorCode.AI_CONFIGURATION_ERROR, "AI 연동 설정 문제로 실행할 수 없습니다. 운영자에게 전달되었습니다.")
+            ProviderFailure.RATE_LIMITED ->
+                problem(ErrorCode.AI_RATE_LIMITED, "AI 제공자 요청 한도에 걸렸습니다. 잠시 후 다시 시도하세요.")
+            ProviderFailure.OVERLOADED, ProviderFailure.UNAVAILABLE ->
+                problem(ErrorCode.AI_PROVIDER_UNAVAILABLE, "AI 제공자에 연결하지 못했습니다. 잠시 후 다시 시도하세요.")
+        }
+    }
 
     @ExceptionHandler(NotImplementedException::class)
     fun onNotImplemented(e: NotImplementedException): ProblemDetail = problem(ErrorCode.NOT_IMPLEMENTED, e.message)
