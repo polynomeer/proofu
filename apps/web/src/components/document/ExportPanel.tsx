@@ -17,8 +17,8 @@ import { EXPORT_FORMATS, exportFormatLabel, exportStatusLabel } from "@/lib/labe
 type Export = Schema<"Export">;
 type Format = Schema<"ExportFormat">;
 
-/** PDF waits for the font bundle (ADR-0009); the option stays visible so the plan is legible. */
-const UNAVAILABLE: readonly Format[] = ["PDF"];
+/** Formats the renderer module does not produce yet; none today (ADR-0009). */
+const UNAVAILABLE: readonly Format[] = [];
 
 const EXPORT_ERRORS: Record<string, string> = {
   UNSUPPORTED_CLAIM_IN_EXPORT: "승인되지 않은 문장이 있어 내보내지 않았습니다.",
@@ -107,7 +107,7 @@ export function ExportPanel({
       : pendingApproval > 0
         ? `승인 필요 블록 ${pendingApproval}개를 먼저 승인하고 버전을 저장하세요.`
         : UNAVAILABLE.includes(format)
-          ? "PDF는 한글 폰트 번들 후 제공됩니다."
+          ? "아직 지원하지 않는 형식입니다."
           : null;
 
   return (
