@@ -74,8 +74,48 @@ fun interface ModelClient {
     fun complete(request: ModelRequest): ModelOutcome
 }
 
-/** The provider is unreachable or failed; retryable at the job level. */
+/**
+ * Why a provider call failed, so callers can retry the transient kinds and page an operator for
+ * the rest. Billing and configuration failures never fix themselves.
+ */
+enum class ProviderFailure(
+    val retryable: Boolean,
+    /** Someone has to act (top up credits, rotate a key, fix a request shape). */
+    val operatorAction: Boolean,
+) {
+    BILLING(retryable = false, operatorAction = true),
+    AUTHENTICATION(retryable = false, operatorAction = true),
+    INVALID_REQUEST(retryable = false, operatorAction = true),
+    RATE_LIMITED(retryable = true, operatorAction = false),
+    OVERLOADED(retryable = true, operatorAction = false),
+    UNAVAILABLE(retryable = true, operatorAction = false),
+    ;
+
+    companion object {
+        /** From an HTTP status (null for transport errors) and the provider's message. */
+        fun classify(
+            statusCode: Int?,
+            message: String?,
+        ): ProviderFailure {
+            val text = message?.lowercase().orEmpty()
+            return when {
+                statusCode == 400 && BILLING_HINTS.any { it in text } -> BILLING
+                statusCode == 402 -> BILLING
+                statusCode == 401 || statusCode == 403 -> AUTHENTICATION
+                statusCode == 400 || statusCode == 404 || statusCode == 422 -> INVALID_REQUEST
+                statusCode == 429 -> RATE_LIMITED
+                statusCode == 529 -> OVERLOADED
+                else -> UNAVAILABLE
+            }
+        }
+
+        private val BILLING_HINTS = listOf("credit balance", "billing", "purchase credits", "payment")
+    }
+}
+
+/** The provider call failed; [failure] says whether retrying makes sense. */
 class ModelProviderException(
     message: String,
     cause: Throwable? = null,
+    val failure: ProviderFailure = ProviderFailure.UNAVAILABLE,
 ) : RuntimeException(message, cause)

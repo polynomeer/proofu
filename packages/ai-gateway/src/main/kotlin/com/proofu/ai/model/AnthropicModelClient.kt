@@ -4,6 +4,7 @@ import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.core.JsonValue
 import com.anthropic.errors.AnthropicException
+import com.anthropic.errors.AnthropicServiceException
 import com.anthropic.models.messages.CacheControlEphemeral
 import com.anthropic.models.messages.ContentBlockParam
 import com.anthropic.models.messages.DocumentBlockParam
@@ -55,7 +56,13 @@ class AnthropicModelClient(
             try {
                 client.messages().create(params)
             } catch (e: AnthropicException) {
-                throw ModelProviderException("anthropic request failed: ${e.message}", e)
+                val status = (e as? AnthropicServiceException)?.statusCode()
+                val failure = ProviderFailure.classify(status, e.message)
+                throw ModelProviderException(
+                    "anthropic request failed (${failure.name.lowercase()}): ${e.message}",
+                    e,
+                    failure,
+                )
             }
 
         val usage =
