@@ -1,14 +1,12 @@
 package com.proofu.worker.analysis
 
-import com.proofu.ai.AiBudgetExceeded
-import com.proofu.ai.AiCallFailed
 import com.proofu.ai.extraction.RequirementExtractor
-import com.proofu.ai.model.ModelProviderException
 import com.proofu.domain.common.JobPostingId
 import com.proofu.domain.common.JobPostingSnapshotId
 import com.proofu.domain.common.WorkspaceId
 import com.proofu.domain.jobs.JobPostingSnapshot
 import com.proofu.domain.jobs.SnapshotSource
+import com.proofu.worker.jobs.AiFailures
 import com.proofu.worker.jobs.JobFailure
 import com.proofu.worker.jobs.JobHandler
 import com.proofu.worker.jobs.JobRecord
@@ -45,16 +43,8 @@ class PostingAnalysisJobHandler(
                 ?: throw JobFailure("SNAPSHOT_NOT_FOUND", "snapshot $snapshotId", retryable = false)
 
         val result =
-            try {
+            AiFailures.guard {
                 extractor.extract(WorkspaceId(job.workspaceId), snapshot, job.id)
-            } catch (e: AiBudgetExceeded) {
-                throw JobFailure("AI_BUDGET_EXCEEDED", e.message ?: "budget", retryable = false, cause = e)
-            } catch (e: AiCallFailed.Refused) {
-                throw JobFailure("AI_REFUSED", e.message ?: "refused", retryable = false, cause = e)
-            } catch (e: AiCallFailed.InvalidOutput) {
-                throw JobFailure("AI_OUTPUT_INVALID", e.message ?: "invalid output", retryable = true, cause = e)
-            } catch (e: ModelProviderException) {
-                throw JobFailure("AI_PROVIDER_UNAVAILABLE", e.message ?: "provider", retryable = true, cause = e)
             }
 
         val stored: Int =

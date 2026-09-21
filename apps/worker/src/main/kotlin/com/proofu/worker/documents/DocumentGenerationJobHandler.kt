@@ -1,14 +1,11 @@
 package com.proofu.worker.documents
 
-import com.proofu.ai.AiBudgetExceeded
-import com.proofu.ai.AiCallFailed
 import com.proofu.ai.documents.ClaimForDraft
 import com.proofu.ai.documents.DocumentDrafter
 import com.proofu.ai.documents.DraftRequest
 import com.proofu.ai.documents.EvidenceForDraft
 import com.proofu.ai.documents.PostingForDraft
 import com.proofu.ai.documents.RequirementForDraft
-import com.proofu.ai.model.ModelProviderException
 import com.proofu.domain.common.IdGenerator
 import com.proofu.domain.common.WorkspaceId
 import com.proofu.domain.documents.DocumentTemplate
@@ -16,6 +13,7 @@ import com.proofu.domain.documents.DocumentType
 import com.proofu.domain.documents.GeneratedBlock
 import com.proofu.domain.documents.ProvenanceRelation
 import com.proofu.domain.documents.ProvenanceSourceType
+import com.proofu.worker.jobs.AiFailures
 import com.proofu.worker.jobs.JobFailure
 import com.proofu.worker.jobs.JobHandler
 import com.proofu.worker.jobs.JobRecord
@@ -105,7 +103,7 @@ class DocumentGenerationJobHandler(
             }
 
         val draft =
-            try {
+            AiFailures.guard {
                 drafter.draft(
                     WorkspaceId(job.workspaceId),
                     DraftRequest(
@@ -117,14 +115,6 @@ class DocumentGenerationJobHandler(
                     ),
                     job.id,
                 )
-            } catch (e: AiBudgetExceeded) {
-                throw JobFailure("AI_BUDGET_EXCEEDED", e.message ?: "budget", retryable = false, cause = e)
-            } catch (e: AiCallFailed.Refused) {
-                throw JobFailure("AI_REFUSED", e.message ?: "refused", retryable = false, cause = e)
-            } catch (e: AiCallFailed.InvalidOutput) {
-                throw JobFailure("AI_OUTPUT_INVALID", e.message ?: "invalid output", retryable = true, cause = e)
-            } catch (e: ModelProviderException) {
-                throw JobFailure("AI_PROVIDER_UNAVAILABLE", e.message ?: "provider", retryable = true, cause = e)
             }
         if (draft.output.blocks.isEmpty()) {
             throw JobFailure("AI_OUTPUT_INVALID", "model produced no usable block", retryable = true)

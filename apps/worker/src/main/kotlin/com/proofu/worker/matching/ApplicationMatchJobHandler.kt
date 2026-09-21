@@ -1,15 +1,13 @@
 package com.proofu.worker.matching
 
-import com.proofu.ai.AiBudgetExceeded
-import com.proofu.ai.AiCallFailed
 import com.proofu.ai.matching.CandidateToExplain
 import com.proofu.ai.matching.MatchExplainer
 import com.proofu.ai.matching.RequirementToExplain
-import com.proofu.ai.model.ModelProviderException
 import com.proofu.domain.common.IdGenerator
 import com.proofu.domain.common.WorkspaceId
 import com.proofu.domain.matching.MatchFeatureCalculator
 import com.proofu.domain.matching.MatchScore
+import com.proofu.worker.jobs.AiFailures
 import com.proofu.worker.jobs.JobFailure
 import com.proofu.worker.jobs.JobHandler
 import com.proofu.worker.jobs.JobRecord
@@ -97,16 +95,8 @@ class ApplicationMatchJobHandler(
             if (toExplain.isEmpty()) {
                 null
             } else {
-                try {
+                AiFailures.guard {
                     explainer.explain(WorkspaceId(job.workspaceId), toExplain, job.id)
-                } catch (e: AiBudgetExceeded) {
-                    throw JobFailure("AI_BUDGET_EXCEEDED", e.message ?: "budget", retryable = false, cause = e)
-                } catch (e: AiCallFailed.Refused) {
-                    throw JobFailure("AI_REFUSED", e.message ?: "refused", retryable = false, cause = e)
-                } catch (e: AiCallFailed.InvalidOutput) {
-                    throw JobFailure("AI_OUTPUT_INVALID", e.message ?: "invalid output", retryable = true, cause = e)
-                } catch (e: ModelProviderException) {
-                    throw JobFailure("AI_PROVIDER_UNAVAILABLE", e.message ?: "provider", retryable = true, cause = e)
                 }
             }
         val reasons = explained?.explanations?.associateBy { it.requirementId to it.claimId } ?: emptyMap()

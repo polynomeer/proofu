@@ -1,5 +1,6 @@
 package com.proofu.worker.documents
 
+import com.proofu.ai.documents.DocumentDrafter
 import com.proofu.ai.model.FakeModelClient
 import com.proofu.ai.model.ModelClient
 import com.proofu.ai.model.ModelOutcome
@@ -68,7 +69,7 @@ class DocumentGenerationJobHandlerTest {
         assertThat(version["created_by"]).isEqualTo("AI")
         assertThat(version["parent_id"]).isNull()
         assertThat(version["template_version"]).isEqualTo("ko-v1")
-        assertThat(version["prompt_version"]).isEqualTo("draft-v1")
+        assertThat(version["prompt_version"]).isEqualTo(DocumentDrafter.PROMPT_VERSION)
         assertThat(version["source_job_id"]).isEqualTo(job)
         assertThat(version["execution_id"]).isNotNull()
         val content = version["content"] as String

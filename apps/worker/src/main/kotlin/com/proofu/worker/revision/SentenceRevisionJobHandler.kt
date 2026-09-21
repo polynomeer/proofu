@@ -1,13 +1,11 @@
 package com.proofu.worker.revision
 
-import com.proofu.ai.AiBudgetExceeded
-import com.proofu.ai.AiCallFailed
-import com.proofu.ai.model.ModelProviderException
 import com.proofu.ai.revision.SentenceReviser
 import com.proofu.ai.revision.SentenceToRevise
 import com.proofu.domain.common.WorkspaceId
 import com.proofu.domain.documents.RevisionMode
 import com.proofu.worker.documents.VersionContentReader
+import com.proofu.worker.jobs.AiFailures
 import com.proofu.worker.jobs.JobFailure
 import com.proofu.worker.jobs.JobHandler
 import com.proofu.worker.jobs.JobRecord
@@ -71,20 +69,12 @@ class SentenceRevisionJobHandler(
             ) ?: "ko"
 
         val result =
-            try {
+            AiFailures.guard {
                 reviser.revise(
                     WorkspaceId(job.workspaceId),
                     SentenceToRevise(blockId, block.text, facts, mode, language),
                     job.id,
                 )
-            } catch (e: AiBudgetExceeded) {
-                throw JobFailure("AI_BUDGET_EXCEEDED", e.message ?: "budget", retryable = false, cause = e)
-            } catch (e: AiCallFailed.Refused) {
-                throw JobFailure("AI_REFUSED", e.message ?: "refused", retryable = false, cause = e)
-            } catch (e: AiCallFailed.InvalidOutput) {
-                throw JobFailure("AI_OUTPUT_INVALID", e.message ?: "invalid output", retryable = true, cause = e)
-            } catch (e: ModelProviderException) {
-                throw JobFailure("AI_PROVIDER_UNAVAILABLE", e.message ?: "provider", retryable = true, cause = e)
             }
         log.info(
             "document.revision version={} block={} mode={} accepted={} cost={}µ$",
