@@ -10,7 +10,8 @@ enum class RevisionMode {
 /**
  * Deterministic guard for AI sentence revisions (AI feature spec "문장 개선": 사실 의미 변경 금지).
  * A revision is refused when it introduces a number that neither the original nor the cited
- * facts contain, is empty, or grows far beyond the original. Returns the problems; empty = ok.
+ * facts contain, drops a number the original stated, is empty, or grows far beyond the
+ * original. Returns the problems; empty = ok.
  */
 object RevisionGuard {
     fun check(
@@ -29,6 +30,8 @@ object RevisionGuard {
         val allowed = (listOf(original) + facts).flatMap(::numbers).toSet()
         val added = newNumbers(text, allowed)
         if (added.isNotEmpty()) problems += "revision adds numbers not in the sources: $added"
+        val dropped = newNumbers(original, numbers(text).toSet())
+        if (dropped.isNotEmpty()) problems += "revision drops numbers the original stated: $dropped"
         return problems
     }
 
