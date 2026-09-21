@@ -157,7 +157,17 @@ export default async function DocumentPage({ params }: { params: Params }) {
             initialItems={exports?.items ?? []}
           />
           <div className="rounded-md border border-border-300 bg-surface-000 p-4">
-            <h2 className="text-card-title">버전 기록</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-card-title">버전 기록</h2>
+              {(versions?.items.length ?? 0) >= 2 ? (
+                <Link
+                  href={`/documents/${doc.id}/compare`}
+                  className="text-caption text-primary-600 hover:underline"
+                >
+                  비교
+                </Link>
+              ) : null}
+            </div>
             {!versions || versions.items.length === 0 ? (
               <p className="mt-2 text-caption text-text-600">아직 저장된 버전이 없습니다.</p>
             ) : (
@@ -168,6 +178,13 @@ export default async function DocumentPage({ params }: { params: Params }) {
                       {v.label ?? versionAuthorLabel(v.createdBy)}
                       {v.id === latest?.id ? (
                         <span className="ml-2 text-caption text-primary-700">최신</span>
+                      ) : latest ? (
+                        <Link
+                          href={`/documents/${doc.id}/compare?base=${v.id}&target=${latest.id}`}
+                          className="ml-2 text-caption text-primary-600 hover:underline"
+                        >
+                          최신과 비교
+                        </Link>
                       ) : null}
                     </span>
                     <span className="block text-caption text-text-600">
