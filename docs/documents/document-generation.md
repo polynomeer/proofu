@@ -52,4 +52,4 @@ REQUESTED -> RENDERING -> VALIDATING -> READY | FAILED | EXPIRED
 
 ## 구현
 
-렌더러는 `packages/document-renderer`(순수 Kotlin + Apache POI, [ADR-0009](../architecture/adr/0009-document-rendering-and-export-storage.md))이며 `apps/worker`의 `document.export` Job이 실행합니다. `DocxRenderer`는 단일 열·제목 계층·본문 11pt로 쓰고, `ExportValidator`가 텍스트를 재추출해 모든 블록이 순서대로 있는지 검사합니다. `MARKDOWN`/`JSON`도 같은 모듈이 만들고, `PDF`는 후속(OpenPDF + Noto Sans KR). 산출물은 당분간 PostgreSQL `export_files`에 저장하고 `GET /exports/{id}/file`로만 내려받습니다.
+렌더러는 `packages/document-renderer`(순수 Kotlin + Apache POI, [ADR-0009](../architecture/adr/0009-document-rendering-and-export-storage.md))이며 `apps/worker`의 `document.export` Job이 실행합니다. `DocxRenderer`는 단일 열·제목 계층·본문 11pt로 쓰고, `ExportValidator`가 텍스트를 재추출해 모든 블록이 순서대로 있는지 검사합니다. `PDF`는 `PdfRenderer`(OpenPDF, Noto Sans KR 서브셋 임베딩)가, `MARKDOWN`/`JSON`도 같은 모듈이 만듭니다. 산출물은 당분간 PostgreSQL `export_files`에 저장하고 `GET /exports/{id}/file`로만 내려받습니다.

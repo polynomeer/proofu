@@ -29,16 +29,17 @@ F07–F09(내보내기)는 렌더링 라이브러리와 산출물 저장소가 �
 
 1. **DOCX: Apache POI XWPF** (`packages/document-renderer`, `DocxRenderer`). 단일 열, 제목 계층(문서 제목 → 섹션 제목 → 문단), 본문 11pt, 폰트는 `Malgun Gothic`/`Apple SD Gothic Neo`/`Noto Sans KR` 순 fallback을 지정한다(글리프는 열람 환경 폰트로 렌더링, 텍스트는 실제 텍스트). 내부 id·certainty·경고는 본문에 쓰지 않는다. `MARKDOWN`/`JSON`은 같은 모듈의 순수 Kotlin 렌더러.
 2. **검증: 텍스트 재추출.** 렌더 후 `XWPFWordExtractor`로 텍스트를 뽑아 모든 블록 문장이 순서대로 들어 있는지 확인한다(`ExportValidator`). 실패하면 `FAILED` + `RENDER_VALIDATION_FAILED`.
-3. **PDF는 후속 슬라이스.** OpenPDF + Noto Sans KR TTF 번들로 구현한다. 그때까지 `PDF` 요청은 `NOT_IMPLEMENTED`(501).
+3. **PDF: OpenPDF + Noto Sans KR** (`PdfRenderer`, `pdf-openpdf-1`). Google Fonts의 정적 TTF(Regular·Bold, OFL, 각 ~6MB)를 `packages/document-renderer/src/main/resources/fonts/`에 번들하고 `IDENTITY_H`로 서브셋 임베딩한다(산출물 ~60KB). 글리프가 열람 환경에 의존하지 않는 유일한 형식이므로 제출용 기본 형식으로 권한다. A4, 여백 20mm, 행간 1.5. 검증은 `PdfTextExtractor`로 재추출.
 4. **저장: 당분간 PostgreSQL `export_files`**(`exports.object_key`는 `pg:<export id>`). `ExportStore` 인터페이스 뒤에 두고 객체 저장소가 정해지면 구현만 교체하고 `object_key`를 이관한다. 파일 크기 상한 5MB.
 5. **재사용.** 같은 문서 버전·형식·템플릿의 `READY` 산출물이 있으면 새로 렌더링하지 않고 그 export를 돌려준다(문서 버전은 불변이므로 결과가 같다).
 6. **내보내기 게이트는 도메인.** 요청 시 API가, 렌더 시 worker가 `GeneratedOutput.blocksPendingApproval()`로 미승인 블록을 거부한다(`UNSUPPORTED_CLAIM_IN_EXPORT`).
 
 ## 결과
 
-- `renderer_version`은 렌더러 모듈 상수(`docx-poi-1`)로 기록해 재현성을 남긴다.
+- `renderer_version`은 렌더러 모듈 상수(`docx-poi-1`, `pdf-openpdf-1`)로 기록해 재현성을 남긴다.
+- 폰트 12MB가 저장소와 worker 이미지에 들어간다. 폰트를 바꾸면 `renderer_version`을 올린다.
 - 다운로드는 `GET /exports/{id}/file`(workspace 검증)로만, 공개 URL 없음.
 
 ## 재검토 조건
 
-객체 저장소 확정, 파일 Evidence 도입(같은 저장소를 씀), PDF 품질 기준 실패, 사용자 정의 템플릿 도입.
+객체 저장소 확정, 파일 Evidence 도입(같은 저장소를 씀), PDF 품질 기준 실패(글리프 누락·추출 순서), 사용자 정의 템플릿 도입.
