@@ -208,6 +208,24 @@ class DocumentApiTest {
         assertThat(blocks.get(1).get("certainty").asString()).isEqualTo("INFERRED") // cannot be raised
         assertThat(saved.get("provenance")).hasSize(2) // carried over with the retained references
 
+        // Sentence revision is a job on an existing block; unknown blocks are 404.
+        post(
+            "/api/v1/documents/$documentId/revision-jobs",
+            """{"versionId":"$aiVersion","blockId":"nope-1","mode":"SHORTEN"}""",
+        ).expectStatus().isNotFound
+        val revision =
+            post(
+                "/api/v1/documents/$documentId/revision-jobs",
+                """{"versionId":"$aiVersion","blockId":"experience-1","mode":"CLARIFY"}""",
+            ).expectStatus().isAccepted.expectBody(String::class.java).returnResult().responseBody
+        val revisionPayload =
+            jdbc.queryForObject(
+                "select (payload ->> 'blockId') || '|' || (payload ->> 'mode') from jobs where id = ?::uuid",
+                String::class.java,
+                mapper.readTree(revision).get("jobId").asString(),
+            )
+        assertThat(revisionPayload).isEqualTo("experience-1|CLARIFY")
+
         val after = support.getJson(workspaceId, "/api/v1/documents/$documentId")
         assertThat(after["pendingApprovalCount"]).isEqualTo(1)
         assertThat(after["version"]).isEqualTo(2)

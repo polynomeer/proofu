@@ -289,6 +289,34 @@ class DocumentService(
         return jobId
     }
 
+    /** Sentence revision: nothing is written; the job result is the proposal (AI feature spec "문장 개선"). */
+    @Transactional
+    fun startRevision(
+        workspace: WorkspaceContext,
+        documentId: UUID,
+        request: RevisionRequest,
+    ): UUID {
+        val entity = find(workspace, documentId)
+        val versionId = requireNotNull(request.versionId)
+        val version =
+            versions.find(versionId, workspace.workspaceId.value)?.takeIf { it.documentId == entity.id }
+                ?: throw ResourceNotFoundException("document version", versionId)
+        val blockId = requireNotNull(request.blockId).trim()
+        if (version.blocks.none { it.blockId == blockId }) throw ResourceNotFoundException("block", blockId)
+        val mode = requireNotNull(request.mode)
+        return jobs.enqueue(
+            workspace,
+            JobTypes.DOCUMENT_REVISION,
+            mapOf(
+                "documentId" to entity.id.toString(),
+                "versionId" to versionId.toString(),
+                "blockId" to blockId,
+                "mode" to mode.name,
+            ),
+            dedupeKey = "$versionId:$blockId:${mode.name}",
+        )
+    }
+
     private fun find(
         workspace: WorkspaceContext,
         id: UUID,

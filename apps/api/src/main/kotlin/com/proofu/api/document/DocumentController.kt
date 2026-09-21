@@ -81,6 +81,14 @@ class DocumentController(
         @PathVariable id: UUID,
     ): DocumentVersionResponse = documents.getVersion(workspace, id)
 
+    @PostMapping("/documents/{id}/revision-jobs")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    fun startRevision(
+        workspace: WorkspaceContext,
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: RevisionRequest,
+    ): AcceptedJob = AcceptedJob(documents.startRevision(workspace, id, request))
+
     /** F06: draft a new AI version. A pending run for the same document is returned instead of a duplicate. */
     @PostMapping("/documents/{id}/generation-jobs")
     @ResponseStatus(HttpStatus.ACCEPTED)

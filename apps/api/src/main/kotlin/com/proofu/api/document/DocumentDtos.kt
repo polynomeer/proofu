@@ -9,6 +9,7 @@ import com.proofu.domain.documents.DocumentType
 import com.proofu.domain.documents.GeneratedBlock
 import com.proofu.domain.documents.ProvenanceRelation
 import com.proofu.domain.documents.ProvenanceSourceType
+import com.proofu.domain.documents.RevisionMode
 import com.proofu.domain.documents.TemplateSection
 import com.proofu.domain.documents.VersionAuthor
 import jakarta.validation.Valid
@@ -74,6 +75,12 @@ data class GenerationRequest(
     val parentVersionId: UUID? = null,
     val claimIds: List<UUID>? = null,
     val requirementIds: List<UUID>? = null,
+)
+
+data class RevisionRequest(
+    @field:NotNull val versionId: UUID?,
+    @field:NotBlank val blockId: String?,
+    @field:NotNull val mode: RevisionMode?,
 )
 
 data class ProvenanceLinkResponse(

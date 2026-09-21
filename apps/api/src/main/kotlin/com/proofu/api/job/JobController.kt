@@ -53,4 +53,5 @@ object JobTypes {
     const val APPLICATION_MATCH = "application.match"
     const val DOCUMENT_GENERATION = "document.generation"
     const val DOCUMENT_EXPORT = "document.export"
+    const val DOCUMENT_REVISION = "document.revision"
 }
