@@ -18,6 +18,10 @@ review: 도메인 변경 시
 | Learning       | id, type, title, completedAt                   | provider, hours, certificateId, notes         |
 | Portfolio Item | id, title, artifactId, visibility              | summary, tags, publishedAt                    |
 
+## 프로필
+
+문서 머리글에 들어가는 사람 정보(`Profile`): 이름(필수), 한 줄 소개, 이메일, 전화, 지역, 링크(최대 5개). 사용자당 1개(`user_profiles`)이며 워크스페이스 소유자의 것을 씁니다. 프로필은 **내보내기 파일에만** 렌더링되고 문서 버전(`document_versions`)에는 저장되지 않으며, AI 컨텍스트에 절대 들어가지 않습니다. 프로필이 바뀌면 `version`이 오르고, 같은 문서 버전이라도 이전 프로필로 만든 내보내기 파일은 재사용하지 않습니다.
+
 ## Career Entry 유형
 
 `EMPLOYMENT`, `EDUCATION`, `TRAINING`, `AWARD`, `CERTIFICATION`, `OTHER`
