@@ -32,6 +32,7 @@ OIDC 제공자가 확정될 때까지 `X-Workspace-Id: <uuid>` 헤더로 workspa
 | `INVALID_STATUS_TRANSITION`   | 409    | 허용되지 않은 지원 상태 전이                                         |
 | `SNAPSHOT_IMMUTABLE`          | 409    | 제출 스냅샷 변경 시도                                                |
 | `UNSUPPORTED_CLAIM_IN_EXPORT` | 422    | 승인되지 않은 unsupported 문장 내보내기                              |
+| `EXPORT_NOT_READY`            | 409    | 아직 렌더링되지 않았거나 실패한 내보내기 다운로드 시도               |
 | `RATE_LIMITED`                | 429    | 속도 제한                                                            |
 | `AI_PROVIDER_UNAVAILABLE`     | 503    | 모델 제공자 장애                                                     |
 | `AI_REFUSED`                  | 422    | 모델 제공자가 정책상 요청을 거절                                     |

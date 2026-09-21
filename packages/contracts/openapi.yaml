@@ -1627,11 +1627,35 @@ paths:
   /document-versions/{id}/exports:
     parameters:
       - $ref: "#/components/parameters/Id"
+    get:
+      tags: [documents]
+      operationId: listExports
+      summary: Exports of a version, newest first
+      responses:
+        "200":
+          description: Exports
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Export"
+        default:
+          $ref: "#/components/responses/Problem"
     post:
       tags: [documents, async]
       operationId: startExport
-      summary: Render a version to DOCX, PDF, Markdown or JSON (asynchronous)
-      description: Rejected with `UNSUPPORTED_CLAIM_IN_EXPORT` while any INFERRED or UNSUPPORTED block is unapproved.
+      summary: Render a version to DOCX, Markdown or JSON (asynchronous)
+      description: |
+        Rejected with `UNSUPPORTED_CLAIM_IN_EXPORT` while any INFERRED or UNSUPPORTED block is
+        unapproved, and with `NOT_IMPLEMENTED` for PDF (ADR-0009). Creates an export in
+        REQUESTED and a `document.export` job whose result carries `exportId`; a pending job for
+        the same version and format is returned instead of a duplicate. A READY export of the
+        same version, format and template is reused without rendering again.
       requestBody:
         required: true
         content:
@@ -1644,7 +1668,54 @@ paths:
                   $ref: "#/components/schemas/ExportFormat"
       responses:
         "202":
-          $ref: "#/components/responses/Accepted"
+          description: Export accepted; poll `GET /jobs/{jobId}` or `GET /exports/{exportId}`
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [jobId, exportId]
+                properties:
+                  jobId:
+                    $ref: "#/components/schemas/Uuid"
+                  exportId:
+                    $ref: "#/components/schemas/Uuid"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /exports/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [documents]
+      operationId: getExport
+      summary: Export status and file metadata
+      responses:
+        "200":
+          description: Export
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Export"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /exports/{id}/file:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [documents]
+      operationId: downloadExport
+      summary: Download a READY export (attachment)
+      responses:
+        "200":
+          description: The rendered file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "409":
+          description: The export is not READY (code EXPORT_NOT_READY)
         default:
           $ref: "#/components/responses/Problem"
 
@@ -1937,6 +2008,49 @@ components:
     ExportFormat:
       type: string
       enum: [DOCX, PDF, MARKDOWN, JSON]
+    ExportStatus:
+      type: string
+      enum: [REQUESTED, RENDERING, VALIDATING, READY, FAILED, EXPIRED]
+
+    Export:
+      type: object
+      required:
+        [id, documentVersionId, format, templateVersion, status, fileName, createdAt, updatedAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        documentVersionId:
+          $ref: "#/components/schemas/Uuid"
+        format:
+          $ref: "#/components/schemas/ExportFormat"
+        templateVersion:
+          type: string
+        rendererVersion:
+          type: string
+        status:
+          $ref: "#/components/schemas/ExportStatus"
+        errorCode:
+          type: string
+        sha256:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        pageCount:
+          type: integer
+        mimeType:
+          type: string
+        fileName:
+          description: Suggested download name
+          type: string
+        jobId:
+          $ref: "#/components/schemas/Uuid"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     JobStatus:
       type: string
       enum: [QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELLED]
