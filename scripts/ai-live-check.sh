@@ -13,5 +13,6 @@ echo "Expected cost: well under \$0.50 per run with claude-opus-5."
   --tests '*AnthropicModelClientLiveTest*' \
   --tests '*RequirementExtractionEvalTest*' \
   --tests '*LivePromptEvalTest*' \
-  -i 2>&1 | grep -E '^(==|--|  |     |recall|model=|execution|Live checks|BUILD|.*FAILED|.*Expecting|.*but )' || true
+  -i 2>&1 | grep -E '^(==|--|  |     |recall|model=|execution|BUILD|.*FAILED|.*Expecting|.*but )' \
+  | grep -vE "Executed with|Not worth caching|SLF4J" || true
 echo "Full report: packages/ai-gateway/build/reports/tests/test/index.html"
