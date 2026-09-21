@@ -43,12 +43,16 @@ export default async function ApplicationPage({ params }: { params: Params }) {
   const { id } = await params;
   const { data: a } = await api.GET("/applications/{id}", { params: { path: { id } } });
   if (!a) notFound();
-  const [{ data: reviews }, { data: documents }, { data: submissions }] = await Promise.all([
-    api.GET("/applications/{id}/reviews", { params: { path: { id } } }),
-    api.GET("/applications/{id}/documents", { params: { path: { id } } }),
-    api.GET("/applications/{id}/submissions", { params: { path: { id } } }),
-  ]);
   const canReview = REVIEWABLE.includes(a.status);
+  const [{ data: reviews }, { data: documents }, { data: submissions }, { data: reviewContext }] =
+    await Promise.all([
+      api.GET("/applications/{id}/reviews", { params: { path: { id } } }),
+      api.GET("/applications/{id}/documents", { params: { path: { id } } }),
+      api.GET("/applications/{id}/submissions", { params: { path: { id } } }),
+      canReview
+        ? api.GET("/applications/{id}/review-context", { params: { path: { id } } })
+        : Promise.resolve({ data: undefined }),
+    ]);
   const canSubmit = SUBMITTABLE.includes(a.status);
   const submittable: SubmittableVersion[] = canSubmit
     ? (
@@ -148,6 +152,7 @@ export default async function ApplicationPage({ params }: { params: Params }) {
             applicationId={a.id}
             initialReviews={reviews?.items ?? []}
             canReview={canReview}
+            context={reviewContext}
           />
         </div>
 

@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import type { ProblemDetail, Schema } from "@proofu/contracts";
 
+import { ReviewComparison } from "@/components/application/ReviewComparison";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -16,6 +17,7 @@ import { formatDateTime } from "@/lib/format";
 
 type Review = Schema<"Review">;
 type Input = Schema<"ReviewInput">;
+type Context = Schema<"ReviewContext">;
 type Confidence = Schema<"ReviewConfidence">;
 
 const CONFIDENCE: { value: Confidence; label: string }[] = [
@@ -57,15 +59,25 @@ function Warnings({ warnings }: { warnings: string[] }) {
 function ReviewForm({
   applicationId,
   initial,
+  quotes = [],
   onSaved,
   onCancel,
 }: {
   applicationId: string;
   initial?: Review;
+  /** Lines quoted from the comparison panel; appended to the rationale as they arrive. */
+  quotes?: string[];
   onSaved: (r: Review) => void;
   onCancel: () => void;
 }) {
   const [values, setValues] = useState<Input>(initial ?? EMPTY);
+  const applied = useRef(0);
+  useEffect(() => {
+    if (quotes.length <= applied.current) return;
+    const added = quotes.slice(applied.current).join("\n");
+    applied.current = quotes.length;
+    setValues((v) => ({ ...v, rationale: [v.rationale, added].filter(Boolean).join("\n") }));
+  }, [quotes]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -295,14 +307,23 @@ export function ReviewSection({
   applicationId,
   initialReviews,
   canReview,
+  context,
 }: {
   applicationId: string;
   initialReviews: Review[];
   canReview: boolean;
+  context?: Context;
 }) {
   const router = useRouter();
   const [reviews, setReviews] = useState(initialReviews);
   const [editing, setEditing] = useState<"new" | string | null>(null);
+  const [quotes, setQuotes] = useState<string[]>([]);
+
+  /** Quoting opens the new-review form when nothing is being edited. */
+  function quote(line: string) {
+    setQuotes((q) => [...q, line]);
+    if (editing === null) setEditing("new");
+  }
 
   return (
     <section className="rounded-md border border-border-300 bg-surface-000 p-6">
@@ -320,15 +341,22 @@ export function ReviewSection({
         지원에서 확인할 계획을 남깁니다.
       </p>
 
+      {canReview && context ? <ReviewComparison context={context} onQuote={quote} /> : null}
+
       {editing === "new" ? (
         <ReviewForm
           applicationId={applicationId}
+          quotes={quotes}
           onSaved={(r) => {
             setReviews((list) => [...list, r]);
             setEditing(null);
+            setQuotes([]);
             router.refresh();
           }}
-          onCancel={() => setEditing(null)}
+          onCancel={() => {
+            setEditing(null);
+            setQuotes([]);
+          }}
         />
       ) : null}
 
