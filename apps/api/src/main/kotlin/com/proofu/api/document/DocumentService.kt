@@ -160,7 +160,7 @@ class DocumentService(
         val latest = versions.latestId(entity.id)?.let { versions.find(it, workspace.workspaceId.value) }
         val template =
             latest?.let { DocumentTemplate.find(it.templateVersion, entity.type) }
-                ?: DocumentTemplate.latest(entity.type)
+                ?: DocumentTemplate.latest(entity.type, entity.language)
         val pending =
             latest?.let { GeneratedOutput(it.blocks.map(DocumentBlockDto::toDomain)).blocksPendingApproval().size } ?: 0
         val base = entity.toResponse(latest?.let { it.id to it.createdBy })
@@ -236,7 +236,8 @@ class DocumentService(
                 parentId = latestId,
                 label = request.label?.trim()?.ifEmpty { null },
                 blocks = revised.blocks.map(DocumentBlockDto::from),
-                templateVersion = parent?.templateVersion ?: DocumentTemplate.latest(entity.type).version,
+                templateVersion =
+                    parent?.templateVersion ?: DocumentTemplate.latest(entity.type, entity.language).version,
                 promptVersion = null,
                 modelRef = null,
                 createdBy = VersionAuthor.USER,
@@ -259,7 +260,9 @@ class DocumentService(
         request: GenerationRequest,
     ): UUID {
         val entity = find(workspace, documentId)
-        val templateVersion = request.templateVersion?.trim()?.ifEmpty { null } ?: DocumentTemplate.KO_V1
+        val templateVersion =
+            request.templateVersion?.trim()?.ifEmpty { null }
+                ?: DocumentTemplate.latest(entity.type, entity.language).version
         DocumentTemplate.find(templateVersion, entity.type)
             ?: throw DomainRuleViolation("template $templateVersion does not exist for ${entity.type}")
         val accepted =

@@ -47,15 +47,19 @@ class DocumentGenerationJobHandler(
     override fun handle(job: JobRecord): String {
         val payload = mapper.readTree(job.payload)
         val documentId = UUID.fromString(payload.get("documentId").asString())
-        val templateVersion = payload.get("templateVersion")?.asString()?.ifBlank { null } ?: DocumentTemplate.KO_V1
+        val templateVersion = payload.get("templateVersion")?.asString()?.ifBlank { null }
         val onlyClaims = payload.uuidSet("claimIds")
         val onlyRequirements = payload.uuidSet("requirementIds")
 
         val document =
             sources.document(documentId, job.workspaceId)
                 ?: throw JobFailure("DOCUMENT_NOT_FOUND", "document $documentId", retryable = false)
+        val type = DocumentType.valueOf(document.type)
         val template =
-            DocumentTemplate.find(templateVersion, DocumentType.valueOf(document.type))
+            (
+                templateVersion?.let { DocumentTemplate.find(it, type) }
+                    ?: DocumentTemplate.latest(type, document.language)
+            ).takeIf { templateVersion == null || it.version == templateVersion }
                 ?: throw JobFailure(
                     "TEMPLATE_NOT_FOUND",
                     "template $templateVersion for ${document.type}",

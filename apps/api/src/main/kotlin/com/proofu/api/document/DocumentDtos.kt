@@ -17,6 +17,7 @@ import com.proofu.domain.documents.VersionAuthor
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.time.Instant
 import java.util.UUID
@@ -24,7 +25,7 @@ import java.util.UUID
 data class CreateDocumentRequest(
     @field:NotNull val type: DocumentType?,
     @field:NotBlank @field:Size(max = 200) val title: String?,
-    @field:Size(max = 10) val language: String? = null,
+    @field:Pattern(regexp = "ko|en") val language: String? = null,
 )
 
 /** Wire shape of a block; also the shape stored in document_versions.content_json. */

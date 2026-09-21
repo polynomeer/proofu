@@ -92,6 +92,27 @@ class DocumentApiTest {
         assertThat(support.titles(support.getJson(workspaceId, "/api/v1/documents?type=RESUME"))).isEmpty()
         assertThat(support.titles(support.getJson(support.newWorkspace(), "/api/v1/documents"))).isEmpty()
 
+        val english =
+            support.create(
+                workspaceId,
+                "/api/v1/applications/$applicationId/documents",
+                """{"type":"RESUME","title":"Resume","language":"en"}""",
+            )
+        assertThat(
+            (support.getJson(workspaceId, "/api/v1/documents/$english")["sections"] as List<Map<*, *>>).map {
+                it["title"]
+            },
+        ).containsExactly("Summary", "Core Skills", "Experience", "Projects", "Technologies", "Education")
+        client
+            .post()
+            .uri("/api/v1/applications/$applicationId/documents")
+            .header(HeaderWorkspaceResolver.HEADER, workspaceId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"type":"RESUME","title":"x","language":"fr"}""")
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+
         val empty = support.getJson(workspaceId, "/api/v1/documents/$documentId")
         assertThat(empty["latestVersion"]).isNull()
         assertThat(

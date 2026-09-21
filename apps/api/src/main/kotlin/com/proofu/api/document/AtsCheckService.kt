@@ -65,7 +65,8 @@ class AtsCheckService(
                 .map { it.text }
         val ready = exports.list(workspace, versionId).items.filter { it.status == ExportStatus.READY }
         val template =
-            DocumentTemplate.find(version.templateVersion, document.type) ?: DocumentTemplate.latest(document.type)
+            DocumentTemplate.find(version.templateVersion, document.type)
+                ?: DocumentTemplate.latest(document.type, document.language)
         val report =
             AtsChecker.check(
                 template = template,

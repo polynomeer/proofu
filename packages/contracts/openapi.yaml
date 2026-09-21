@@ -1556,7 +1556,9 @@ paths:
                   type: string
                   maxLength: 200
                 language:
+                  description: "`ko` or `en`; picks the template (ko-v1 / en-v1) for drafts and exports"
                   type: string
+                  enum: [ko, en]
                   default: ko
       responses:
         "201":
@@ -1607,8 +1609,8 @@ paths:
               type: object
               properties:
                 templateVersion:
+                  description: Defaults to the current template for the document's language (ko-v1 / en-v1)
                   type: string
-                  default: ko-v1
                 parentVersionId:
                   $ref: "#/components/schemas/Uuid"
                 claimIds:

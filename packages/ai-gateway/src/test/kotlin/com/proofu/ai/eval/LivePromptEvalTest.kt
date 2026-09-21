@@ -124,7 +124,7 @@ class LivePromptEvalTest {
     ) {
         val language = f.get("language")?.asString() ?: "ko"
         val type = f.get("documentType")?.asString()?.let(DocumentType::valueOf) ?: DocumentType.COVER_LETTER
-        val template = DocumentTemplate.latest(type)
+        val template = DocumentTemplate.latest(type, language)
         val request =
             DraftRequest(
                 template = template,
