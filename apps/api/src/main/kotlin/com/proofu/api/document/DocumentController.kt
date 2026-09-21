@@ -3,13 +3,18 @@ package com.proofu.api.document
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.job.AcceptedJob
 import com.proofu.api.web.ApiPaths
+import com.proofu.api.web.DateIdCursor
+import com.proofu.domain.documents.DocumentType
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
@@ -25,6 +30,16 @@ class DocumentController(
         workspace: WorkspaceContext,
         @PathVariable id: UUID,
     ): AtsReportResponse = ats.check(workspace, id)
+
+    @GetMapping("/documents")
+    fun list(
+        workspace: WorkspaceContext,
+        @RequestParam(required = false) cursor: String?,
+        @RequestParam(defaultValue = "20") @Min(1) @Max(100) limit: Int,
+        @RequestParam(required = false) type: DocumentType?,
+        @RequestParam(required = false) q: String?,
+    ): DocumentPage =
+        documents.list(workspace, type, q?.trim()?.ifEmpty { null }, cursor?.let(DateIdCursor::decode), limit)
 
     @GetMapping("/applications/{id}/documents")
     fun listForApplication(

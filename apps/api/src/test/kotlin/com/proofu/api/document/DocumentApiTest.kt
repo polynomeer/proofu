@@ -85,6 +85,12 @@ class DocumentApiTest {
             )
         val listed = support.getJson(workspaceId, "/api/v1/applications/$applicationId/documents")
         assertThat(support.titles(listed)).containsExactly("자기소개서")
+        val all = support.getJson(workspaceId, "/api/v1/documents?q=abc")
+        assertThat(support.titles(all)).containsExactly("자기소개서")
+        assertThat((all["items"] as List<Map<*, *>>).single()["company"]).isEqualTo("ABC")
+        assertThat((all["items"] as List<Map<*, *>>).single()["applicationStatus"]).isEqualTo("INTERESTED")
+        assertThat(support.titles(support.getJson(workspaceId, "/api/v1/documents?type=RESUME"))).isEmpty()
+        assertThat(support.titles(support.getJson(support.newWorkspace(), "/api/v1/documents"))).isEmpty()
 
         val empty = support.getJson(workspaceId, "/api/v1/documents/$documentId")
         assertThat(empty["latestVersion"]).isNull()

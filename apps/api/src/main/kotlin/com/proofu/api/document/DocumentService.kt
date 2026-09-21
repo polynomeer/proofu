@@ -5,11 +5,14 @@ import com.proofu.api.audit.AuditLog
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.job.JobService
 import com.proofu.api.job.JobTypes
+import com.proofu.api.web.DateIdCursor
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.api.web.StaleVersionException
+import com.proofu.domain.applications.ApplicationStatus
 import com.proofu.domain.common.DomainRuleViolation
 import com.proofu.domain.common.IdGenerator
 import com.proofu.domain.documents.DocumentTemplate
+import com.proofu.domain.documents.DocumentType
 import com.proofu.domain.documents.GeneratedOutput
 import com.proofu.domain.documents.ProvenanceSourceType
 import com.proofu.domain.documents.VersionAuthor
@@ -18,6 +21,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 
 @Service
@@ -31,6 +36,83 @@ class DocumentService(
     private val clock: Clock,
     private val audit: AuditLog,
 ) {
+    /** Workspace-wide list (IA "지원 문서"), keyset on (updated date, id) like the other lists. */
+    @Transactional(readOnly = true)
+    fun list(
+        workspace: WorkspaceContext,
+        type: DocumentType?,
+        q: String?,
+        cursor: DateIdCursor?,
+        limit: Int,
+    ): DocumentPage {
+        val rows =
+            jdbc.query(
+                """
+                select d.id, d.application_id, d.type, d.title, d.language, d.version, d.created_at, d.updated_at,
+                       a.company, a.role_title, a.status as application_status,
+                       (select count(*) from submission_snapshots s join document_versions v on v.id = s.document_version_id
+                         where v.document_id = d.id) as submission_count,
+                       lv.id as latest_version_id, lv.created_by as latest_created_by
+                from documents d
+                join applications a on a.id = d.application_id
+                left join lateral (
+                    select v.id, v.created_by from document_versions v where v.document_id = d.id
+                    order by v.created_at desc, v.id desc limit 1
+                ) lv on true
+                where d.workspace_id = ? and d.deleted_at is null
+                  and (cast(? as varchar) is null or d.type = cast(? as varchar))
+                  and (cast(? as varchar) is null
+                       or d.title ilike '%' || cast(? as varchar) || '%'
+                       or a.company ilike '%' || cast(? as varchar) || '%'
+                       or a.role_title ilike '%' || cast(? as varchar) || '%')
+                  and (cast(? as date) is null
+                       or cast(d.updated_at as date) < cast(? as date)
+                       or (cast(d.updated_at as date) = cast(? as date) and d.id < cast(? as uuid)))
+                order by cast(d.updated_at as date) desc, d.id desc
+                limit ?
+                """.trimIndent(),
+                { rs, _ ->
+                    DocumentResponse(
+                        id = rs.getObject("id", UUID::class.java),
+                        applicationId = rs.getObject("application_id", UUID::class.java),
+                        type = DocumentType.valueOf(rs.getString("type")),
+                        title = rs.getString("title"),
+                        language = rs.getString("language"),
+                        latestVersionId = rs.getObject("latest_version_id", UUID::class.java),
+                        latestVersionCreatedBy = rs.getString("latest_created_by")?.let(VersionAuthor::valueOf),
+                        company = rs.getString("company"),
+                        roleTitle = rs.getString("role_title"),
+                        applicationStatus = ApplicationStatus.valueOf(rs.getString("application_status")),
+                        submissionCount = rs.getInt("submission_count"),
+                        version = rs.getLong("version"),
+                        createdAt = rs.getObject("created_at", OffsetDateTime::class.java).toInstant(),
+                        updatedAt = rs.getObject("updated_at", OffsetDateTime::class.java).toInstant(),
+                    )
+                },
+                workspace.workspaceId.value,
+                type?.name,
+                type?.name,
+                q,
+                q,
+                q,
+                q,
+                cursor?.date,
+                cursor?.date,
+                cursor?.date,
+                cursor?.id,
+                limit + 1,
+            )
+        val page = rows.take(limit)
+        val next =
+            if (rows.size > limit) {
+                val last = page.last()
+                DateIdCursor(last.updatedAt.atZone(ZoneOffset.UTC).toLocalDate(), last.id).encode()
+            } else {
+                null
+            }
+        return DocumentPage(page, next)
+    }
+
     @Transactional(readOnly = true)
     fun listForApplication(
         workspace: WorkspaceContext,

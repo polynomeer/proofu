@@ -1,5 +1,6 @@
 package com.proofu.api.document
 
+import com.proofu.domain.applications.ApplicationStatus
 import com.proofu.domain.common.ClaimId
 import com.proofu.domain.common.EvidenceId
 import com.proofu.domain.common.RequirementId
@@ -115,9 +116,18 @@ data class DocumentResponse(
     val language: String,
     val latestVersionId: UUID?,
     val latestVersionCreatedBy: VersionAuthor?,
+    val company: String? = null,
+    val roleTitle: String? = null,
+    val applicationStatus: ApplicationStatus? = null,
+    val submissionCount: Int? = null,
     val version: Long,
     val createdAt: Instant,
     val updatedAt: Instant,
+)
+
+data class DocumentPage(
+    val items: List<DocumentResponse>,
+    val nextCursor: String?,
 )
 
 data class DocumentDetailResponse(
