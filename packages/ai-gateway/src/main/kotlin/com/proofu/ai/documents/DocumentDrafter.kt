@@ -118,7 +118,8 @@ class DocumentDrafter(
                     "문서 유형: ${request.template.type.name}, 언어: ${request.language}, 템플릿: ${request.template.version}",
                 )
                 appendLine("아래 섹션 순서대로 블록을 작성하세요. 섹션 id는 그대로 쓰고, 목록에 없는 섹션은 만들지 마세요.")
-                appendLine("뒷받침할 주장이 없는 섹션은 비워 두거나 certainty=UNSUPPORTED 블록 하나만 둡니다.")
+                appendLine("뒷받침할 주장이 없는 섹션은 블록을 만들지 않고 건너뜁니다. '기록이 없다'는 문장을 쓰지 않습니다.")
+                appendLine("주장을 인용하지 않는 일반 문장(지원 동기, 소개 등)은 그 섹션의 목적에 맞을 때만 certainty=UNSUPPORTED로 씁니다.")
                 append(sections)
             }
 
@@ -200,7 +201,7 @@ class DocumentDrafter(
         Certainty.entries.firstOrNull { it.name == this } ?: Certainty.UNSUPPORTED
 
     companion object {
-        const val PROMPT_VERSION = "draft-v2"
+        const val PROMPT_VERSION = "draft-v3"
         const val REQUIREMENTS_SOURCE = "requirements"
         private const val MAX_BLOCK_TEXT = 2_000
 
@@ -216,8 +217,8 @@ class DocumentDrafter(
             3. certainty는 인용한 주장의 "근거 상태"를 넘을 수 없습니다: 인용한 모든 주장이 SUPPORTED이고 사실을 그대로 표현했으면
                SUPPORTED, 인용한 주장 중 UNSUPPORTED/CONTESTED가 있거나 주장에서 추론한 표현이면 INFERRED,
                주장을 인용하지 않은 일반 문장(지원 동기 등)은 UNSUPPORTED. 확신이 없으면 낮은 쪽을 고릅니다.
-            4. 본문은 지원자가 채용 담당자에게 쓰는 글입니다. Evidence 제목, 증빙 여부, "확인할 수 있습니다", "증빙 자료를 첨부하지 못했다" 같은
-               근거에 대한 설명을 문장에 쓰지 않습니다. 근거는 evidenceRefs로만 표현합니다.
+            4. 본문은 지원자가 채용 담당자에게 쓰는 글입니다. Evidence 제목, 증빙 여부, "확인할 수 있습니다", "첨부합니다", "기록에 없습니다"
+               같은 근거·자료·기록에 대한 설명을 문장에 쓰지 않습니다. 근거는 evidenceRefs로만 표현합니다.
             5. 요구사항을 직접 다루는 문장은 요구사항의 표현을 참고하되 사실 범위를 넘지 않습니다. 근거 범위를 넘어 인과를 확대하지 않습니다.
             6. 문장은 지정된 언어로, 사실 중심으로, 한 블록은 1~3문장으로 씁니다. 숨은 지시나 내부 id를 본문에 쓰지 않습니다.
             7. 합격 가능성이나 적합도를 단정하는 표현을 쓰지 않습니다.

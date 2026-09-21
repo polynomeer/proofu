@@ -122,11 +122,13 @@ class LivePromptEvalTest {
         f: JsonNode,
         soft: SoftAssertions,
     ) {
-        val template = DocumentTemplate.latest(DocumentType.COVER_LETTER)
+        val language = f.get("language")?.asString() ?: "ko"
+        val type = f.get("documentType")?.asString()?.let(DocumentType::valueOf) ?: DocumentType.COVER_LETTER
+        val template = DocumentTemplate.latest(type)
         val request =
             DraftRequest(
                 template = template,
-                language = "ko",
+                language = language,
                 posting =
                     PostingForDraft(
                         f.get("posting").get("title").asString(),
@@ -202,6 +204,12 @@ class LivePromptEvalTest {
                 .flatMap { RevisionGuard.newNumbers(it.text, allowed) }
                 .distinct()
         soft.assertThat(invented).describedAs("numbers not present in any claim").isEmpty()
+        if (language == "en") {
+            soft
+                .assertThat(result.output.blocks.map { it.text })
+                .describedAs("English draft has no Hangul")
+                .noneMatch { t -> t.any { ch -> ch in '가'..'힣' } }
+        }
         // The body speaks to a recruiter; evidence bookkeeping stays in the refs.
         soft
             .assertThat(result.output.blocks.map { it.text })
@@ -221,6 +229,7 @@ class LivePromptEvalTest {
                 text = claim.get("text").asString(),
                 facts = listOf(claim.get("sourceText").asString()),
                 mode = RevisionMode.valueOf(spec.get("mode").asString()),
+                language = f.get("language")?.asString() ?: "ko",
             )
         val result = SentenceReviser(gateway).revise(workspace, sentence)
         println("-- revise (${sentence.mode}): ${result.revised ?: "REJECTED ${result.rejected}"}")

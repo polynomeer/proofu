@@ -1,0 +1,16 @@
+{
+  "title": "Frontend Engineer (prose-style posting, no bullets)",
+  "text": "We're hiring a Frontend Engineer to join a team of six building a scheduling product used by clinics. Day to day you'll ship features in React and TypeScript, pair with a designer on our component library, and keep our Lighthouse scores above 90. You should have at least three years of professional experience with React and be comfortable writing accessible, well-tested UI. Familiarity with Next.js and Playwright is a plus, as is experience in healthcare or another regulated industry. We offer a hybrid schedule (two days in our Seoul office), a learning budget, and 20 days of paid leave. Interviews take about two weeks end to end.",
+  "expected": [
+    { "category": "RESPONSIBILITY", "quote": "ship features in React and TypeScript" },
+    { "category": "RESPONSIBILITY", "quote": "keep our Lighthouse scores above 90" },
+    {
+      "category": "REQUIRED",
+      "quote": "at least three years of professional experience with React"
+    },
+    { "category": "REQUIRED", "quote": "writing accessible, well-tested UI" },
+    { "category": "PREFERRED", "quote": "Familiarity with Next.js and Playwright" },
+    { "category": "PREFERRED", "quote": "healthcare or another regulated industry" }
+  ],
+  "mustNotContain": ["20 days", "learning budget", "two weeks", "team of six"]
+}

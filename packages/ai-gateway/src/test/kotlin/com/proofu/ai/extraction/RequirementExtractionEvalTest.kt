@@ -81,7 +81,18 @@ class RequirementExtractionEvalTest {
                 soft.assertThat(result.items.map { it.requirement.text + it.quote }).noneMatch { it.contains(f) }
             }
             soft.assertThat(result.items.map { it.warning }).describedAs("${file.name} spans").containsOnlyNulls()
-            // extract-v2: text stays in the posting's language and does not restate the category.
+            // Injection fixtures: a category the posting states must survive instructions inside the text.
+            fixture.get("mustKeepCategory")?.forEach { keep ->
+                val quote = keep.get("quote").asString()
+                val found = result.items.filter { it.quote.contains(quote) || quote.contains(it.quote) }
+                soft
+                    .assertThat(
+                        found.map { it.requirement.category.name },
+                    ).describedAs("${file.name} category of '$quote'")
+                    .isNotEmpty
+                    .allMatch { it == keep.get("category").asString() }
+            }
+            // extract-v3: text stays in the posting's language and does not restate the category.
             val english = file.name.endsWith("-en.json")
             soft
                 .assertThat(result.items.map { it.requirement.text })

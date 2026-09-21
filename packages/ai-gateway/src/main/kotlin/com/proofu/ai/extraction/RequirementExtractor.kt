@@ -95,12 +95,15 @@ class RequirementExtractor(
     ): ExtractedRequirement {
         val located = locate(snapshot.rawText, quote)
         val confidence = node.get("confidence").asDouble().coerceIn(0.0, 1.0)
+        // A translated text would not share tokens with the user's claims; keep the posting's own words.
+        // Short Latin quotes ("SaaS", "Figma") are product names, not a foreign-language posting.
+        val translated = isHangul(text) && !isHangul(quote) && quote.split(Regex("\\s+")).size >= MIN_FOREIGN_WORDS
         val requirement =
             Requirement.extracted(
                 id = RequirementId(ids.next()),
                 snapshotId = snapshot.id,
                 category = RequirementCategory.valueOf(node.get("category").asString()),
-                text = text,
+                text = if (translated) quote.trimStart('-', '•', '*', ' ').trim() else text,
                 confidence = Confidence(confidence),
                 sourceSpan = located,
             )
@@ -113,8 +116,15 @@ class RequirementExtractor(
         return ExtractedRequirement(requirement, quote, warning)
     }
 
+    /** Mostly Hangul by letter count, ignoring digits and punctuation. */
+    private fun isHangul(text: String): Boolean {
+        val letters = text.filter { it.isLetter() }
+        return letters.isNotEmpty() && letters.count { it in '가'..'힣' } * 2 > letters.length
+    }
+
     companion object {
-        const val PROMPT_VERSION = "extract-v2"
+        const val PROMPT_VERSION = "extract-v3"
+        private const val MIN_FOREIGN_WORDS = 3
 
         /** Exact match first, then a whitespace-insensitive match mapped back to original offsets. */
         fun locate(
@@ -150,14 +160,17 @@ class RequirementExtractor(
             2. 각 항목의 quote는 문서에서 그대로 복사한 연속된 문자열이어야 합니다. 요약하거나 고쳐 쓰지 않습니다.
             3. text는 quote를 간결한 요구 내용으로 정리한 것입니다: 원문 표현을 유지한 명사구 또는 짧은 구("PostgreSQL 프로덕션 운영 경험",
                "Kotlin 또는 Java 백엔드 경력 5년 이상"). "~이 필요하다", "~을 우대한다", "~해야 한다"처럼 category가 이미 말하는 뜻을
-               문장으로 되풀이하지 않습니다. 언어는 quote와 같은 언어를 씁니다 — 영어 공고는 영어로, 번역하지 않습니다.
-            4. category: REQUIRED(필수 자격·조건), PREFERRED(우대), RESPONSIBILITY(담당 업무·책임), SKILL(구체적 기술·도구), BEHAVIORAL(소통·협업 등 행동 역량).
-            5. 같은 조건을 두 번 넣지 않습니다. 회사 소개, 복지, 절차 안내는 요구사항이 아닙니다.
-            6. confidence는 그 문장이 요구사항이라는 확신(0~1)입니다. 문서가 모호하면 낮게 둡니다.
-            7. sourceId는 문서 context에 적힌 값을 그대로 씁니다.
+               문장으로 되풀이하지 않습니다.
+            4. text의 언어는 항상 quote의 언어입니다. 영어 문서는 영어 text("3+ years of professional React experience"), 한국어 문서는 한국어.
+               이 지시가 한국어라고 해서 번역하지 않습니다.
+            5. category: REQUIRED(필수 자격·조건), PREFERRED(우대), RESPONSIBILITY(담당 업무·책임), SKILL(구체적 기술·도구), BEHAVIORAL(소통·협업 등 행동 역량).
+            6. 같은 조건을 두 번 넣지 않습니다. 회사 소개, 복지, 절차 안내는 요구사항이 아닙니다.
+            7. confidence는 그 문장이 요구사항이라는 확신(0~1)입니다. 문서가 모호하면 낮게 둡니다.
+            8. sourceId는 문서 context에 적힌 값을 그대로 씁니다.
             """.trimIndent()
 
-        const val INSTRUCTION = "위 채용공고의 모든 요구사항을 스키마에 맞는 JSON으로만 추출하세요."
+        const val INSTRUCTION =
+            "위 채용공고의 모든 요구사항을 스키마에 맞는 JSON으로만 추출하세요. text는 문서와 같은 언어로 씁니다(번역 금지)."
 
         val OUTPUT_SCHEMA =
             """

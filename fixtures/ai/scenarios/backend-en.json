@@ -1,0 +1,66 @@
+{
+  "posting": { "title": "Senior Backend Engineer (Kotlin)", "company": "Example Payments Ltd." },
+  "requirements": [
+    {
+      "id": "11111111-1111-7111-8111-111111111201",
+      "category": "REQUIRED",
+      "text": "5+ years building backend systems in Kotlin or Java"
+    },
+    {
+      "id": "11111111-1111-7111-8111-111111111202",
+      "category": "REQUIRED",
+      "text": "Production experience with PostgreSQL"
+    },
+    {
+      "id": "11111111-1111-7111-8111-111111111203",
+      "category": "PREFERRED",
+      "text": "Experience with event-driven architecture (Kafka)"
+    }
+  ],
+  "claims": [
+    {
+      "id": "22222222-2222-7222-8222-222222222301",
+      "text": "Built and operated Kotlin/Spring Boot payment services handling 1.2M transactions per day",
+      "sourceText": "Example Fintech · Backend Engineer · 2020.02–present · payments platform, 1.2M tx/day peak",
+      "status": "SUPPORTED",
+      "evidence": [
+        {
+          "id": "33333333-3333-7333-8333-333333333401",
+          "title": "Architecture review deck (public)"
+        }
+      ],
+      "requirementIds": ["11111111-1111-7111-8111-111111111201"],
+      "score": 82
+    },
+    {
+      "id": "22222222-2222-7222-8222-222222222302",
+      "text": "Ran PostgreSQL 14 in production including a zero-downtime major version upgrade",
+      "sourceText": "Database migration project · 2023.05–2023.08",
+      "status": "CONTESTED",
+      "evidence": [
+        {
+          "id": "33333333-3333-7333-8333-333333333402",
+          "title": "Postmortem noting 12 minutes of write downtime"
+        }
+      ],
+      "requirementIds": ["11111111-1111-7111-8111-111111111202"],
+      "score": 61
+    },
+    {
+      "id": "22222222-2222-7222-8222-222222222303",
+      "text": "Introduced Kafka-based event sourcing for ledger updates",
+      "sourceText": "Ledger event pipeline · 2024.01–2024.06",
+      "status": "UNSUPPORTED",
+      "evidence": [],
+      "requirementIds": ["11111111-1111-7111-8111-111111111203"],
+      "score": 58
+    }
+  ],
+  "language": "en",
+  "documentType": "RESUME",
+  "revision": {
+    "claimId": "22222222-2222-7222-8222-222222222301",
+    "mode": "FORMAL",
+    "mustKeepNumbers": ["12"]
+  }
+}
