@@ -45,6 +45,7 @@ review: API 릴리스 시
 | GET, POST ✅          | `/applications/{id}/submissions`              | 제출 스냅샷 목록·생성 (불변, ADR-0006)                  |
 | GET ✅                | `/submission-snapshots/{id}`                  | 제출 스냅샷 상세(고정된 문서 버전 포함)                 |
 | GET, POST ✅          | `/applications/{id}/reviews`                  | 서류 결과 회고 목록과 생성                              |
+| GET ✅                | `/applications/{id}/review-context`           | 회고 비교 대상(공고·제출 스냅샷·문서 사실·매칭 판정)    |
 | GET, PATCH, DELETE    | `/reviews/{id}` ✅                            | 회고 상세, 변경, 삭제                                   |
 | POST                  | `/applications/{id}/interview-handoffs`       | iterview 인계 요청                                      |
 | GET                   | `/jobs/{id}`                                  | 비동기 작업 상태와 결과 조회                            |

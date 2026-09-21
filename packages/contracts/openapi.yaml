@@ -1338,6 +1338,27 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /applications/{id}/review-context:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [applications]
+      operationId: getReviewContext
+      summary: Comparison material for a review (A02)
+      description: |
+        Observable facts only — the posting snapshot, the latest submission and what its
+        document version contains, and the match verdicts per approved requirement. Nothing
+        here states a cause; the user may quote lines into a review's rationale.
+      responses:
+        "200":
+          description: Review context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewContext"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /reviews/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -2553,6 +2574,83 @@ components:
               type: string
             roleTitle:
               type: string
+
+    ReviewContext:
+      type: object
+      required: [applicationId, status, postingSnapshot, requirements, submissionCount]
+      properties:
+        applicationId:
+          $ref: "#/components/schemas/Uuid"
+        status:
+          $ref: "#/components/schemas/ApplicationStatus"
+        postingSnapshot:
+          type: object
+          required: [id, postingId, capturedAt, approvedRequirementCount]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            postingId:
+              $ref: "#/components/schemas/Uuid"
+            capturedAt:
+              type: string
+              format: date-time
+            approvedRequirementCount:
+              type: integer
+        submissionCount:
+          type: integer
+        submission:
+          description: The latest submission snapshot, when one exists
+          $ref: "#/components/schemas/SubmissionSnapshot"
+        document:
+          description: Facts about the submitted version (domain SubmissionFacts)
+          type: object
+          required:
+            [
+              totalBlocks,
+              blocksWithClaims,
+              supportedBlocks,
+              approvedWithoutEvidence,
+              evidenceLinkRate,
+              requirementCoverage,
+            ]
+          properties:
+            totalBlocks:
+              type: integer
+            blocksWithClaims:
+              type: integer
+            supportedBlocks:
+              type: integer
+            approvedWithoutEvidence:
+              type: integer
+            evidenceLinkRate:
+              description: 0–100
+              type: integer
+            requirementCoverage:
+              description: 0–100
+              type: integer
+        matchRunAt:
+          type: string
+          format: date-time
+        requirements:
+          description: Approved requirements, REQUIRED first
+          type: array
+          items:
+            type: object
+            required: [id, category, text, addressedBySubmission]
+            properties:
+              id:
+                $ref: "#/components/schemas/Uuid"
+              category:
+                $ref: "#/components/schemas/RequirementCategory"
+              text:
+                type: string
+              assessment:
+                $ref: "#/components/schemas/RequirementAssessment"
+              acceptedCandidates:
+                type: integer
+              addressedBySubmission:
+                description: false also when there is no submission
+                type: boolean
 
     MatchDecision:
       type: string
