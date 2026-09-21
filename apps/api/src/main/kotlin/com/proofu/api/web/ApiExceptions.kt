@@ -24,3 +24,9 @@ class InvalidRequestException(
 class NotImplementedException(
     feature: String,
 ) : RuntimeException("$feature is not available yet")
+
+/** Download attempted before the export reached READY (or after it failed). */
+class ExportNotReadyException(
+    id: Any,
+    status: String,
+) : RuntimeException("export $id is $status, not READY")

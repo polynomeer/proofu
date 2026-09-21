@@ -61,6 +61,9 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ResourceNotFoundException::class)
     fun onNotFound(e: ResourceNotFoundException): ProblemDetail = problem(ErrorCode.NOT_FOUND, e.message)
 
+    @ExceptionHandler(ExportNotReadyException::class)
+    fun onExportNotReady(e: ExportNotReadyException): ProblemDetail = problem(ErrorCode.EXPORT_NOT_READY, e.message)
+
     @ExceptionHandler(StaleVersionException::class)
     fun onStaleVersion(e: StaleVersionException): ProblemDetail = problem(ErrorCode.CONFLICT_STALE_VERSION, e.message)
 
