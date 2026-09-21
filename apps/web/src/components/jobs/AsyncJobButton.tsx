@@ -20,6 +20,9 @@ export const AI_JOB_ERRORS: Record<string, string> = {
   AI_REFUSED: "AI 제공자가 이 요청을 처리하지 않았습니다.",
   AI_OUTPUT_INVALID: "AI 응답이 검증을 통과하지 못했습니다. 다시 시도하세요.",
   AI_PROVIDER_UNAVAILABLE: "AI 제공자에 연결하지 못했습니다. 잠시 후 다시 시도하세요.",
+  AI_RATE_LIMITED: "AI 제공자 요청 한도에 걸렸습니다. 잠시 후 다시 시도하세요.",
+  AI_BILLING_BLOCKED: "AI 제공자 계정 문제로 실행할 수 없습니다. 운영자에게 전달되었습니다.",
+  AI_CONFIGURATION_ERROR: "AI 연동 설정 문제로 실행할 수 없습니다. 운영자에게 전달되었습니다.",
 };
 
 /**
