@@ -25,6 +25,13 @@ class DocumentController(
     private val documents: DocumentService,
     private val ats: AtsCheckService,
 ) {
+    @GetMapping("/document-versions/{id}/diff")
+    fun diff(
+        workspace: WorkspaceContext,
+        @PathVariable id: UUID,
+        @RequestParam against: UUID,
+    ): VersionDiffResponse = documents.diff(workspace, id, against)
+
     @GetMapping("/document-versions/{id}/ats-check")
     fun atsCheck(
         workspace: WorkspaceContext,

@@ -5,11 +5,13 @@ import com.proofu.domain.common.ClaimId
 import com.proofu.domain.common.EvidenceId
 import com.proofu.domain.common.RequirementId
 import com.proofu.domain.documents.Certainty
+import com.proofu.domain.documents.DiffKind
 import com.proofu.domain.documents.DocumentType
 import com.proofu.domain.documents.GeneratedBlock
 import com.proofu.domain.documents.ProvenanceRelation
 import com.proofu.domain.documents.ProvenanceSourceType
 import com.proofu.domain.documents.RevisionMode
+import com.proofu.domain.documents.SegmentKind
 import com.proofu.domain.documents.TemplateSection
 import com.proofu.domain.documents.VersionAuthor
 import jakarta.validation.Valid
@@ -159,4 +161,28 @@ data class DocumentList(
 
 data class DocumentVersionList(
     val items: List<DocumentVersionResponse>,
+)
+
+data class DiffSegmentResponse(
+    val kind: SegmentKind,
+    val text: String,
+)
+
+data class BlockDiffResponse(
+    val blockId: String,
+    val kind: DiffKind,
+    val changedFields: List<String>,
+    val base: DocumentBlockDto?,
+    val target: DocumentBlockDto?,
+    val textDiff: List<DiffSegmentResponse>,
+)
+
+data class VersionDiffResponse(
+    val baseVersionId: UUID,
+    val targetVersionId: UUID,
+    val added: Int,
+    val removed: Int,
+    val changed: Int,
+    val unchanged: Int,
+    val entries: List<BlockDiffResponse>,
 )

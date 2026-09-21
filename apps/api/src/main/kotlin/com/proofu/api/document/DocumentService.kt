@@ -16,6 +16,7 @@ import com.proofu.domain.documents.DocumentType
 import com.proofu.domain.documents.GeneratedOutput
 import com.proofu.domain.documents.ProvenanceSourceType
 import com.proofu.domain.documents.VersionAuthor
+import com.proofu.domain.documents.VersionDiff
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -287,6 +288,42 @@ class DocumentService(
             )
         audit.record(workspace, "document.generation_requested", TARGET, entity.id, after = mapOf("jobId" to jobId))
         return jobId
+    }
+
+    /** R02: target `{id}` against base `against`; both must be versions of the same document. */
+    @Transactional(readOnly = true)
+    fun diff(
+        workspace: WorkspaceContext,
+        targetId: UUID,
+        baseId: UUID,
+    ): VersionDiffResponse {
+        val target = getVersion(workspace, targetId)
+        val base = getVersion(workspace, baseId)
+        if (base.documentId != target.documentId) throw ResourceNotFoundException("document version", baseId)
+        val diff =
+            VersionDiff.compare(
+                GeneratedOutput(base.blocks.map(DocumentBlockDto::toDomain)),
+                GeneratedOutput(target.blocks.map(DocumentBlockDto::toDomain)),
+            )
+        return VersionDiffResponse(
+            baseVersionId = baseId,
+            targetVersionId = targetId,
+            added = diff.added,
+            removed = diff.removed,
+            changed = diff.changed,
+            unchanged = diff.unchanged,
+            entries =
+                diff.entries.map { e ->
+                    BlockDiffResponse(
+                        blockId = e.blockId,
+                        kind = e.kind,
+                        changedFields = e.changedFields,
+                        base = e.base?.let(DocumentBlockDto::from),
+                        target = e.target?.let(DocumentBlockDto::from),
+                        textDiff = e.textDiff.map { DiffSegmentResponse(it.kind, it.text) },
+                    )
+                },
+        )
     }
 
     /** Sentence revision: nothing is written; the job result is the proposal (AI feature spec "문장 개선"). */

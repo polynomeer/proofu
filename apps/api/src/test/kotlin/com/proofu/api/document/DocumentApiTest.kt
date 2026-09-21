@@ -226,6 +226,38 @@ class DocumentApiTest {
             )
         assertThat(revisionPayload).isEqualTo("experience-1|CLARIFY")
 
+        // R02: the user version against the AI version.
+        val userVersionId = saved.get("id").asString()
+        val diff = support.getJson(workspaceId, "/api/v1/document-versions/$userVersionId/diff?against=$aiVersion")
+        assertThat(diff["changed"]).isEqualTo(2)
+        assertThat(diff["unchanged"]).isEqualTo(0)
+        val entries = (diff["entries"] as List<Map<*, *>>).associateBy { it["blockId"] }
+        assertThat(entries.getValue("motivation-1")["changedFields"]).isEqualTo(listOf("approval", "references"))
+        assertThat(entries.getValue("experience-1")["changedFields"]).isEqualTo(listOf("text"))
+        assertThat(
+            (entries.getValue("experience-1")["textDiff"] as List<Map<*, *>>).map { it["kind"] },
+        ).contains("ADDED")
+        // A version of another document is not a valid base.
+        val otherDoc =
+            support.create(
+                workspaceId,
+                "/api/v1/applications/$applicationId/documents",
+                """{"type":"RESUME","title":"x"}""",
+            )
+        val otherVersion =
+            support.create(
+                workspaceId,
+                "/api/v1/documents/$otherDoc/versions",
+                """{"blocks":[{"blockId":"summary-1","text":"y","certainty":"UNSUPPORTED"}]}""",
+            )
+        client
+            .get()
+            .uri("/api/v1/document-versions/$userVersionId/diff?against=$otherVersion")
+            .header(HeaderWorkspaceResolver.HEADER, workspaceId.toString())
+            .exchange()
+            .expectStatus()
+            .isNotFound
+
         val after = support.getJson(workspaceId, "/api/v1/documents/$documentId")
         assertThat(after["pendingApprovalCount"]).isEqualTo(1)
         assertThat(after["version"]).isEqualTo(2)
