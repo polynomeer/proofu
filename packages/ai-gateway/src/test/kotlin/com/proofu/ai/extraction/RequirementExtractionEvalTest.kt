@@ -81,6 +81,13 @@ class RequirementExtractionEvalTest {
                 soft.assertThat(result.items.map { it.requirement.text + it.quote }).noneMatch { it.contains(f) }
             }
             soft.assertThat(result.items.map { it.warning }).describedAs("${file.name} spans").containsOnlyNulls()
+            // extract-v2: text stays in the posting's language and does not restate the category.
+            val english = file.name.endsWith("-en.json")
+            soft
+                .assertThat(result.items.map { it.requirement.text })
+                .describedAs("${file.name} text style")
+                .noneMatch { t -> Regex("(필요하다|우대한다|해야 한다)\\.?$").containsMatchIn(t) }
+                .allMatch { t -> if (english) !t.any { ch -> ch in '가'..'힣' } else true }
         }
         val recall = found.toDouble() / expectedTotal
         println("recall = $found/$expectedTotal = ${"%.2f".format(recall)}")

@@ -114,7 +114,7 @@ class RequirementExtractor(
     }
 
     companion object {
-        const val PROMPT_VERSION = "extract-v1"
+        const val PROMPT_VERSION = "extract-v2"
 
         /** Exact match first, then a whitespace-insensitive match mapped back to original offsets. */
         fun locate(
@@ -148,7 +148,9 @@ class RequirementExtractor(
             규칙:
             1. 문서에 실제로 적힌 조건만 추출합니다. 문서에 없는 자격, 기술, 연차, 조건을 만들지 않습니다.
             2. 각 항목의 quote는 문서에서 그대로 복사한 연속된 문자열이어야 합니다. 요약하거나 고쳐 쓰지 않습니다.
-            3. text는 quote를 한 문장의 요구사항으로 정리한 것입니다. 한국어 문서면 한국어로 씁니다.
+            3. text는 quote를 간결한 요구 내용으로 정리한 것입니다: 원문 표현을 유지한 명사구 또는 짧은 구("PostgreSQL 프로덕션 운영 경험",
+               "Kotlin 또는 Java 백엔드 경력 5년 이상"). "~이 필요하다", "~을 우대한다", "~해야 한다"처럼 category가 이미 말하는 뜻을
+               문장으로 되풀이하지 않습니다. 언어는 quote와 같은 언어를 씁니다 — 영어 공고는 영어로, 번역하지 않습니다.
             4. category: REQUIRED(필수 자격·조건), PREFERRED(우대), RESPONSIBILITY(담당 업무·책임), SKILL(구체적 기술·도구), BEHAVIORAL(소통·협업 등 행동 역량).
             5. 같은 조건을 두 번 넣지 않습니다. 회사 소개, 복지, 절차 안내는 요구사항이 아닙니다.
             6. confidence는 그 문장이 요구사항이라는 확신(0~1)입니다. 문서가 모호하면 낮게 둡니다.
