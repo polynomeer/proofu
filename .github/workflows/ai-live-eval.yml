@@ -1,0 +1,72 @@
+name: AI live evaluation
+
+# Real-model checks (docs/ai/evaluation.md §CI). They spend money and need a key, so they run
+# only on demand, weekly, or on pull requests labelled `ai-live` that touch prompts or fixtures.
+# The key lives in the `ai-live` environment secret ANTHROPIC_API_KEY, never in the repo.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 1" # Monday 09:00 KST
+  pull_request:
+    types: [labeled, synchronize, opened, reopened]
+    paths:
+      - "packages/ai-gateway/src/main/**"
+      - "packages/domain/src/main/kotlin/com/proofu/domain/documents/**"
+      - "fixtures/ai/**"
+      - "scripts/ai-live-check.sh"
+      - ".github/workflows/ai-live-eval.yml"
+
+concurrency:
+  group: ai-live-eval
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: Extraction, explanation, drafting, revision against claude-opus-5
+    # Manual and scheduled runs always; PRs only when someone opted in with the label.
+    if: >-
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'ai-live')
+    runs-on: ubuntu-latest
+    environment: ai-live
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Require the key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY is not configured in the ai-live environment"; exit 1
+          fi
+      - name: Run live checks
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AI_LIVE_SUMMARY: ${{ runner.temp }}/ai-live-summary.md
+        run: scripts/ai-live-check.sh
+      - name: Publish summary
+        if: always()
+        run: |
+          {
+            echo "## AI live evaluation"
+            echo
+            echo "Model outputs below are for a human to read; assertions cover grounding guards only."
+            echo
+            cat "${{ runner.temp }}/ai-live-summary.md" 2>/dev/null || echo "(no summary produced)"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-live-eval-report
+          path: packages/ai-gateway/build/reports/tests/test
+          retention-days: 30

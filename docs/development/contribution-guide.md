@@ -63,3 +63,7 @@ pnpm install && pnpm dev --filter web               # http://localhost:3000
 ./gradlew check                                     # JVM 테스트 + lint
 pnpm check                                          # web/contracts lint + typecheck
 ```
+
+## AI 프롬프트 변경
+
+`packages/ai-gateway`의 프롬프트나 `fixtures/ai`를 바꾸는 PR은 `PROMPT_VERSION`을 올리고 `ai-live` 라벨을 붙여 실모델 평가(`ai-live-eval.yml`)를 통과시킨 뒤, `docs/ai/evaluation.md` 실행 기록에 한 줄을 남깁니다. 로컬은 `scripts/ai-live-check.sh`(키는 `.env`).

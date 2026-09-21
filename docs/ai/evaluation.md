@@ -31,6 +31,13 @@ scripts/ai-live-check.sh       # SDK 스모크 → 추출 평가 → 설명·초
 | `RequirementExtractionEvalTest` | `fixtures/ai/postings`  | 기대 인용 재현율 ≥ 90%, 금지 항목 0건, 모든 항목의 원문 구간 해결                                                                                       | 항목별 분류·인용                            |
 | `LivePromptEvalTest`            | `fixtures/ai/scenarios` | 설명: 제안 쌍마다 1개·버림 0 / 초안: 섹션 ≥ 2·컨텍스트 밖 참조 0·certainty 상한 보정 0·새 수치 0 / 문장 개선: 가드 통과·수치 보존·(SHORTEN이면) 더 짧음 | 설명 문장, 초안 블록, 개선 문장과 변경 이유 |
 
+### CI 정책
+
+- 일반 CI(`ci.yml`)는 라이브 평가를 **실행하지 않습니다**(키 없음 → `@EnabledIfEnvironmentVariable`로 건너뜀). 가짜 제공자 테스트만 매 커밋 검증합니다.
+- 별도 워크플로 `ai-live-eval.yml`이 실모델 평가를 돌립니다. 트리거: **수동(`workflow_dispatch`)**, **매주 월요일 09:00 KST**, 그리고 프롬프트·픽스처·가드(`packages/ai-gateway/src/main`, `domain/documents`, `fixtures/ai`)를 건드린 PR에 **`ai-live` 라벨을 붙였을 때**. 라벨 없는 PR은 돈을 쓰지 않습니다.
+- 키는 GitHub 환경 `ai-live`의 secret `ANTHROPIC_API_KEY`에만 둡니다(환경 보호 규칙으로 승인자를 둘 수 있음). 동시 실행 1건, 20분 제한.
+- 결과는 잡 요약(`GITHUB_STEP_SUMMARY`)에 모델 출력이 그대로 실리고 HTML 리포트가 30일 보관됩니다. 프롬프트 버전을 올리는 PR은 요약을 읽고 아래 실행 기록 표에 한 줄을 남깁니다.
+
 기계 판정은 근거화 정책의 하한이고, 사실성·관련성·구체성·문체는 위 표대로 사람이 출력을 읽고 채점합니다. 회당 비용은 $0.5 미만(Opus 5)이며 `ai_executions`에는 기록되지 않습니다(테스트 recorder는 콘솔 출력만). 평가 세트가 커지면 `packages/ai-evaluation`으로 분리합니다. 개인 실제 데이터는 동의 없이 공용 평가 세트에 포함하지 않습니다. 모델과 프롬프트 변경은 고정 평가 세트 회귀 테스트를 통과해야 합니다.
 
 ## 실행 기록
