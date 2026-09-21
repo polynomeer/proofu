@@ -37,6 +37,7 @@ review: API 릴리스 시
 | GET, PATCH, DELETE    | `/applications/{id}` ✅                       | 지원 상세(상태 이력), 마감일 변경, 삭제                 |
 | POST                  | `/applications/{id}/transitions` ✅           | 상태 전이 (도메인 허용 목록만)                          |
 | POST                  | `/applications/{id}/match-jobs`               | Evidence 매칭 작업 시작 (202)                           |
+| GET ✅                | `/documents`                                  | 워크스페이스 문서 목록 (cursor, type, q)                |
 | GET, POST ✅          | `/applications/{id}/documents`                | 지원 건의 문서 목록·생성                                |
 | GET ✅                | `/documents/{id}`                             | 문서 상세(최신 버전, 템플릿 섹션)                       |
 | POST ✅               | `/documents/{id}/generation-jobs`             | 문서 버전 생성 (202, `document.generation`)             |

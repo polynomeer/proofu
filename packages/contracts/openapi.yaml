@@ -1480,6 +1480,41 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /documents:
+    get:
+      tags: [documents]
+      operationId: listDocuments
+      summary: Documents across the workspace, most recently updated first
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/DocumentType"
+        - name: q
+          in: query
+          description: Substring match on the title, company or role
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Page of documents
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Document"
+                  nextCursor:
+                    type: [string, "null"]
+        default:
+          $ref: "#/components/responses/Problem"
+
   /applications/{id}/documents:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -3108,6 +3143,16 @@ components:
         latestVersionCreatedBy:
           type: string
           enum: [USER, AI]
+        company:
+          description: Of the application the document belongs to
+          type: string
+        roleTitle:
+          type: string
+        applicationStatus:
+          $ref: "#/components/schemas/ApplicationStatus"
+        submissionCount:
+          description: Submission snapshots that froze a version of this document
+          type: integer
         version:
           type: integer
           format: int64
