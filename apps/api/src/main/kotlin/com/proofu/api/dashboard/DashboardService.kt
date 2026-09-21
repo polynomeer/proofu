@@ -205,40 +205,108 @@ class DashboardService(
             ws,
         )
 
-    /** At most three, ordered by how directly they hurt the "evidence first" promise. */
+    /**
+     * Up to [MAX_ATTENTION] items in [AttentionCode] order: application deadlines and results
+     * first, then the AI approval queue, then gaps in the evidence chain.
+     */
     private fun attention(
         ws: UUID,
         kpis: DashboardKpis,
     ): List<AttentionItem> {
         if (kpis.careerEntries.total == 0) return listOf(AttentionItem(AttentionCode.NO_CAREER_ENTRIES, 0))
-        val entriesWithoutProjects =
-            jdbc.queryForObject(
-                """
-                select count(*) from career_entries ce
-                where ce.workspace_id = ? and ce.deleted_at is null and ce.type = 'EMPLOYMENT'
-                  and not exists (select 1 from projects p where p.career_entry_id = ce.id and p.deleted_at is null)
-                """.trimIndent(),
-                Int::class.java,
-                ws,
-            ) ?: 0
-        return listOfNotNull(
-            (kpis.evidenceCoverage.claims - kpis.evidenceCoverage.supported)
-                .takeIf { it > 0 }
-                ?.let { AttentionItem(AttentionCode.UNSUPPORTED_CLAIMS, it) },
-            jdbc
-                .queryForObject(
-                    "select count(*) from evidence where workspace_id = ? and deleted_at is null and verification = 'UNVERIFIED'",
-                    Int::class.java,
-                    ws,
-                ).takeIf { it != null && it > 0 }
-                ?.let { AttentionItem(AttentionCode.UNVERIFIED_EVIDENCE, it) },
-            entriesWithoutProjects.takeIf { it > 0 }?.let { AttentionItem(AttentionCode.ENTRIES_WITHOUT_PROJECTS, it) },
-        ).take(MAX_ATTENTION)
+        val now = Instant.now(clock)
+        val counts =
+            mapOf(
+                AttentionCode.DEADLINES_SOON to
+                    count(
+                        """
+                        select count(*) from applications
+                        where workspace_id = ? and deleted_at is null and status in ('INTERESTED', 'PREPARING')
+                          and deadline_at is not null and deadline_at between ? and ?
+                        """.trimIndent(),
+                        ws,
+                        Timestamp.from(now),
+                        Timestamp.from(now.plus(DEADLINE_WINDOW_DAYS, ChronoUnit.DAYS)),
+                    ),
+                AttentionCode.REVIEWS_PENDING to
+                    count(
+                        """
+                        select count(*) from applications a
+                        where a.workspace_id = ? and a.deleted_at is null
+                          and a.status in ('DOCUMENT_REJECTED', 'NO_RESPONSE', 'REVIEW_PENDING')
+                          and not exists (select 1 from reviews r where r.application_id = a.id)
+                        """.trimIndent(),
+                        ws,
+                    ),
+                AttentionCode.DRAFT_REQUIREMENTS to
+                    count(
+                        """
+                        select count(*) from requirements r
+                        join job_posting_snapshots s on s.id = r.snapshot_id
+                        join job_postings p on p.id = s.posting_id
+                        where p.workspace_id = ? and p.deleted_at is null and r.deleted_at is null and r.status = 'DRAFT'
+                        """.trimIndent(),
+                        ws,
+                    ),
+                AttentionCode.MATCH_NOT_RUN to
+                    count(
+                        """
+                        select count(*) from applications a
+                        where a.workspace_id = ? and a.deleted_at is null and a.status in ('INTERESTED', 'PREPARING')
+                          and exists (select 1 from requirements r where r.snapshot_id = a.snapshot_id
+                                        and r.status = 'APPROVED' and r.deleted_at is null)
+                          and not exists (select 1 from jobs j where j.workspace_id = a.workspace_id
+                                            and j.type = 'application.match' and j.status = 'SUCCEEDED'
+                                            and j.payload ->> 'applicationId' = a.id::text)
+                        """.trimIndent(),
+                        ws,
+                    ),
+                AttentionCode.BLOCKS_PENDING_APPROVAL to
+                    count(
+                        """
+                        select count(*) from documents d
+                        join lateral (
+                            select v.content_json from document_versions v where v.document_id = d.id
+                            order by v.created_at desc, v.id desc limit 1
+                        ) lv on true
+                        where d.workspace_id = ? and d.deleted_at is null
+                          and exists (
+                            select 1 from jsonb_array_elements(lv.content_json -> 'blocks') b
+                            where b ->> 'certainty' <> 'SUPPORTED' and coalesce((b ->> 'approvedByUser')::boolean, false) = false
+                          )
+                        """.trimIndent(),
+                        ws,
+                    ),
+                AttentionCode.UNSUPPORTED_CLAIMS to (kpis.evidenceCoverage.claims - kpis.evidenceCoverage.supported),
+                AttentionCode.UNVERIFIED_EVIDENCE to
+                    count(
+                        "select count(*) from evidence where workspace_id = ? and deleted_at is null and verification = 'UNVERIFIED'",
+                        ws,
+                    ),
+                AttentionCode.ENTRIES_WITHOUT_PROJECTS to
+                    count(
+                        """
+                        select count(*) from career_entries ce
+                        where ce.workspace_id = ? and ce.deleted_at is null and ce.type = 'EMPLOYMENT'
+                          and not exists (select 1 from projects p where p.career_entry_id = ce.id and p.deleted_at is null)
+                        """.trimIndent(),
+                        ws,
+                    ),
+            )
+        return AttentionCode.entries
+            .mapNotNull { code -> counts[code]?.takeIf { it > 0 }?.let { AttentionItem(code, it) } }
+            .take(MAX_ATTENTION)
     }
+
+    private fun count(
+        sql: String,
+        vararg args: Any,
+    ): Int = jdbc.queryForObject(sql, Int::class.java, *args) ?: 0
 
     private companion object {
         const val TIMELINE_LIMIT = 5
         const val RECENT_EVIDENCE_LIMIT = 4
         const val MAX_ATTENTION = 3
+        const val DEADLINE_WINDOW_DAYS = 7L
     }
 }

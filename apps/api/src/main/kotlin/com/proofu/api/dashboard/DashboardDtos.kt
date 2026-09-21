@@ -61,11 +61,17 @@ data class RecentEvidenceItem(
     val capturedAt: Instant,
 )
 
+/** Ordered by how urgently the user should act; the dashboard shows the first few. */
 enum class AttentionCode {
+    NO_CAREER_ENTRIES,
+    DEADLINES_SOON,
+    REVIEWS_PENDING,
+    DRAFT_REQUIREMENTS,
+    MATCH_NOT_RUN,
+    BLOCKS_PENDING_APPROVAL,
     UNSUPPORTED_CLAIMS,
     UNVERIFIED_EVIDENCE,
     ENTRIES_WITHOUT_PROJECTS,
-    NO_CAREER_ENTRIES,
 }
 
 data class AttentionItem(

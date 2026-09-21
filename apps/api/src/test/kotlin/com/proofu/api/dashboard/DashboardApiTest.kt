@@ -139,6 +139,57 @@ class DashboardApiTest {
     }
 
     @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `application flow items outrank evidence gaps and are capped at three`() {
+        support.create(
+            workspaceId,
+            "/api/v1/career-entries",
+            """{"type":"EMPLOYMENT","title":"E","startDate":"2022-01-01"}""",
+        )
+        val imported =
+            client
+                .post()
+                .uri("/api/v1/job-postings/import")
+                .header(HeaderWorkspaceResolver.HEADER, workspaceId.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"source":"MANUAL_TEXT","company":"ABC","roleTitle":"PM","text":"SaaS 제품 기획 경험"}""")
+                .exchange()
+                .expectBody(String::class.java)
+                .returnResult()
+                .responseBody
+        val snapshotId = mapper.readTree(imported).get("snapshotId").asString()
+        // Approved requirement + no match run → MATCH_NOT_RUN; a DRAFT requirement → DRAFT_REQUIREMENTS.
+        support.create(
+            workspaceId,
+            "/api/v1/job-posting-snapshots/$snapshotId/requirements",
+            """{"category":"REQUIRED","text":"SaaS 제품 기획 경험"}""",
+        )
+        jdbc.update(
+            "insert into requirements (id, snapshot_id, category, text, confidence, origin, status, sort_order) values (?, ?::uuid, 'SKILL', 'Draft', 0.5, 'AI', 'DRAFT', 9)",
+            UUID.randomUUID(),
+            snapshotId,
+        )
+        val soon = support.create(workspaceId, "/api/v1/applications", """{"snapshotId":"$snapshotId"}""")
+        jdbc.update("update applications set deadline_at = now() + interval '3 days' where id = ?", soon)
+        val rejected = support.create(workspaceId, "/api/v1/applications", """{"snapshotId":"$snapshotId"}""")
+        jdbc.update("update applications set status = 'DOCUMENT_REJECTED' where id = ?", rejected)
+
+        val codes = (dashboard()["attention"] as List<Map<String, Any?>>).map { it["code"] to it["count"] }
+        assertThat(codes).containsExactly("DEADLINES_SOON" to 1, "REVIEWS_PENDING" to 1, "DRAFT_REQUIREMENTS" to 1)
+
+        // Once the drafts are gone and a match ran for the deadline one, the next items surface.
+        jdbc.update("delete from requirements where status = 'DRAFT' and snapshot_id = ?::uuid", snapshotId)
+        jdbc.update(
+            "insert into jobs (id, workspace_id, type, status, payload, finished_at) values (?, ?, 'application.match', 'SUCCEEDED', ?::jsonb, now())",
+            UUID.randomUUID(),
+            workspaceId,
+            """{"applicationId":"$soon"}""",
+        )
+        val after = (dashboard()["attention"] as List<Map<String, Any?>>).map { it["code"] }
+        assertThat(after).containsExactly("DEADLINES_SOON", "REVIEWS_PENDING", "ENTRIES_WITHOUT_PROJECTS")
+    }
+
+    @Test
     fun `other workspaces do not leak into the summary`() {
         support.create(
             workspaceId,

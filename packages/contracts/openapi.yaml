@@ -2048,7 +2048,11 @@ components:
                 format: date-time
         attention:
           type: array
-          description: Up to three items that need the user's action, most impactful first
+          description: |
+            Up to three items that need the user's action, most urgent first: application
+            deadlines within 7 days, results awaiting a review, AI requirement drafts to approve,
+            applications with approved requirements but no match run, documents whose latest
+            version has unapproved blocks, then gaps in the evidence chain.
           items:
             type: object
             required: [code, count]
@@ -2057,10 +2061,15 @@ components:
                 type: string
                 enum:
                   [
+                    NO_CAREER_ENTRIES,
+                    DEADLINES_SOON,
+                    REVIEWS_PENDING,
+                    DRAFT_REQUIREMENTS,
+                    MATCH_NOT_RUN,
+                    BLOCKS_PENDING_APPROVAL,
                     UNSUPPORTED_CLAIMS,
                     UNVERIFIED_EVIDENCE,
                     ENTRIES_WITHOUT_PROJECTS,
-                    NO_CAREER_ENTRIES,
                   ]
               count:
                 type: integer
