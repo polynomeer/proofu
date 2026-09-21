@@ -202,3 +202,26 @@ export const versionAuthorLabel = labelsOf<"USER" | "AI">({
   USER: "사용자",
   AI: "AI 초안",
 });
+
+export const exportFormatLabel = labelsOf<Schema<"ExportFormat">>({
+  DOCX: "Word (DOCX)",
+  PDF: "PDF",
+  MARKDOWN: "Markdown",
+  JSON: "JSON",
+});
+
+export const EXPORT_FORMATS: readonly Schema<"ExportFormat">[] = [
+  "DOCX",
+  "PDF",
+  "MARKDOWN",
+  "JSON",
+];
+
+export const exportStatusLabel = labelsOf<Schema<"ExportStatus">>({
+  REQUESTED: "대기",
+  RENDERING: "렌더링 중",
+  VALIDATING: "검증 중",
+  READY: "준비됨",
+  FAILED: "실패",
+  EXPIRED: "만료",
+});

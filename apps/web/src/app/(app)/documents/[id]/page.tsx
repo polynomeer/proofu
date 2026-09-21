@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DocumentEditor } from "@/components/document/DocumentEditor";
+import { ExportPanel } from "@/components/document/ExportPanel";
 import { GenerateDraftButton } from "@/components/document/GenerateDraftButton";
 import { Chip } from "@/components/ui/Chip";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -34,6 +35,9 @@ export default async function DocumentPage({ params }: { params: Params }) {
     matches?.groups.flatMap((g) => g.candidates.filter((c) => c.userDecision === "ACCEPTED")) ?? [];
   const latest = doc.latestVersion ?? null;
   const blocks = latest?.blocks ?? [];
+  const { data: exports } = latest
+    ? await api.GET("/document-versions/{id}/exports", { params: { path: { id: latest.id } } })
+    : { data: undefined };
 
   return (
     <>
@@ -142,6 +146,11 @@ export default async function DocumentPage({ params }: { params: Params }) {
               공고 매칭에서 바꾸기
             </Link>
           </div>
+          <ExportPanel
+            versionId={latest?.id ?? null}
+            pendingApproval={doc.pendingApprovalCount}
+            initialItems={exports?.items ?? []}
+          />
           <div className="rounded-md border border-border-300 bg-surface-000 p-4">
             <h2 className="text-card-title">버전 기록</h2>
             {!versions || versions.items.length === 0 ? (

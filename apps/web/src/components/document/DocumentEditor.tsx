@@ -134,13 +134,6 @@ export function DocumentEditor({
             <Icon name="check" size={16} />
             버전 저장
           </Button>
-          <Button
-            variant="secondary"
-            disabled
-            title="DOCX 렌더링 라이브러리 결정 후 제공됩니다 (docs/project/open-decisions.md)"
-          >
-            내보내기
-          </Button>
         </div>
       </div>
       {problem ? <ErrorState title="저장할 수 없습니다" description={problem} /> : null}
