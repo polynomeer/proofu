@@ -10,7 +10,7 @@ review: 도메인 변경 시
 - Document Version은 부모 버전, 선택된 원천 revision, 공고 snapshot, 프롬프트 템플릿 버전, 모델 식별자를 참조합니다.
 - 사용자 편집과 AI 생성 변경을 구분해 기록합니다 (`created_by`: `USER` | `AI`).
 - Submission Snapshot은 생성 후 수정하지 않으며 정정이 필요하면 새 스냅샷을 만듭니다.
-- 비교는 문서 전체뿐 아니라 섹션 및 문장 단위 변경 유형을 표시합니다.
+- 비교는 문서 전체뿐 아니라 섹션 및 문장 단위 변경 유형을 표시합니다. `VersionDiff.compare(base, target)`가 블록 id 기준으로 추가·삭제·변경(텍스트·certainty·승인·참조)·동일을 판정하고, 변경된 텍스트는 단어 단위 LCS로 같은/추가/삭제 구간을 냅니다 (`GET /document-versions/{id}/diff?against=`).
 
 ## Provenance
 
