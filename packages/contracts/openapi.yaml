@@ -1732,6 +1732,30 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /document-versions/{id}/diff:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [documents]
+      operationId: diffDocumentVersions
+      summary: Block-by-block differences from another version of the same document (R02)
+      parameters:
+        - name: against
+          in: query
+          required: true
+          description: The base version; `{id}` is the target. Both must belong to the same document.
+          schema:
+            $ref: "#/components/schemas/Uuid"
+      responses:
+        "200":
+          description: Diff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionDiff"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /document-versions/{id}/ats-check:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -2147,6 +2171,63 @@ components:
     AtsSeverity:
       type: string
       enum: [PASS, INFO, WARN]
+
+    DiffKind:
+      type: string
+      enum: [ADDED, REMOVED, CHANGED, UNCHANGED]
+
+    DiffSegment:
+      type: object
+      required: [kind, text]
+      properties:
+        kind:
+          type: string
+          enum: [SAME, ADDED, REMOVED]
+        text:
+          type: string
+
+    BlockDiff:
+      type: object
+      required: [blockId, kind, changedFields, textDiff]
+      properties:
+        blockId:
+          type: string
+        kind:
+          $ref: "#/components/schemas/DiffKind"
+        changedFields:
+          description: text, certainty, approval, references
+          type: array
+          items:
+            type: string
+        base:
+          $ref: "#/components/schemas/DocumentBlock"
+        target:
+          $ref: "#/components/schemas/DocumentBlock"
+        textDiff:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiffSegment"
+
+    VersionDiff:
+      type: object
+      required: [baseVersionId, targetVersionId, added, removed, changed, unchanged, entries]
+      properties:
+        baseVersionId:
+          $ref: "#/components/schemas/Uuid"
+        targetVersionId:
+          $ref: "#/components/schemas/Uuid"
+        added:
+          type: integer
+        removed:
+          type: integer
+        changed:
+          type: integer
+        unchanged:
+          type: integer
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlockDiff"
 
     AtsFinding:
       type: object

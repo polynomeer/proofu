@@ -45,6 +45,7 @@ review: API 릴리스 시
 | GET, POST ✅          | `/documents/{id}/versions`                    | 버전 조회와 사용자 버전 생성                            |
 | GET ✅                | `/document-versions/{id}`                     | 버전 상세(블록, provenance)                             |
 | GET, POST ✅          | `/document-versions/{id}/exports`             | 내보내기 목록·시작 (202, `document.export`; PDF는 501)  |
+| GET ✅                | `/document-versions/{id}/diff?against=`       | 두 버전의 블록·단어 단위 비교 (R02)                     |
 | GET ✅                | `/document-versions/{id}/ats-check`           | ATS 호환성 검사 결과(점수 없음)                         |
 | GET ✅                | `/exports/{id}`                               | 내보내기 상태·파일 메타데이터                           |
 | GET ✅                | `/exports/{id}/file`                          | READY 산출물 다운로드 (첨부)                            |
