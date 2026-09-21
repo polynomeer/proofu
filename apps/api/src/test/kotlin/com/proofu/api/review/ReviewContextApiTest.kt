@@ -121,6 +121,17 @@ class ReviewContextApiTest {
         assertThat(document["approvedWithoutEvidence"]).isEqualTo(2)
         assertThat(document["evidenceLinkRate"]).isEqualTo(50)
         assertThat(document["requirementCoverage"]).isEqualTo(50)
+        val ats = after["ats"] as Map<String, Any?>
+        assertThat(ats["documentVersionId"]).isEqualTo(version.toString())
+        val findings = (ats["findings"] as List<Map<*, *>>).associateBy { it["code"] }
+        assertThat(findings.getValue("KEYWORDS")["details"]).isEqualTo(listOf("SaaS 제품 기획 경험", "Kotlin"))
+        assertThat(findings.getValue("CONTACT")["severity"]).isEqualTo("WARN")
+        assertThat(findings.getValue("FILE_FORMAT")["severity"]).isEqualTo("INFO")
+        assertThat(before["ats"]).isNull()
+
+        // The same report is served on its own endpoint.
+        val direct = support.getJson(workspaceId, "/api/v1/document-versions/$version/ats-check")
+        assertThat(direct["warnings"]).isEqualTo(ats["warnings"])
         val reqs = after["requirements"] as List<Map<*, *>>
         assertThat(reqs.first { it["id"] == reqSaas.toString() }["addressedBySubmission"]).isEqualTo(true)
         assertThat(reqs.first { it["id"] == reqKotlin.toString() }["addressedBySubmission"]).isEqualTo(false)

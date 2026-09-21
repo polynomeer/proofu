@@ -18,7 +18,14 @@ import java.util.UUID
 @RequestMapping(ApiPaths.V1)
 class DocumentController(
     private val documents: DocumentService,
+    private val ats: AtsCheckService,
 ) {
+    @GetMapping("/document-versions/{id}/ats-check")
+    fun atsCheck(
+        workspace: WorkspaceContext,
+        @PathVariable id: UUID,
+    ): AtsReportResponse = ats.check(workspace, id)
+
     @GetMapping("/applications/{id}/documents")
     fun listForApplication(
         workspace: WorkspaceContext,

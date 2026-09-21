@@ -1,6 +1,8 @@
 package com.proofu.api.review
 
 import com.proofu.api.application.ApplicationService
+import com.proofu.api.document.AtsCheckService
+import com.proofu.api.document.AtsReportResponse
 import com.proofu.api.document.DocumentBlockDto
 import com.proofu.api.document.DocumentVersionStore
 import com.proofu.api.identity.WorkspaceContext
@@ -52,6 +54,7 @@ data class ReviewContext(
     val submission: SubmissionResponse?,
     val document: ReviewDocumentFacts?,
     val matchRunAt: Instant?,
+    val ats: AtsReportResponse?,
     val requirements: List<ReviewRequirementFact>,
 )
 
@@ -62,6 +65,7 @@ class ReviewContextService(
     private val matches: MatchReportService,
     private val submissions: SubmissionService,
     private val versions: DocumentVersionStore,
+    private val ats: AtsCheckService,
 ) {
     @Transactional(readOnly = true)
     fun context(
@@ -102,6 +106,7 @@ class ReviewContextService(
                     )
                 },
             matchRunAt = report.lastRunAt,
+            ats = latest?.let { ats.check(workspace, it.documentVersionId) },
             requirements =
                 report.groups.map { g ->
                     ReviewRequirementFact(
