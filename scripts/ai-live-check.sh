@@ -3,8 +3,15 @@
 # Needs ANTHROPIC_API_KEY in the environment (never pass it as an argument or commit it).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# A local .env (git-ignored) is the easiest place to keep the key; it is loaded, never printed.
+if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
 if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-  echo "ANTHROPIC_API_KEY is not set. Export it in your shell first (see .env.example)." >&2
+  echo "ANTHROPIC_API_KEY is not set. Either export it in this shell or put it in .env (copy .env.example; .env is git-ignored)." >&2
   exit 2
 fi
 echo "Live checks: SDK smoke → extraction eval (fixtures/ai/postings) → explain/draft/revise eval (fixtures/ai/scenarios)"
