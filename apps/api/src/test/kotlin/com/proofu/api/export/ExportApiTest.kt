@@ -82,7 +82,6 @@ class ExportApiTest {
                 "/api/v1/documents/$documentId/versions",
                 """{"parentVersionId":"$pendingVersion","blocks":[{"blockId":"summary-1","text":"요약","certainty":"UNSUPPORTED","approvedByUser":true}]}""",
             )
-        start(approved, "PDF").expectStatus().isEqualTo(501)
 
         val first =
             mapper.readTree(

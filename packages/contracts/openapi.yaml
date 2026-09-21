@@ -1649,10 +1649,10 @@ paths:
     post:
       tags: [documents, async]
       operationId: startExport
-      summary: Render a version to DOCX, Markdown or JSON (asynchronous)
+      summary: Render a version to DOCX, PDF, Markdown or JSON (asynchronous)
       description: |
         Rejected with `UNSUPPORTED_CLAIM_IN_EXPORT` while any INFERRED or UNSUPPORTED block is
-        unapproved, and with `NOT_IMPLEMENTED` for PDF (ADR-0009). Creates an export in
+        unapproved (ADR-0009). Creates an export in
         REQUESTED and a `document.export` job whose result carries `exportId`; a pending job for
         the same version and format is returned instead of a duplicate. A READY export of the
         same version, format and template is reused without rendering again.

@@ -54,10 +54,29 @@ class DocumentExportJobHandlerTest {
         assertThat(reused["status"]).isEqualTo("READY")
         assertThat(reused["object_key"]).isEqualTo("pg:${first.export}")
         assertThat(reused["sha256"]).isEqualTo(export["sha256"])
-        assertThat(jdbc.queryForObject("select count(*) from export_files", Long::class.java)).isEqualTo(1L)
+        assertThat(
+            jdbc.queryForObject(
+                "select count(*) from export_files where object_key like ?",
+                Long::class.java,
+                "pg:${first.export}%",
+            ),
+        ).isEqualTo(1L)
         assertThat(
             jdbc.queryForObject("select result ->> 'reused' from jobs where id = ?", String::class.java, second.job),
         ).isEqualTo("true")
+
+        // PDF: embedded Korean font, page count recorded.
+        val pdf = requestExport(s, "PDF")
+        awaitStatus(pdf.job, "SUCCEEDED")
+        val pdfRow =
+            jdbc.queryForMap(
+                "select status, page_count, mime_type, renderer_version from exports where id = ?",
+                pdf.export,
+            )
+        assertThat(pdfRow["status"]).isEqualTo("READY")
+        assertThat(pdfRow["page_count"]).isEqualTo(1)
+        assertThat(pdfRow["mime_type"]).isEqualTo("application/pdf")
+        assertThat(pdfRow["renderer_version"]).isEqualTo("pdf-openpdf-1")
 
         // An unapproved version fails at the gate and the export records why.
         val pending = version(s.documentId, approved = false)
