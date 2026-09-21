@@ -1624,6 +1624,27 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /document-versions/{id}/ats-check:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [documents]
+      operationId: getAtsCheck
+      summary: Deterministic ATS compatibility findings for a version
+      description: |
+        Facts only (documents §ATS 검사): section structure, requirement keywords, contact
+        parseability, date format consistency, layout, submittable file formats and length.
+        No score and no outcome prediction.
+      responses:
+        "200":
+          description: ATS report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AtsReport"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /document-versions/{id}/exports:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -2011,6 +2032,38 @@ components:
     ExportStatus:
       type: string
       enum: [REQUESTED, RENDERING, VALIDATING, READY, FAILED, EXPIRED]
+
+    AtsSeverity:
+      type: string
+      enum: [PASS, INFO, WARN]
+
+    AtsFinding:
+      type: object
+      required: [code, severity, message, details]
+      properties:
+        code:
+          type: string
+        severity:
+          $ref: "#/components/schemas/AtsSeverity"
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+
+    AtsReport:
+      type: object
+      required: [documentVersionId, warnings, findings]
+      properties:
+        documentVersionId:
+          $ref: "#/components/schemas/Uuid"
+        warnings:
+          type: integer
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/AtsFinding"
 
     Export:
       type: object
@@ -2745,6 +2798,9 @@ components:
         matchRunAt:
           type: string
           format: date-time
+        ats:
+          description: ATS findings for the submitted version, when there is a submission
+          $ref: "#/components/schemas/AtsReport"
         requirements:
           description: Approved requirements, REQUIRED first
           type: array
