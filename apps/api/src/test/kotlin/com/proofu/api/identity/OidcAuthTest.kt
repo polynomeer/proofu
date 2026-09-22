@@ -243,4 +243,105 @@ class OidcAuthTest {
             .jsonPath("$.visibility")
             .isEqualTo("SELECTIVE")
     }
+
+    @Test
+    fun `a full data export is requested once, listed, and downloaded only after a recent login`() {
+        val subject = UUID.randomUUID().toString()
+        val token = idp.token(subject)
+        get("/api/v1/career-entries", token).expectStatus().isOk
+        val first =
+            client
+                .post()
+                .uri("/api/v1/me/exports")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus()
+                .isAccepted
+                .expectBody(Map::class.java)
+                .returnResult()
+                .responseBody!!["jobId"]
+        // A second request while the first is queued reuses the job and the export row.
+        val second =
+            client
+                .post()
+                .uri("/api/v1/me/exports")
+                .header("Authorization", "Bearer $token")
+                .exchange()
+                .expectStatus()
+                .isAccepted
+                .expectBody(Map::class.java)
+                .returnResult()
+                .responseBody!!["jobId"]
+        assertThat(second).isEqualTo(first)
+        val exportId =
+            get("/api/v1/me/exports", token)
+                .expectStatus()
+                .isOk
+                .expectBody()
+                .jsonPath("$.items.length()")
+                .isEqualTo(1)
+                .jsonPath("$.items[0].status")
+                .isEqualTo("REQUESTED")
+                .jsonPath("$.items[0].jobId")
+                .isEqualTo(first.toString())
+                .returnResult()
+                .responseBody!!
+                .let {
+                    jdbc.queryForObject(
+                        "select id from account_exports where job_id = ?",
+                        UUID::class.java,
+                        UUID.fromString(first.toString()),
+                    )
+                }
+
+        // Not ready yet: 409, not a partial file.
+        get("/api/v1/me/exports/$exportId/file", token)
+            .expectStatus()
+            .isEqualTo(409)
+            .expectBody()
+            .jsonPath("$.code")
+            .isEqualTo("EXPORT_NOT_READY")
+
+        // Simulate the worker.
+        jdbc.update(
+            "insert into export_files (object_key, content) values (?, ?)",
+            "pg:account:$exportId",
+            "PK".toByteArray(),
+        )
+        jdbc.update(
+            "update account_exports set status = 'READY', object_key = ?, sha256 = repeat('a', 64), size_bytes = 2, expires_at = now() + interval '7 days' where id = ?",
+            "pg:account:$exportId",
+            exportId,
+        )
+        val stale = Instant.now().minus(Duration.ofHours(1))
+        get("/api/v1/me/exports/$exportId/file", idp.token(subject, authTime = stale))
+            .expectStatus()
+            .isUnauthorized
+            .expectBody()
+            .jsonPath("$.code")
+            .isEqualTo("REAUTHENTICATION_REQUIRED")
+        get("/api/v1/me/exports/$exportId/file", token)
+            .expectStatus()
+            .isOk
+            .expectHeader()
+            .contentType("application/zip")
+            .expectHeader()
+            .valueMatches("Content-Disposition", "attachment; filename=\"proofu-data-.*[.]zip\"")
+            .expectHeader()
+            .valueEquals("Cache-Control", "private, no-store")
+            .expectBody(ByteArray::class.java)
+            .isEqualTo("PK".toByteArray())
+
+        // Another user cannot see it at all.
+        get("/api/v1/me/exports/$exportId/file", idp.token(UUID.randomUUID().toString())).expectStatus().isNotFound
+
+        // Expired: refused like not-ready.
+        jdbc.update("update account_exports set expires_at = now() - interval '1 day' where id = ?", exportId)
+        get("/api/v1/me/exports/$exportId/file", token)
+            .expectStatus()
+            .isEqualTo(409)
+            .expectBody()
+            .jsonPath("$.code")
+            .isEqualTo("EXPORT_NOT_READY")
+    }
 }
