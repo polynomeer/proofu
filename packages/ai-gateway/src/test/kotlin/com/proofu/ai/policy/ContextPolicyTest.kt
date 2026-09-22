@@ -29,8 +29,10 @@ class ContextPolicyTest {
             without.excluded,
         ).containsEntry("b", ExclusionReason.SENSITIVITY).containsEntry("c", ExclusionReason.SENSITIVITY)
 
+        // Consent unlocks CONFIDENTIAL; RESTRICTED stays out whatever the user agreed to.
         val with = policy.apply(docs, consentToSensitive = true, reservedTokens = 0)
-        assertThat(with.includedSourceIds).containsExactly("a", "b", "c", "d")
+        assertThat(with.includedSourceIds).containsExactly("a", "b", "d")
+        assertThat(with.excluded).containsEntry("c", ExclusionReason.SENSITIVITY)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.proofu.ai.policy
 
 import com.proofu.ai.model.ContextDocument
+import com.proofu.domain.common.AiConsent
 import com.proofu.domain.common.Sensitivity
 
 /** Why a document was left out of the model context. */
@@ -17,8 +18,8 @@ data class ContextDecision(
 }
 
 /**
- * Grounding policy steps 3–4: CONFIDENTIAL / RESTRICTED data never enters a model context
- * unless the user consented for this call, and the context is capped so a request cannot
+ * Grounding policy steps 3–4: CONFIDENTIAL data enters a model context only with the user's
+ * consent and RESTRICTED never does, and the context is capped so a request cannot
  * silently blow past the per-call token limit. Documents are kept in the caller's order and
  * dropped from the end when the budget runs out, so callers put the most relevant first.
  */
@@ -34,7 +35,8 @@ class ContextPolicy(
         val included = mutableListOf<ContextDocument>()
         var budget = maxInputTokens - reservedTokens
         for (doc in documents) {
-            if (!doc.sensitivity.allowedInAiContextByDefault && !consentToSensitive) {
+            val consent = if (consentToSensitive) AiConsent.CONFIDENTIAL else AiConsent.NONE
+            if (!doc.sensitivity.allowedInAiContext(consent)) {
                 excluded[doc.sourceId] = ExclusionReason.SENSITIVITY
                 continue
             }

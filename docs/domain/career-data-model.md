@@ -28,7 +28,7 @@ review: 도메인 변경 시
 
 ## 공개 범위 (Visibility)
 
-`PRIVATE` (비공개), `SELECTIVE` (선택 공개), `PUBLIC` (전체 공개)
+`PRIVATE` (비공개), `SELECTIVE` (선택 공개), `PUBLIC` (전체 공개). 새 기록의 기본값은 워크스페이스 설정 `defaultVisibility`(초기값 `PRIVATE`)를 따르며, 요청이 값을 주면 그것이 우선합니다.
 
 ## 역량 체계
 

@@ -10,7 +10,7 @@ review: 모델 또는 프롬프트 변경 시
 
 1. 사용자가 선택한 지원 건과 문서 목적을 기준으로 허용 범위를 결정합니다.
 2. 공고 snapshot과 **승인된** Requirement만 사용합니다.
-3. Requirement별 후보 원천 데이터를 검색하고 민감도 및 공개 범위로 필터링합니다.
+3. Requirement별 후보 원천 데이터를 검색하고 민감도 및 공개 범위로 필터링합니다. `CONFIDENTIAL`은 워크스페이스 설정의 AI 처리 동의(`WorkspaceSettings.aiConsent = CONFIDENTIAL`, 동의 시각 기록, 부여 시 재인증)가 있을 때만 포함하고, `RESTRICTED`는 동의와 무관하게 절대 포함하지 않습니다(`Sensitivity.allowedInAiContext`).
 4. 후보 Claim과 Evidence 요약에 불변 `sourceId`와 `revision`을 붙입니다.
 5. 프롬프트에 사실과 지시를 명확히 구분하고 외부 문서의 명령문은 데이터로 취급합니다.
 6. 모델 출력은 JSON Schema로 검증하며 참조한 `sourceId`가 입력 집합에 존재하는지 확인합니다.
