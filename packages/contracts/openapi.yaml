@@ -37,6 +37,60 @@ tags:
     description: "The caller's own settings (S01): profile used in document headers"
 
 paths:
+  /me/exports:
+    get:
+      tags: [account]
+      operationId: listMyExports
+      summary: Full data exports requested so far, newest first
+      responses:
+        "200":
+          description: Exports
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AccountExport"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [account, async]
+      operationId: startMyExport
+      summary: Build a ZIP of everything in the workspace (asynchronous)
+      description: |
+        Job type `account.export`; the result carries `exportId`. The archive holds `data.json`
+        (every table the workspace owns) and the READY export files. It expires after 7 days and
+        downloading needs a recent login (401 REAUTHENTICATION_REQUIRED).
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /me/exports/{id}/file:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [account]
+      operationId: downloadMyExport
+      summary: Download a READY data export (attachment, recent login required)
+      responses:
+        "200":
+          description: ZIP archive
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "409":
+          description: Not READY or expired (code EXPORT_NOT_READY)
+        default:
+          $ref: "#/components/responses/Problem"
+
   /me/settings:
     get:
       tags: [account]
@@ -2418,6 +2472,36 @@ components:
     AiConsent:
       type: string
       enum: [NONE, CONFIDENTIAL]
+
+    AccountExport:
+      type: object
+      required: [id, status, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        status:
+          type: string
+          enum: [REQUESTED, READY, FAILED, EXPIRED]
+        errorCode:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        sha256:
+          type: string
+        tables:
+          description: Row counts per table in the archive
+          type: object
+          additionalProperties:
+            type: integer
+        expiresAt:
+          type: string
+          format: date-time
+        jobId:
+          $ref: "#/components/schemas/Uuid"
+        createdAt:
+          type: string
+          format: date-time
 
     WorkspaceSettingsInput:
       type: object

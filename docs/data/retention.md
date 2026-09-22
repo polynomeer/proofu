@@ -15,10 +15,14 @@ review: 법률 검토 후 확정
 | AI 실행 메타데이터    | 90일 권고      | 입력 원문은 기본 저장하지 않음               |
 | 백업                  | 35일 권고      | 만료 시 자동 파기하며 삭제 반영 한계를 고지  |
 
+## 전체 데이터 내보내기 (`account.export`)
+
+`POST /me/exports`가 접수하면 잡이 workspace의 모든 테이블 행을 `data.json`으로, READY 내보내기 파일을 `exports/`로 묶은 ZIP을 만들어 `export_files`에 저장합니다(`account_exports` 행, `tables`에 표별 행 수). 다운로드는 `GET /me/exports/{id}/file`로만, **최근 재인증**이 필요하고 **7일 뒤 만료**됩니다(만료 후 409, 파일은 정리 잡 도입 전까지 계정 삭제 시 함께 제거). 프로필·설정·감사 기록도 포함합니다.
+
 ## 계정 삭제 (`account.purge`)
 
 1. `DELETE /me`는 최근 재인증(`REAUTHENTICATION_REQUIRED`)을 요구하고, 즉시 `users.deleted_at`·`workspaces.deleted_at`을 기록해 로그인을 막은 뒤 `account.purge` 잡을 접수합니다(202). 웹은 곧바로 로그아웃합니다.
-2. 잡은 한 트랜잭션에서 `SET LOCAL proofu.purge = 'on'`으로 불변 트리거의 DELETE만 허용받아 workspace의 모든 행을 지웁니다: 내보내기 파일·exports, provenance, 제출 스냅샷, 문서 버전·문서, 회고, 인계, 매칭, 상태 이벤트, 지원, 요구사항, 공고 스냅샷·공고, Claim/Evidence 연결, Claim, Evidence, 성과·프로젝트·스킬·역량·경력, AI 실행 기록, 다른 잡, 프로필, 멤버십.
+2. 잡은 한 트랜잭션에서 `SET LOCAL proofu.purge = 'on'`으로 불변 트리거의 DELETE만 허용받아 workspace의 모든 행을 지웁니다: 내보내기 파일·exports, provenance, 제출 스냅샷, 문서 버전·문서, 회고, 인계, 매칭, 상태 이벤트, 지원, 요구사항, 공고 스냅샷·공고, Claim/Evidence 연결, Claim, Evidence, 성과·프로젝트·스킬·역량·경력, AI 실행 기록, 다른 잡, 전체 내보내기(ZIP 포함), 프로필, 멤버십.
 3. `users`와 `workspaces` 행은 **묘비**로 남습니다: 이메일·이름·OIDC subject를 `deleted:<id>` 형태로 덮어써 개인정보를 제거하고, 같은 subject가 다시 가입하면 새 사용자로 만들어집니다. `audit_events`는 개인정보 없이(id·해시만) 보존 정책(1년)을 따릅니다.
 4. 제공자 측 사용자 삭제는 제공자 확정 후 어댑터로 붙입니다(ADR-0010 결정 2 기준). 그때까지 잡 결과에 `providerUserDeleted=false`를 남깁니다.
 5. 백업에는 삭제가 35일 뒤에 반영됩니다(위 표).
