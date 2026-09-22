@@ -34,7 +34,7 @@ class OidcWorkspaceResolver(
         val issuer = jwt.issuer?.toString() ?: return null
         val subject = jwt.subject ?: return null
         if (jwt.getClaimAsBoolean("email_verified") == false) return null
-        val (userId, workspaceId) = provision(issuer, subject, jwt)
+        val (userId, workspaceId) = provision(issuer, subject, jwt) ?: return null
         return WorkspaceContext(WorkspaceId(workspaceId), UserId(userId), authenticatedAt = authTime(jwt))
     }
 
@@ -42,21 +42,32 @@ class OidcWorkspaceResolver(
         issuer: String,
         subject: String,
         jwt: Jwt,
-    ): Pair<UUID, UUID> {
+    ): Pair<UUID, UUID>? {
         val existing =
             jdbc
                 .query(
                     """
-                    select u.id, w.id as workspace_id from users u
-                    join workspaces w on w.owner_user_id = u.id and w.deleted_at is null
-                    where u.oidc_issuer = ? and u.oidc_subject = ? and u.deleted_at is null
+                    select u.id, u.deleted_at, w.id as workspace_id from users u
+                    left join workspaces w on w.owner_user_id = u.id and w.deleted_at is null
+                    where u.oidc_issuer = ? and u.oidc_subject = ?
                     order by w.created_at limit 1
                     """.trimIndent(),
-                    { rs, _ -> rs.getObject("id", UUID::class.java) to rs.getObject("workspace_id", UUID::class.java) },
+                    { rs, _ ->
+                        Triple(
+                            rs.getObject("id", UUID::class.java),
+                            rs.getObject("deleted_at") != null,
+                            rs.getObject("workspace_id", UUID::class.java),
+                        )
+                    },
                     issuer,
                     subject,
                 ).firstOrNull()
-        if (existing != null) return existing
+        if (existing != null) {
+            val (userId, deleted, workspaceId) = existing
+            // Deleted or purging: refuse until the purge has scrubbed the subject (then it is a new user).
+            if (deleted || workspaceId == null) return null
+            return userId to workspaceId
+        }
         return checkNotNull(
             tx.execute {
                 val userId = ids.next()

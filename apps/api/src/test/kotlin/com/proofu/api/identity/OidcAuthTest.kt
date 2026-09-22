@@ -146,4 +146,39 @@ class OidcAuthTest {
         save("""{"fullName":"홍길동 2","email":"a@example.com","version":1}""", stale).expectStatus().isOk
         save("""{"fullName":"홍길동","email":"b@example.com","version":2}""", Instant.now()).expectStatus().isOk
     }
+
+    @Test
+    fun `account deletion needs a recent login, then refuses the user until the purge scrubs them`() {
+        val subject = UUID.randomUUID().toString()
+        get("/api/v1/career-entries", idp.token(subject)).expectStatus().isOk
+        val stale = Instant.now().minus(Duration.ofHours(1))
+        client
+            .delete()
+            .uri("/api/v1/me")
+            .header("Authorization", "Bearer ${idp.token(subject, authTime = stale)}")
+            .exchange()
+            .expectStatus()
+            .isUnauthorized
+            .expectBody()
+            .jsonPath("$.code")
+            .isEqualTo("REAUTHENTICATION_REQUIRED")
+        client
+            .delete()
+            .uri("/api/v1/me")
+            .header("Authorization", "Bearer ${idp.token(subject)}")
+            .exchange()
+            .expectStatus()
+            .isAccepted
+            .expectBody()
+            .jsonPath("$.jobId")
+            .exists()
+        assertThat(
+            jdbc.queryForObject("select count(*) from jobs where type = 'account.purge'", Long::class.java),
+        ).isGreaterThanOrEqualTo(1L)
+        // Marked deleted: the same subject is refused, not re-provisioned.
+        get("/api/v1/career-entries", idp.token(subject)).expectStatus().isUnauthorized
+        assertThat(
+            jdbc.queryForObject("select count(*) from users where oidc_subject = ?", Long::class.java, subject),
+        ).isEqualTo(1L)
+    }
 }
