@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import "@/styles/tokens.css";
+// Registers the server-side credential middleware for @/lib/api (ADR-0010).
+import "@/lib/auth/server-api";
 
 export const metadata: Metadata = {
   title: {

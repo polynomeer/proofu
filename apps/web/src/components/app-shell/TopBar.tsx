@@ -1,7 +1,7 @@
 import { Icon } from "@/components/ui/Icon";
 
 /** Global search, notifications and user menu (docs/design/components.md §상단 바). */
-export function TopBar({ userName }: { userName: string }) {
+export function TopBar({ userName, canSignOut }: { userName: string; canSignOut: boolean }) {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border-300 bg-surface-000 px-4 md:px-6">
       <span className="text-[22px] font-bold text-primary-600 md:hidden">ProofU</span>
@@ -31,17 +31,22 @@ export function TopBar({ userName }: { userName: string }) {
         >
           <Icon name="bell" />
         </button>
-        <button
-          type="button"
-          className="flex h-10 items-center gap-2 rounded-md px-2 text-body hover:bg-surface-050"
-          aria-haspopup="menu"
-        >
+        <span className="flex h-10 items-center gap-2 rounded-md px-2 text-body">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 text-text-600">
             <Icon name="user" size={16} />
           </span>
           <span className="hidden sm:inline">{userName}</span>
-          <Icon name="chevron-down" size={16} className="text-text-600" />
-        </button>
+        </span>
+        {canSignOut ? (
+          <form action="/auth/logout" method="post">
+            <button
+              type="submit"
+              className="h-10 rounded-md px-3 text-body text-text-600 hover:bg-surface-050"
+            >
+              로그아웃
+            </button>
+          </form>
+        ) : null}
       </div>
     </header>
   );

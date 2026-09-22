@@ -101,7 +101,7 @@ const PENDING: string[] = [
   "파일 Evidence 업로드 (객체 저장소 확정 후)",
   "URL로 공고 가져오기 (지금은 원문 붙여넣기)",
   "iterview 면접 인계",
-  "로그인·계정 (OIDC 확정 후), 공개 범위 기본값, AI 처리 동의, 데이터 삭제",
+  "공개 범위 기본값, AI 처리 동의, 데이터 삭제",
 ];
 
 export default function HelpPage() {
@@ -195,7 +195,7 @@ export default function HelpPage() {
               ))}
             </ul>
             <p className="mt-3 text-caption text-text-600">
-              지금은 로그인 없이 로컬 워크스페이스 하나로 동작합니다.{" "}
+              로그인은 OIDC 제공자에 위임합니다(제공자 선택은 결정 대기).{" "}
               <Link href="/settings" className="text-primary-600 hover:underline">
                 설정
               </Link>

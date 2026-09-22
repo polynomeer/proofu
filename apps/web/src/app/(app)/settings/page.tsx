@@ -53,7 +53,7 @@ export default async function SettingsPage() {
             <ul className="mt-2 flex flex-col gap-1 text-caption text-text-600">
               <li>공개 범위 기본값</li>
               <li>AI 처리 동의 (기밀·제한 데이터)</li>
-              <li>보존 기간, 데이터 내보내기, 계정 삭제 — OIDC 도입 후</li>
+              <li>보존 기간, 데이터 내보내기, 계정 삭제 — 제공자 확정 후</li>
             </ul>
           </div>
         </aside>
