@@ -37,6 +37,7 @@ data class ProjectRequest(
         id: ProjectId,
         workspaceId: WorkspaceId,
         revision: Revision,
+        defaultVisibility: Visibility = Visibility.PRIVATE,
     ): Project =
         Project(
             id = id,
@@ -49,7 +50,7 @@ data class ProjectRequest(
             endDate = endDate,
             teamSize = teamSize,
             links = links.map { ProjectLink(requireNotNull(it.label).trim(), requireNotNull(it.url).trim()) },
-            visibility = visibility ?: Visibility.PRIVATE,
+            visibility = visibility ?: defaultVisibility,
             revision = revision,
         )
 }

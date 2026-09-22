@@ -4,6 +4,7 @@ import com.proofu.ai.AiCall
 import com.proofu.ai.AiGateway
 import com.proofu.ai.model.AiPurpose
 import com.proofu.ai.model.ContextDocument
+import com.proofu.domain.common.AiConsent
 import com.proofu.domain.common.ClaimId
 import com.proofu.domain.common.EvidenceId
 import com.proofu.domain.common.RequirementId
@@ -76,6 +77,8 @@ class DocumentDrafter(
         workspace: WorkspaceId,
         request: DraftRequest,
         jobId: UUID? = null,
+        /** Workspace AI consent (S01); CONFIDENTIAL documents stay out without it, RESTRICTED always. */
+        consent: AiConsent = AiConsent.NONE,
     ): DraftResult {
         val requirementDoc =
             ContextDocument(
@@ -134,6 +137,7 @@ class DocumentDrafter(
                     instruction = instruction,
                     outputSchema = OUTPUT_SCHEMA,
                     jobId = jobId,
+                    consentToSensitive = consent == AiConsent.CONFIDENTIAL,
                 ),
             )
 

@@ -4,6 +4,7 @@ import com.proofu.ai.AiCall
 import com.proofu.ai.AiGateway
 import com.proofu.ai.model.AiPurpose
 import com.proofu.ai.model.ContextDocument
+import com.proofu.domain.common.AiConsent
 import com.proofu.domain.common.Sensitivity
 import com.proofu.domain.common.WorkspaceId
 import com.proofu.domain.documents.RevisionGuard
@@ -39,6 +40,8 @@ class SentenceReviser(
         workspace: WorkspaceId,
         sentence: SentenceToRevise,
         jobId: UUID? = null,
+        /** Workspace AI consent (S01); CONFIDENTIAL documents stay out without it, RESTRICTED always. */
+        consent: AiConsent = AiConsent.NONE,
     ): RevisionResult {
         val documents =
             listOf(
@@ -60,6 +63,7 @@ class SentenceReviser(
                     )}\n언어: ${sentence.language}",
                     outputSchema = OUTPUT_SCHEMA,
                     jobId = jobId,
+                    consentToSensitive = consent == AiConsent.CONFIDENTIAL,
                 ),
             )
         val revised =

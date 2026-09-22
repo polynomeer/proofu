@@ -181,4 +181,66 @@ class OidcAuthTest {
             jdbc.queryForObject("select count(*) from users where oidc_subject = ?", Long::class.java, subject),
         ).isEqualTo(1L)
     }
+
+    @Test
+    fun `settings default safely and granting consent needs a recent login`() {
+        val subject = UUID.randomUUID().toString()
+
+        fun put(
+            json: String,
+            authTime: Instant,
+        ) = client
+            .put()
+            .uri("/api/v1/me/settings")
+            .header("Authorization", "Bearer ${idp.token(subject, authTime = authTime)}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(json)
+            .exchange()
+
+        get("/api/v1/me/settings", idp.token(subject))
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.aiConsent")
+            .isEqualTo("NONE")
+            .jsonPath("$.defaultVisibility")
+            .isEqualTo("PRIVATE")
+            .jsonPath("$.version")
+            .isEqualTo(0)
+
+        val stale = Instant.now().minus(Duration.ofHours(1))
+        put("""{"aiConsent":"CONFIDENTIAL","defaultVisibility":"PRIVATE"}""", stale)
+            .expectStatus()
+            .isUnauthorized
+            .expectBody()
+            .jsonPath("$.code")
+            .isEqualTo("REAUTHENTICATION_REQUIRED")
+        // Changing only the visibility default is not sensitive.
+        put("""{"aiConsent":"NONE","defaultVisibility":"SELECTIVE"}""", stale).expectStatus().isOk
+        put("""{"aiConsent":"CONFIDENTIAL","defaultVisibility":"SELECTIVE","version":1}""", Instant.now())
+            .expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.aiConsentAt")
+            .exists()
+            .jsonPath("$.version")
+            .isEqualTo(2)
+        put(
+            """{"aiConsent":"NONE","defaultVisibility":"SELECTIVE","version":1}""",
+            Instant.now(),
+        ).expectStatus().isEqualTo(409)
+
+        client
+            .post()
+            .uri("/api/v1/career-entries")
+            .header("Authorization", "Bearer ${idp.token(subject)}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"type":"EMPLOYMENT","title":"기본값 확인","startDate":"2022-01-01"}""")
+            .exchange()
+            .expectStatus()
+            .isCreated
+            .expectBody()
+            .jsonPath("$.visibility")
+            .isEqualTo("SELECTIVE")
+    }
 }

@@ -3,6 +3,7 @@ package com.proofu.api.project
 import com.proofu.api.audit.AuditLog
 import com.proofu.api.career.CareerEntryRepository
 import com.proofu.api.identity.WorkspaceContext
+import com.proofu.api.settings.SettingsService
 import com.proofu.api.web.DateIdCursor
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.api.web.StaleVersionException
@@ -25,6 +26,7 @@ class ProjectService(
     private val ids: IdGenerator,
     private val clock: Clock,
     private val audit: AuditLog,
+    private val settings: SettingsService,
 ) {
     @Transactional(readOnly = true)
     fun list(
@@ -58,7 +60,13 @@ class ProjectService(
         request: ProjectRequest,
     ): ProjectResponse {
         requireCareerEntryInWorkspace(workspace, request.careerEntryId)
-        val project = request.toDomain(ProjectId(ids.next()), workspace.workspaceId, Revision.INITIAL)
+        val project =
+            request.toDomain(
+                ProjectId(ids.next()),
+                workspace.workspaceId,
+                Revision.INITIAL,
+                defaultVisibility = settings.current(workspace.workspaceId.value).defaultVisibility,
+            )
         val saved = repository.saveAndFlush(ProjectEntity.from(project))
         val response = ProjectResponse.from(saved)
         audit.record(workspace, "project.created", TARGET, saved.id, after = response)

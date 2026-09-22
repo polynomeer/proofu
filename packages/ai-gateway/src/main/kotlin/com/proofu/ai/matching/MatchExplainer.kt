@@ -4,6 +4,7 @@ import com.proofu.ai.AiCall
 import com.proofu.ai.AiGateway
 import com.proofu.ai.model.AiPurpose
 import com.proofu.ai.model.ContextDocument
+import com.proofu.domain.common.AiConsent
 import com.proofu.domain.common.Sensitivity
 import com.proofu.domain.common.WorkspaceId
 import java.util.UUID
@@ -53,6 +54,8 @@ class MatchExplainer(
         workspace: WorkspaceId,
         requirements: List<RequirementToExplain>,
         jobId: UUID? = null,
+        /** Workspace AI consent (S01); CONFIDENTIAL documents stay out without it, RESTRICTED always. */
+        consent: AiConsent = AiConsent.NONE,
     ): ExplanationResult {
         val offered = requirements.flatMap { r -> r.candidates.map { r.requirementId to it.claimId } }.toSet()
         val requirementDoc =
@@ -105,6 +108,7 @@ class MatchExplainer(
                     instruction = "다음 쌍 각각에 대해 설명을 작성하세요. 목록에 없는 쌍은 만들지 마세요.\n$pairs",
                     outputSchema = OUTPUT_SCHEMA,
                     jobId = jobId,
+                    consentToSensitive = consent == AiConsent.CONFIDENTIAL,
                 ),
             )
 

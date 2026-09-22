@@ -32,6 +32,7 @@ data class CareerEntryRequest(
         workspaceId: WorkspaceId,
         status: CareerEntryStatus,
         revision: Revision,
+        defaultVisibility: Visibility = Visibility.PRIVATE,
     ): CareerEntry =
         CareerEntry(
             id = id,
@@ -43,7 +44,7 @@ data class CareerEntryRequest(
             organization = organization?.trim()?.ifEmpty { null },
             location = location?.trim()?.ifEmpty { null },
             description = description?.trim()?.ifEmpty { null },
-            visibility = visibility ?: Visibility.PRIVATE,
+            visibility = visibility ?: defaultVisibility,
             status = status,
             revision = revision,
         )

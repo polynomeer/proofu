@@ -2,6 +2,7 @@ package com.proofu.api.career
 
 import com.proofu.api.audit.AuditLog
 import com.proofu.api.identity.WorkspaceContext
+import com.proofu.api.settings.SettingsService
 import com.proofu.api.web.DateIdCursor
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.api.web.StaleVersionException
@@ -25,6 +26,7 @@ class CareerEntryService(
     private val clock: Clock,
     private val audit: AuditLog,
     private val events: ApplicationEventPublisher,
+    private val settings: SettingsService,
 ) {
     @Transactional(readOnly = true)
     fun list(
@@ -64,6 +66,7 @@ class CareerEntryService(
                 id = CareerEntryId(ids.next()),
                 workspaceId = workspace.workspaceId,
                 status = CareerEntryStatus.ACTIVE,
+                defaultVisibility = settings.current(workspace.workspaceId.value).defaultVisibility,
                 revision = Revision.INITIAL,
             )
         val saved = repository.saveAndFlush(CareerEntryEntity.from(entry))
