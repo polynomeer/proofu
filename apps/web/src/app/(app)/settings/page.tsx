@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 
+import { DeleteAccount } from "@/components/settings/DeleteAccount";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
+import { currentCaller } from "@/lib/auth/current";
 
 export const metadata: Metadata = { title: "설정" };
 export const dynamic = "force-dynamic";
@@ -10,6 +12,7 @@ export const dynamic = "force-dynamic";
 /** S01: profile now; visibility defaults, AI consent, retention and account deletion follow OIDC. */
 export default async function SettingsPage() {
   const { data: profile } = await api.GET("/me/profile").catch(() => ({ data: undefined }));
+  const caller = await currentCaller();
 
   return (
     <>
@@ -23,6 +26,9 @@ export default async function SettingsPage() {
           </p>
           <ProfileForm initial={profile ?? null} />
         </section>
+        <div className="lg:col-start-1">
+          <DeleteAccount canSignOut={caller?.mode === "oidc"} />
+        </div>
         <aside className="flex h-fit flex-col gap-4">
           <div className="rounded-md border border-border-300 bg-surface-000 p-6">
             <h2 className="text-card-title">머리글 미리보기</h2>
@@ -53,7 +59,7 @@ export default async function SettingsPage() {
             <ul className="mt-2 flex flex-col gap-1 text-caption text-text-600">
               <li>공개 범위 기본값</li>
               <li>AI 처리 동의 (기밀·제한 데이터)</li>
-              <li>보존 기간, 데이터 내보내기, 계정 삭제 — 제공자 확정 후</li>
+              <li>보존 기간, 데이터 내보내기</li>
             </ul>
           </div>
         </aside>

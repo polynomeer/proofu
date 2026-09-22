@@ -101,7 +101,7 @@ const PENDING: string[] = [
   "파일 Evidence 업로드 (객체 저장소 확정 후)",
   "URL로 공고 가져오기 (지금은 원문 붙여넣기)",
   "iterview 면접 인계",
-  "공개 범위 기본값, AI 처리 동의, 데이터 삭제",
+  "공개 범위 기본값, AI 처리 동의, 데이터 내보내기",
 ];
 
 export default function HelpPage() {
