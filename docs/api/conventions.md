@@ -22,7 +22,7 @@ review: API 릴리스 시
 - **`oidc`** (production 강제): API는 OIDC resource server입니다. `Authorization: Bearer <access token>`을 `OIDC_ISSUER`의 JWKS(`OIDC_JWKS_URI`, 첫 토큰에서 지연 로드)로 검증하고 `iss`·`exp`·`aud`(`OIDC_AUDIENCE`, 기본 `proofu-api`)를 확인합니다. `(iss, sub)`로 `users`를 찾고, 처음 보는 사용자는 workspace 1개와 함께 즉시 프로비저닝합니다(`OidcWorkspaceResolver`). `email_verified=false`는 401. 브라우저는 토큰을 갖지 않습니다 — `apps/web`이 BFF로서 암호화된 httpOnly 쿠키 세션을 갖고 `/api/*`를 프록시하며 토큰을 붙입니다.
 - **`header`** (local·test 전용, production 불가): `X-Workspace-Id: <uuid>` 헤더로 workspace를 지정하며 호출자는 그 소유자로 취급됩니다 (`HeaderWorkspaceResolver`). `local` 프로필은 고정 workspace `00000000-0000-7000-8000-000000000002`를 시드합니다.
 
-인증 실패는 두 모드 모두 `401 UNAUTHENTICATED`(Problem Details). 민감 작업(현재: 프로필 이메일 변경)은 토큰의 `auth_time`이 `AUTH_REAUTH_MAX_AGE`(기본 10분) 이내여야 하고, 아니면 `401 REAUTHENTICATION_REQUIRED` — 웹은 `/auth/login?prompt=login&return=…`으로 재인증합니다. `header` 모드에는 `auth_time`이 없어 검사하지 않습니다.
+인증 실패는 두 모드 모두 `401 UNAUTHENTICATED`(Problem Details). 민감 작업(프로필 이메일 변경, 계정 삭제 `DELETE /me`)은 토큰의 `auth_time`이 `AUTH_REAUTH_MAX_AGE`(기본 10분) 이내여야 하고, 아니면 `401 REAUTHENTICATION_REQUIRED` — 웹은 `/auth/login?prompt=login&return=…`으로 재인증합니다. `header` 모드에는 `auth_time`이 없어 검사하지 않습니다.
 
 ## 오류 코드 (초안)
 

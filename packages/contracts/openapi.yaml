@@ -76,6 +76,22 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /me:
+    delete:
+      tags: [account]
+      operationId: deleteMyAccount
+      summary: Delete the caller's account and everything in their workspace (asynchronous)
+      description: |
+        Requires a recent login (401 REAUTHENTICATION_REQUIRED otherwise). Marks the user and
+        workspace deleted at once — the next request is 401 — and queues `account.purge`, which
+        removes every row of the workspace including immutable snapshots (docs/data/retention.md).
+        The user and workspace rows stay as tombstones without personal data.
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /dashboard:
     get:
       tags: [dashboard]
