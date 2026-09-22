@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { DataExport } from "@/components/settings/DataExport";
 import { DeleteAccount } from "@/components/settings/DeleteAccount";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { WorkspaceSettingsForm } from "@/components/settings/WorkspaceSettingsForm";
@@ -10,11 +11,12 @@ import { currentCaller } from "@/lib/auth/current";
 export const metadata: Metadata = { title: "설정" };
 export const dynamic = "force-dynamic";
 
-/** S01: profile now; visibility defaults, AI consent, retention and account deletion follow OIDC. */
+/** S01: profile, visibility defaults, AI consent, full data export, account deletion; retention follows. */
 export default async function SettingsPage() {
-  const [{ data: profile }, { data: settings }] = await Promise.all([
+  const [{ data: profile }, { data: settings }, { data: exports }] = await Promise.all([
     api.GET("/me/profile").catch(() => ({ data: undefined })),
     api.GET("/me/settings").catch(() => ({ data: undefined })),
+    api.GET("/me/exports").catch(() => ({ data: undefined })),
   ]);
   const caller = await currentCaller();
 
@@ -41,6 +43,9 @@ export default async function SettingsPage() {
             <p className="text-body text-text-600">설정을 불러오지 못했습니다.</p>
           )}
         </section>
+        <div className="lg:col-start-1">
+          <DataExport initialItems={exports?.items ?? []} />
+        </div>
         <div className="lg:col-start-1">
           <DeleteAccount canSignOut={caller?.mode === "oidc"} />
         </div>
@@ -72,7 +77,7 @@ export default async function SettingsPage() {
           <div className="rounded-md border border-border-300 bg-surface-000 p-6">
             <h2 className="text-card-title">준비 중</h2>
             <ul className="mt-2 flex flex-col gap-1 text-caption text-text-600">
-              <li>보존 기간, 데이터 내보내기</li>
+              <li>보존 기간 설정</li>
             </ul>
           </div>
         </aside>
