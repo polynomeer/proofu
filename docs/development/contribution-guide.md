@@ -67,3 +67,17 @@ pnpm check                                          # web/contracts lint + typec
 ## AI 프롬프트 변경
 
 `packages/ai-gateway`의 프롬프트나 `fixtures/ai`를 바꾸는 PR은 `PROMPT_VERSION`을 올리고 `ai-live` 라벨을 붙여 실모델 평가(`ai-live-eval.yml`)를 통과시킨 뒤, `docs/ai/evaluation.md` 실행 기록에 한 줄을 남깁니다. 로컬은 `scripts/ai-live-check.sh`(키는 `.env`).
+
+## 로그인 흐름을 로컬에서 돌리기
+
+기본(`AUTH_MODE=header`)은 로그인 없이 시드 workspace로 동작합니다. OIDC 흐름을 보려면:
+
+```bash
+node apps/web/scripts/mock-idp.mjs   # 로그인 폼 없는 가짜 IdP, http://localhost:8181/realms/mock
+AUTH_MODE=oidc OIDC_ISSUER=http://localhost:8181/realms/mock \
+OIDC_JWKS_URI=http://localhost:8181/realms/mock/protocol/openid-connect/certs ./gradlew :api:bootRun
+AUTH_MODE=oidc OIDC_ISSUER=http://localhost:8181/realms/mock OIDC_CLIENT_ID=proofu-web OIDC_CLIENT_SECRET=x \
+SESSION_SECRET=$(openssl rand -base64 32) APP_ORIGIN=http://localhost:3000 pnpm dev --filter web
+```
+
+실제 IdP 화면까지 보려면 `docker compose -f infra/docker-compose.yml --profile auth up -d`(Keycloak, `dev@proofu.local` / `devpass`, issuer `http://localhost:8180/realms/proofu`)로 바꿔 끼웁니다.
