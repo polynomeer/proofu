@@ -14,6 +14,7 @@
 | `packages/domain`            | 순수 Kotlin 도메인 모델·불변식. **Spring 의존 금지**                                                                                    | Gradle `:domain`            |
 | `packages/ai-gateway`        | 모델 제공자로 가는 유일한 문. 컨텍스트 정책·예산·스키마 검증·비용·`ai_executions` 기록. api/worker가 `AiGatewayFactory`로 동일하게 구성 | Gradle `:ai-gateway`        |
 | `packages/document-renderer` | DOCX(Apache POI)·Markdown·JSON 렌더러와 텍스트 재추출 검증(`ExportValidator`). Spring 의존 금지 (ADR-0009)                              | Gradle `:document-renderer` |
+| `apps/e2e`                   | Playwright 여정 테스트. `scripts/e2e.sh`가 실제 스택 + mock IdP + 가짜 AI로 실행                                                        | pnpm                        |
 | `packages/contracts`         | `openapi.yaml` (단일 원천) → `generated/api.d.ts`                                                                                       | pnpm                        |
 | `migrations/`                | Flyway SQL 단일 원천. api 빌드 시 `db/migration`으로 복사                                                                               | —                           |
 | `docs/`                      | 제품·도메인·디자인·아키텍처·ADR                                                                                                         | —                           |
@@ -28,13 +29,14 @@ pnpm dev --filter web                               # http://localhost:3000 (/ap
 ./gradlew :api:bootRun                              # http://localhost:8080, OpenAPI /api/v1/openapi.json
 ./gradlew ktlintFormat                              # Kotlin 포맷
 pnpm format                                         # prettier
+scripts/e2e.sh                                      # Playwright 여정 (docker + jar + mock IdP + web build)
 ```
 
 JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 항상 `./gradlew` 사용.
 
 ## 규칙
 
-- **커밋**: Conventional Commits (`feat|fix|docs|refactor|test|chore|ci|perf(scope): subject`), 한 커밋 = 한 논리 변경. scope: `web`, `api`, `worker`, `domain`, `ai`, `renderer`, `contracts`, `db`, `infra`, `docs`. 커밋 전 해당 영역 검사 통과.
+- **커밋**: Conventional Commits (`feat|fix|docs|refactor|test|chore|ci|perf(scope): subject`), 한 커밋 = 한 논리 변경. scope: `web`, `e2e`, `api`, `worker`, `domain`, `ai`, `renderer`, `contracts`, `db`, `infra`, `docs`. 커밋 전 해당 영역 검사 통과.
 - **도메인 불변식은 `packages/domain`에 한 번만** 구현하고 단위 테스트한다. API/워커/UI는 이를 호출한다 (예: `ApplicationStatus.transitionTo`, `GeneratedOutput.requireGrounded`). DB CHECK/트리거는 방어선이지 대체가 아니다.
 - **enum 값**은 domain Kotlin enum ↔ `migrations/` CHECK ↔ `openapi.yaml` ↔ `docs/domain` 네 곳이 항상 일치해야 한다. 하나를 바꾸면 넷을 바꾼다.
 - **스키마 변경**은 `migrations/V{n}__*.sql` 추가만 (expand → migrate → contract). 기존 파일 수정 금지. JPA 엔티티는 스키마를 만들지 않는다.

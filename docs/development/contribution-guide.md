@@ -81,3 +81,7 @@ SESSION_SECRET=$(openssl rand -base64 32) APP_ORIGIN=http://localhost:3000 pnpm 
 ```
 
 실제 IdP 화면까지 보려면 `docker compose -f infra/docker-compose.yml --profile auth up -d`(Keycloak, `dev@proofu.local` / `devpass`, issuer `http://localhost:8180/realms/proofu`)로 바꿔 끼웁니다.
+
+## 브라우저 여정 테스트
+
+`scripts/e2e.sh`(Playwright, `apps/e2e`)가 실제 스택을 띄워 로그인부터 계정 삭제까지 돌립니다. 화면 문구·라벨을 바꾸면 해당 스펙의 로케이터도 함께 고칩니다. 처음 한 번 `pnpm --filter e2e exec playwright install chromium`.

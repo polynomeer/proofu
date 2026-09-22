@@ -11,7 +11,8 @@ import { createServer } from "node:http";
 const port = Number(process.env.MOCK_IDP_PORT ?? 8181);
 const issuer = process.env.MOCK_IDP_ISSUER ?? `http://localhost:${port}/realms/mock`;
 const base = new URL(issuer).pathname;
-const user = {
+// The "current user" the authorize endpoint signs in. Tests switch it with POST /dev/user.
+let user = {
   sub: process.env.MOCK_IDP_USER_SUB ?? "mock-user-0001",
   email: process.env.MOCK_IDP_USER_EMAIL ?? "dev@proofu.local",
   name: process.env.MOCK_IDP_USER_NAME ?? "Mock User",
@@ -34,21 +35,26 @@ const now = () => Math.floor(Date.now() / 1000);
 const codes = new Map(); // code -> { clientId, redirectUri, nonce, challenge, authTime }
 const refreshTokens = new Map(); // token -> { clientId, authTime }
 
-function tokens({ clientId, nonce, authTime }) {
+function accessToken({ clientId, authTime, who = user }) {
   const iat = now();
-  const access = jwt({
+  return jwt({
     iss: issuer,
-    sub: user.sub,
+    sub: who.sub,
     aud: apiAudience,
     azp: clientId,
     iat,
     exp: iat + accessTtl,
     auth_time: authTime,
-    email: user.email,
+    email: who.email,
     email_verified: true,
-    name: user.name,
+    name: who.name,
     scope: "openid profile email",
   });
+}
+
+function tokens({ clientId, nonce, authTime }) {
+  const iat = now();
+  const access = accessToken({ clientId, authTime });
   const id = jwt({
     iss: issuer,
     sub: user.sub,
@@ -153,6 +159,25 @@ createServer(async (req, res) => {
       return json(res, 200, tokens({ ...entry, nonce: undefined }));
     }
     return json(res, 400, { error: "unsupported_grant_type" });
+  }
+  // Test hooks (never exist on a real IdP): switch the signed-in user, mint an API token directly.
+  if (path === "/dev/user" && req.method === "POST") {
+    const form = await readForm(req);
+    user = {
+      sub: form.get("sub") ?? user.sub,
+      email: form.get("email") ?? `${form.get("sub")}@example.test`,
+      name: form.get("name") ?? form.get("sub") ?? user.name,
+    };
+    return json(res, 200, user);
+  }
+  if (path === "/dev/token") {
+    const sub = url.searchParams.get("sub") ?? user.sub;
+    const who = sub === user.sub ? user : { sub, email: `${sub}@example.test`, name: sub };
+    const authTime = now() - Number(url.searchParams.get("age") ?? 0);
+    return json(res, 200, {
+      access_token: accessToken({ clientId: "proofu-web", authTime, who }),
+      expires_in: accessTtl,
+    });
   }
   if (path === "/protocol/openid-connect/logout") {
     const to = url.searchParams.get("post_logout_redirect_uri");
