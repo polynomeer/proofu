@@ -1,30 +1,24 @@
 package com.proofu.api
 
 import com.proofu.api.identity.HeaderWorkspaceResolver
-import com.proofu.api.identity.WorkspaceContext
-import com.proofu.api.identity.WorkspaceResolver
-import com.proofu.domain.common.UserId
-import com.proofu.domain.common.WorkspaceId
+import com.proofu.api.identity.OidcWorkspaceResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
-import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationContext
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.core.env.Environment
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.client.RestTestClient
-import java.util.UUID
 
 /**
- * What the `production` profile must guarantee before OIDC exists: no header identity, no seeded
- * workspace, no API docs, a real AI provider. A stand-in resolver plays the future OIDC one so
- * the context can start at all (without one, startup fails by design).
+ * What the `production` profile must guarantee: OIDC only (no header identity), no seeded
+ * workspace, no API docs, a real AI provider. The IdP need not be reachable at startup — the
+ * JWKS is fetched on the first token — so every request is simply refused here.
  */
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -33,23 +27,14 @@ import java.util.UUID
         "DATABASE_PASSWORD=proofu",
         "AI_PROVIDER=anthropic",
         "ANTHROPIC_API_KEY=test-key-never-used",
+        "OIDC_ISSUER=https://idp.example/realms/proofu",
+        "OIDC_JWKS_URI=https://idp.example/realms/proofu/protocol/openid-connect/certs",
     ],
 )
-@Import(TestcontainersConfiguration::class, ProductionProfileTest.StandInOidc::class)
+@Import(TestcontainersConfiguration::class)
 @AutoConfigureRestTestClient
 @ActiveProfiles("production")
 class ProductionProfileTest {
-    @TestConfiguration(proxyBeanMethods = false)
-    class StandInOidc {
-        @Bean
-        fun workspaceResolver(): WorkspaceResolver =
-            WorkspaceResolver { request ->
-                request.getHeader("X-Test-Subject")?.let {
-                    WorkspaceContext(WorkspaceId(UUID.fromString(it)), UserId(UUID.fromString(it)))
-                }
-            }
-    }
-
     @Autowired
     lateinit var client: RestTestClient
 
@@ -65,6 +50,8 @@ class ProductionProfileTest {
     @Test
     fun `header identity, seeding and docs are off and the AI provider is real`() {
         assertThat(context.getBeanNamesForType(HeaderWorkspaceResolver::class.java)).isEmpty()
+        assertThat(context.getBeanNamesForType(OidcWorkspaceResolver::class.java)).hasSize(1)
+        assertThat(environment.getProperty("proofu.auth.mode")).isEqualTo("oidc")
         assertThat(context.containsBean("localWorkspaceSeeder")).isFalse()
         assertThat(jdbc.queryForObject("select count(*) from workspaces", Long::class.java)).isZero()
         assertThat(environment.getProperty("proofu.ai.provider")).isEqualTo("anthropic")

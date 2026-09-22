@@ -5,6 +5,7 @@ import com.proofu.ai.AiCallFailed
 import com.proofu.ai.BudgetBlock
 import com.proofu.ai.model.ModelProviderException
 import com.proofu.ai.model.ProviderFailure
+import com.proofu.api.identity.ReauthenticationRequiredException
 import com.proofu.domain.common.DomainRuleViolation
 import com.proofu.domain.common.ImmutableSnapshotViolation
 import com.proofu.domain.common.InvalidStatusTransition
@@ -60,6 +61,13 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
 
     @ExceptionHandler(DomainRuleViolation::class)
     fun onDomainRule(e: DomainRuleViolation): ProblemDetail = problem(ErrorCode.DOMAIN_RULE_VIOLATION, e.message)
+
+    @ExceptionHandler(ReauthenticationRequiredException::class)
+    fun onReauthentication(e: ReauthenticationRequiredException): ProblemDetail =
+        problem(
+            ErrorCode.REAUTHENTICATION_REQUIRED,
+            "이 작업은 최근 ${e.maxAge.toMinutes()}분 안에 로그인한 상태에서만 할 수 있습니다. 다시 로그인하세요.",
+        )
 
     @ExceptionHandler(ResourceNotFoundException::class)
     fun onNotFound(e: ResourceNotFoundException): ProblemDetail = problem(ErrorCode.NOT_FOUND, e.message)

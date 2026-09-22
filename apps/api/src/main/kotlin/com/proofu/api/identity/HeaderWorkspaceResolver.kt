@@ -5,6 +5,7 @@ import com.proofu.domain.common.WorkspaceId
 import jakarta.annotation.PostConstruct
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Profile
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
@@ -19,6 +20,7 @@ import java.util.UUID
  */
 @Component
 @Profile("!production")
+@ConditionalOnProperty(prefix = "proofu.auth", name = ["mode"], havingValue = "header", matchIfMissing = true)
 class HeaderWorkspaceResolver(
     private val jdbc: JdbcTemplate,
 ) : WorkspaceResolver {

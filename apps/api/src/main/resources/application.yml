@@ -20,6 +20,12 @@ spring:
       enabled: true
 
 proofu:
+  auth:
+    mode: ${AUTH_MODE:header}
+    issuer: ${OIDC_ISSUER:}
+    jwks-uri: ${OIDC_JWKS_URI:}
+    audience: ${OIDC_AUDIENCE:proofu-api}
+    reauth-max-age: ${AUTH_REAUTH_MAX_AGE:10m}
   ai:
     provider: ${AI_PROVIDER:fake}
     api-key: ${ANTHROPIC_API_KEY:}

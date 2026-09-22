@@ -6,6 +6,11 @@ spring:
     password: ${DATABASE_PASSWORD}
 
 proofu:
+  auth:
+    # OIDC only (ADR-0010). Issuer and JWKS are mandatory; the API starts without them refusing every request.
+    mode: oidc
+    issuer: ${OIDC_ISSUER}
+    jwks-uri: ${OIDC_JWKS_URI}
   ai:
     # The fake provider is refused under this profile (AiGatewayConfig); a key is mandatory.
     provider: ${AI_PROVIDER:anthropic}

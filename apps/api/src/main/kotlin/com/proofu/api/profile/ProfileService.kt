@@ -1,6 +1,7 @@
 package com.proofu.api.profile
 
 import com.proofu.api.audit.AuditLog
+import com.proofu.api.identity.AuthProperties
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.api.web.StaleVersionException
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import tools.jackson.databind.ObjectMapper
 import java.sql.ResultSet
+import java.time.Clock
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -24,6 +26,8 @@ class ProfileService(
     private val jdbc: JdbcTemplate,
     private val mapper: ObjectMapper,
     private val audit: AuditLog,
+    private val auth: AuthProperties,
+    private val clock: Clock,
 ) {
     @Transactional(readOnly = true)
     fun get(workspace: WorkspaceContext): ProfileResponse =
@@ -51,6 +55,13 @@ class ProfileService(
         }
         val next = (current ?: 0L) + 1
         val profile = request.toDomain(UserId(userId), next)
+        // Changing the contact email is a sensitive action (ADR-0010 §4): the login must be recent.
+        val currentEmail = find(userId)?.email
+        if (current != null &&
+            profile.email != currentEmail
+        ) {
+            workspace.requireRecentAuthentication(clock, auth.reauthMaxAge)
+        }
         val links = mapper.writeValueAsString(profile.links.map { mapOf("label" to it.label, "url" to it.url) })
         jdbc.update(
             """
