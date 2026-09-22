@@ -185,7 +185,7 @@ class OidcAuthTest {
     @Test
     fun `settings default safely and granting consent needs a recent login`() {
         val subject = UUID.randomUUID().toString()
-        val R = """"retention":{"trashDays":30,"exportDays":7}"""
+        val retention = """"retention":{"trashDays":30,"exportDays":7}"""
 
         fun put(
             json: String,
@@ -214,14 +214,14 @@ class OidcAuthTest {
             .isEqualTo(0)
 
         val stale = Instant.now().minus(Duration.ofHours(1))
-        put("""{"aiConsent":"CONFIDENTIAL","defaultVisibility":"PRIVATE",$R}""", stale)
+        put("""{"aiConsent":"CONFIDENTIAL","defaultVisibility":"PRIVATE",$retention}""", stale)
             .expectStatus()
             .isUnauthorized
             .expectBody()
             .jsonPath("$.code")
             .isEqualTo("REAUTHENTICATION_REQUIRED")
         // Changing only the visibility default is not sensitive.
-        put("""{"aiConsent":"NONE","defaultVisibility":"SELECTIVE",$R}""", stale).expectStatus().isOk
+        put("""{"aiConsent":"NONE","defaultVisibility":"SELECTIVE",$retention}""", stale).expectStatus().isOk
         // Retention is bounded at the edge (400) and read back.
         put(
             """{"aiConsent":"NONE","defaultVisibility":"SELECTIVE","retention":{"trashDays":3,"exportDays":7}}""",
@@ -249,7 +249,7 @@ class OidcAuthTest {
             .jsonPath("$.version")
             .isEqualTo(3)
         put(
-            """{"aiConsent":"NONE","defaultVisibility":"SELECTIVE",$R,"version":1}""",
+            """{"aiConsent":"NONE","defaultVisibility":"SELECTIVE",$retention,"version":1}""",
             Instant.now(),
         ).expectStatus().isEqualTo(409)
 
