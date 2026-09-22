@@ -7,7 +7,11 @@ import com.proofu.api.web.StaleVersionException
 import com.proofu.domain.common.AiConsent
 import com.proofu.domain.common.Visibility
 import com.proofu.domain.common.WorkspaceId
+import com.proofu.domain.identity.RetentionPolicy
 import com.proofu.domain.identity.WorkspaceSettings
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
@@ -17,10 +21,21 @@ import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.UUID
 
+data class RetentionRequest(
+    @field:NotNull @field:Min(7) @field:Max(365) val trashDays: Int?,
+    @field:NotNull @field:Min(1) @field:Max(90) val exportDays: Int?,
+)
+
 data class SettingsRequest(
     @field:NotNull val aiConsent: AiConsent?,
     @field:NotNull val defaultVisibility: Visibility?,
+    @field:NotNull @field:Valid val retention: RetentionRequest?,
     val version: Long? = null,
+)
+
+data class RetentionResponse(
+    val trashDays: Int,
+    val exportDays: Int,
 )
 
 data class SettingsResponse(
@@ -28,11 +43,19 @@ data class SettingsResponse(
     val aiConsent: AiConsent,
     val aiConsentAt: Instant?,
     val defaultVisibility: Visibility,
+    val retention: RetentionResponse,
     val version: Long,
 ) {
     companion object {
         fun from(s: WorkspaceSettings) =
-            SettingsResponse(s.workspaceId.value, s.aiConsent, s.aiConsentAt, s.defaultVisibility, s.version)
+            SettingsResponse(
+                s.workspaceId.value,
+                s.aiConsent,
+                s.aiConsentAt,
+                s.defaultVisibility,
+                RetentionResponse(s.retention.trashDays, s.retention.exportDays),
+                s.version,
+            )
     }
 }
 
@@ -52,13 +75,18 @@ class SettingsService(
     fun current(workspaceId: UUID): WorkspaceSettings =
         jdbc
             .query(
-                "select ai_consent, ai_consent_at, default_visibility, version from workspace_settings where workspace_id = ?",
+                """
+                select ai_consent, ai_consent_at, default_visibility, trash_retention_days, export_retention_days, version
+                from workspace_settings where workspace_id = ?
+                """.trimIndent(),
                 { rs, _ ->
                     WorkspaceSettings(
                         workspaceId = WorkspaceId(workspaceId),
                         aiConsent = AiConsent.valueOf(rs.getString("ai_consent")),
                         aiConsentAt = rs.getObject("ai_consent_at", OffsetDateTime::class.java)?.toInstant(),
                         defaultVisibility = Visibility.valueOf(rs.getString("default_visibility")),
+                        retention =
+                            RetentionPolicy(rs.getInt("trash_retention_days"), rs.getInt("export_retention_days")),
                         version = rs.getLong("version"),
                     )
                 },
@@ -87,22 +115,31 @@ class SettingsService(
                         else -> previous.aiConsentAt?.takeIf { previous.aiConsent == consent } ?: Instant.now(clock)
                     },
                 defaultVisibility = requireNotNull(request.defaultVisibility),
+                retention =
+                    requireNotNull(request.retention).let {
+                        RetentionPolicy(requireNotNull(it.trashDays), requireNotNull(it.exportDays))
+                    },
                 version = previous.version + 1,
             )
         // Letting a model see confidential data is a sensitive decision: prove a recent login.
         if (next.grantsConsentOver(previous)) workspace.requireRecentAuthentication(clock, auth.reauthMaxAge)
         jdbc.update(
             """
-            insert into workspace_settings (workspace_id, ai_consent, ai_consent_at, default_visibility, version)
-            values (?, ?, ?, ?, ?)
+            insert into workspace_settings
+              (workspace_id, ai_consent, ai_consent_at, default_visibility, trash_retention_days, export_retention_days, version)
+            values (?, ?, ?, ?, ?, ?, ?)
             on conflict (workspace_id) do update set
               ai_consent = excluded.ai_consent, ai_consent_at = excluded.ai_consent_at,
-              default_visibility = excluded.default_visibility, version = excluded.version
+              default_visibility = excluded.default_visibility,
+              trash_retention_days = excluded.trash_retention_days,
+              export_retention_days = excluded.export_retention_days, version = excluded.version
             """.trimIndent(),
             workspaceId,
             next.aiConsent.name,
             next.aiConsentAt?.let { OffsetDateTime.ofInstant(it, clock.zone) },
             next.defaultVisibility.name,
+            next.retention.trashDays,
+            next.retention.exportDays,
             next.version,
         )
         val response = SettingsResponse.from(next)

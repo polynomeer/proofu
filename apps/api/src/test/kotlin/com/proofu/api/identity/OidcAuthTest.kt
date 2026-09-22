@@ -185,6 +185,7 @@ class OidcAuthTest {
     @Test
     fun `settings default safely and granting consent needs a recent login`() {
         val subject = UUID.randomUUID().toString()
+        val R = """"retention":{"trashDays":30,"exportDays":7}"""
 
         fun put(
             json: String,
@@ -205,28 +206,50 @@ class OidcAuthTest {
             .isEqualTo("NONE")
             .jsonPath("$.defaultVisibility")
             .isEqualTo("PRIVATE")
+            .jsonPath("$.retention.trashDays")
+            .isEqualTo(30)
+            .jsonPath("$.retention.exportDays")
+            .isEqualTo(7)
             .jsonPath("$.version")
             .isEqualTo(0)
 
         val stale = Instant.now().minus(Duration.ofHours(1))
-        put("""{"aiConsent":"CONFIDENTIAL","defaultVisibility":"PRIVATE"}""", stale)
+        put("""{"aiConsent":"CONFIDENTIAL","defaultVisibility":"PRIVATE",$R}""", stale)
             .expectStatus()
             .isUnauthorized
             .expectBody()
             .jsonPath("$.code")
             .isEqualTo("REAUTHENTICATION_REQUIRED")
         // Changing only the visibility default is not sensitive.
-        put("""{"aiConsent":"NONE","defaultVisibility":"SELECTIVE"}""", stale).expectStatus().isOk
-        put("""{"aiConsent":"CONFIDENTIAL","defaultVisibility":"SELECTIVE","version":1}""", Instant.now())
-            .expectStatus()
+        put("""{"aiConsent":"NONE","defaultVisibility":"SELECTIVE",$R}""", stale).expectStatus().isOk
+        // Retention is bounded at the edge (400) and read back.
+        put(
+            """{"aiConsent":"NONE","defaultVisibility":"SELECTIVE","retention":{"trashDays":3,"exportDays":7}}""",
+            stale,
+        ).expectStatus()
+            .isBadRequest
+        put(
+            """{"aiConsent":"NONE","defaultVisibility":"SELECTIVE","retention":{"trashDays":14,"exportDays":3},"version":1}""",
+            stale,
+        ).expectStatus()
+            .isOk
+            .expectBody()
+            .jsonPath("$.retention.trashDays")
+            .isEqualTo(14)
+            .jsonPath("$.retention.exportDays")
+            .isEqualTo(3)
+        put(
+            """{"aiConsent":"CONFIDENTIAL","defaultVisibility":"SELECTIVE","retention":{"trashDays":14,"exportDays":3},"version":2}""",
+            Instant.now(),
+        ).expectStatus()
             .isOk
             .expectBody()
             .jsonPath("$.aiConsentAt")
             .exists()
             .jsonPath("$.version")
-            .isEqualTo(2)
+            .isEqualTo(3)
         put(
-            """{"aiConsent":"NONE","defaultVisibility":"SELECTIVE","version":1}""",
+            """{"aiConsent":"NONE","defaultVisibility":"SELECTIVE",$R,"version":1}""",
             Instant.now(),
         ).expectStatus().isEqualTo(409)
 
