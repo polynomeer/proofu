@@ -64,6 +64,12 @@ class AccountPurgeJobHandler(
             )
             run("exports", "delete from exports where workspace_id = ?", w)
             run(
+                "account_export_files",
+                "delete from export_files where object_key in (select object_key from account_exports where workspace_id = ? and object_key is not null)",
+                w,
+            )
+            run("account_exports", "delete from account_exports where workspace_id = ?", w)
+            run(
                 "provenance_links",
                 "delete from provenance_links where version_id in (select v.id from document_versions v join documents d on d.id = v.document_id where d.workspace_id = ?)",
                 w,
