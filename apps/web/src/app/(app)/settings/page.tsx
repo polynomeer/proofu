@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { DeleteAccount } from "@/components/settings/DeleteAccount";
 import { ProfileForm } from "@/components/settings/ProfileForm";
+import { WorkspaceSettingsForm } from "@/components/settings/WorkspaceSettingsForm";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
 import { currentCaller } from "@/lib/auth/current";
@@ -11,7 +12,10 @@ export const dynamic = "force-dynamic";
 
 /** S01: profile now; visibility defaults, AI consent, retention and account deletion follow OIDC. */
 export default async function SettingsPage() {
-  const { data: profile } = await api.GET("/me/profile").catch(() => ({ data: undefined }));
+  const [{ data: profile }, { data: settings }] = await Promise.all([
+    api.GET("/me/profile").catch(() => ({ data: undefined })),
+    api.GET("/me/settings").catch(() => ({ data: undefined })),
+  ]);
   const caller = await currentCaller();
 
   return (
@@ -25,6 +29,17 @@ export default async function SettingsPage() {
             않습니다. 저장하면 이후 내보내기부터 새 머리글을 씁니다.
           </p>
           <ProfileForm initial={profile ?? null} />
+        </section>
+        <section className="rounded-md border border-border-300 bg-surface-000 p-6 lg:col-start-1">
+          <h2 className="text-section-title">개인정보와 AI</h2>
+          <p className="mt-1 mb-4 text-caption text-text-600">
+            무엇을 AI가 보게 할지, 새 기록을 기본으로 얼마나 공개할지 정합니다.
+          </p>
+          {settings ? (
+            <WorkspaceSettingsForm initial={settings} />
+          ) : (
+            <p className="text-body text-text-600">설정을 불러오지 못했습니다.</p>
+          )}
         </section>
         <div className="lg:col-start-1">
           <DeleteAccount canSignOut={caller?.mode === "oidc"} />
@@ -57,8 +72,6 @@ export default async function SettingsPage() {
           <div className="rounded-md border border-border-300 bg-surface-000 p-6">
             <h2 className="text-card-title">준비 중</h2>
             <ul className="mt-2 flex flex-col gap-1 text-caption text-text-600">
-              <li>공개 범위 기본값</li>
-              <li>AI 처리 동의 (기밀·제한 데이터)</li>
               <li>보존 기간, 데이터 내보내기</li>
             </ul>
           </div>

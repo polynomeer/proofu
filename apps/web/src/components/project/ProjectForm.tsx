@@ -28,14 +28,20 @@ export function ProjectForm({
   project,
   careerEntries,
   defaultCareerEntryId,
+  defaultVisibility = "PRIVATE",
 }: {
   project?: Project;
   careerEntries: CareerEntryOption[];
   defaultCareerEntryId?: string;
+  defaultVisibility?: Input["visibility"];
 }) {
   const router = useRouter();
   const [values, setValues] = useState<Input>(
-    project ?? { ...EMPTY, careerEntryId: defaultCareerEntryId ?? null },
+    project ?? {
+      ...EMPTY,
+      careerEntryId: defaultCareerEntryId ?? null,
+      visibility: defaultVisibility,
+    },
   );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string | null>(null);

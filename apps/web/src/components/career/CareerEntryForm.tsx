@@ -26,9 +26,15 @@ function fieldErrorsOf(problem: ProblemDetail | undefined): Record<string, strin
 }
 
 /** Create (no `entry`) or edit (with `entry`, sending its revision for optimistic locking). */
-export function CareerEntryForm({ entry }: { entry?: Entry }) {
+export function CareerEntryForm({
+  entry,
+  defaultVisibility = "PRIVATE",
+}: {
+  entry?: Entry;
+  defaultVisibility?: Input["visibility"];
+}) {
   const router = useRouter();
-  const [values, setValues] = useState<Input>(entry ?? EMPTY);
+  const [values, setValues] = useState<Input>(entry ?? { ...EMPTY, visibility: defaultVisibility });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [problem, setProblem] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
