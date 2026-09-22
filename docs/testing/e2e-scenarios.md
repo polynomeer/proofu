@@ -27,6 +27,7 @@ review: 릴리스 계획 시
 | 1 (경력·프로젝트·성과·Claim·Evidence)                                                               | `journey.spec.ts` beforeAll | API 시드. 파일 Evidence는 객체 저장소 확정 후                                          |
 | 2 공고·추출·승인 / 3 매칭·채택 / 4–5 초안·승인·버전·비교 / 6 DOCX·PDF / 7 제출 스냅샷 불변 / 8 회고 | `journey.spec.ts`           | 가짜 AI 제공자, 실제 렌더러·다운로드                                                   |
 | 9 iterview 인계                                                                                     | —                           | 연동 계약 TBD                                                                          |
+| S01 설정 (AI 동의·공개 범위 기본값·보존 기간)                                                       | `settings.spec.ts`          | 동의 저장(재인증 경로), 기본값이 새 경력 폼에 반영, 보존 일수 저장·재조회              |
 | 10 전체 내보내기·계정 삭제                                                                          | `account.spec.ts`           | ZIP 다운로드, 오래된 로그인은 401; 삭제 즉시 401 → purge 후 같은 subject가 새 사용자로 |
 
 직렬 실행(mock IdP의 "현재 사용자"가 하나). 로컬: `scripts/e2e.sh`, 유지하며 재실행하려면 `E2E_KEEP=1`.
