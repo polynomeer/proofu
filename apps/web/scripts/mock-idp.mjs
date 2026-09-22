@@ -37,16 +37,40 @@ const refreshTokens = new Map(); // token -> { clientId, authTime }
 function tokens({ clientId, nonce, authTime }) {
   const iat = now();
   const access = jwt({
-    iss: issuer, sub: user.sub, aud: apiAudience, azp: clientId, iat, exp: iat + accessTtl,
-    auth_time: authTime, email: user.email, email_verified: true, name: user.name, scope: "openid profile email",
+    iss: issuer,
+    sub: user.sub,
+    aud: apiAudience,
+    azp: clientId,
+    iat,
+    exp: iat + accessTtl,
+    auth_time: authTime,
+    email: user.email,
+    email_verified: true,
+    name: user.name,
+    scope: "openid profile email",
   });
   const id = jwt({
-    iss: issuer, sub: user.sub, aud: clientId, iat, exp: iat + accessTtl, auth_time: authTime,
-    nonce, email: user.email, email_verified: true, name: user.name, preferred_username: user.email,
+    iss: issuer,
+    sub: user.sub,
+    aud: clientId,
+    iat,
+    exp: iat + accessTtl,
+    auth_time: authTime,
+    nonce,
+    email: user.email,
+    email_verified: true,
+    name: user.name,
+    preferred_username: user.email,
   });
   const refresh = randomBytes(24).toString("base64url");
   refreshTokens.set(refresh, { clientId, authTime });
-  return { access_token: access, id_token: id, refresh_token: refresh, token_type: "Bearer", expires_in: accessTtl };
+  return {
+    access_token: access,
+    id_token: id,
+    refresh_token: refresh,
+    token_type: "Bearer",
+    expires_in: accessTtl,
+  };
 }
 
 const json = (res, status, body) => {
@@ -90,8 +114,11 @@ createServer(async (req, res) => {
     }
     const code = randomBytes(16).toString("base64url");
     codes.set(code, {
-      clientId: p.get("client_id"), redirectUri: p.get("redirect_uri"), nonce: p.get("nonce"),
-      challenge: p.get("code_challenge"), authTime: now(),
+      clientId: p.get("client_id"),
+      redirectUri: p.get("redirect_uri"),
+      nonce: p.get("nonce"),
+      challenge: p.get("code_challenge"),
+      authTime: now(),
     });
     const back = new URL(p.get("redirect_uri"));
     back.searchParams.set("code", code);
@@ -105,11 +132,18 @@ createServer(async (req, res) => {
     if (grant === "authorization_code") {
       const entry = codes.get(form.get("code"));
       codes.delete(form.get("code"));
-      if (!entry || entry.clientId !== form.get("client_id") || entry.redirectUri !== form.get("redirect_uri")) {
+      if (
+        !entry ||
+        entry.clientId !== form.get("client_id") ||
+        entry.redirectUri !== form.get("redirect_uri")
+      ) {
         return json(res, 400, { error: "invalid_grant" });
       }
-      const expected = createHash("sha256").update(form.get("code_verifier") ?? "").digest("base64url");
-      if (entry.challenge && entry.challenge !== expected) return json(res, 400, { error: "invalid_grant", error_description: "pkce" });
+      const expected = createHash("sha256")
+        .update(form.get("code_verifier") ?? "")
+        .digest("base64url");
+      if (entry.challenge && entry.challenge !== expected)
+        return json(res, 400, { error: "invalid_grant", error_description: "pkce" });
       return json(res, 200, tokens(entry));
     }
     if (grant === "refresh_token") {
@@ -128,5 +162,7 @@ createServer(async (req, res) => {
   }
   json(res, 404, { error: "not_found", path });
 }).listen(port, "127.0.0.1", () => {
-  console.log(`mock IdP at ${issuer} (user ${user.email}, sub ${user.sub}); JWKS at ${issuer}/protocol/openid-connect/certs`);
+  console.log(
+    `mock IdP at ${issuer} (user ${user.email}, sub ${user.sub}); JWKS at ${issuer}/protocol/openid-connect/certs`,
+  );
 });

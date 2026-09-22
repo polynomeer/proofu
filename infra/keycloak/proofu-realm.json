@@ -27,10 +27,7 @@
         "http://localhost:3000/auth/callback",
         "http://localhost:3111/auth/callback"
       ],
-      "webOrigins": [
-        "http://localhost:3000",
-        "http://localhost:3111"
-      ],
+      "webOrigins": ["http://localhost:3000", "http://localhost:3111"],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:3111/*"
