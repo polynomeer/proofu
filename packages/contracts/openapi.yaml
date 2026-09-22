@@ -37,6 +37,44 @@ tags:
     description: "The caller's own settings (S01): profile used in document headers"
 
 paths:
+  /me/settings:
+    get:
+      tags: [account]
+      operationId: getMySettings
+      summary: Workspace preferences (defaults when never saved)
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceSettings"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      tags: [account]
+      operationId: saveMySettings
+      summary: Save workspace preferences
+      description: |
+        Granting AI consent (NONE → CONFIDENTIAL) needs a recent login (401
+        REAUTHENTICATION_REQUIRED); the grant time is recorded. RESTRICTED data is never sent to
+        a model regardless. `version` guards concurrent saves (409).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceSettingsInput"
+      responses:
+        "200":
+          description: Saved settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceSettings"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /me/profile:
     get:
       tags: [account]
@@ -2376,6 +2414,38 @@ components:
             updatedAt:
               type: string
               format: date-time
+
+    AiConsent:
+      type: string
+      enum: [NONE, CONFIDENTIAL]
+
+    WorkspaceSettingsInput:
+      type: object
+      required: [aiConsent, defaultVisibility]
+      properties:
+        aiConsent:
+          $ref: "#/components/schemas/AiConsent"
+        defaultVisibility:
+          $ref: "#/components/schemas/Visibility"
+        version:
+          type: integer
+          format: int64
+
+    WorkspaceSettings:
+      allOf:
+        - $ref: "#/components/schemas/WorkspaceSettingsInput"
+        - type: object
+          required: [workspaceId, version]
+          properties:
+            workspaceId:
+              $ref: "#/components/schemas/Uuid"
+            aiConsentAt:
+              type: [string, "null"]
+              format: date-time
+            version:
+              description: 0 until first saved
+              type: integer
+              format: int64
 
     ProfileLink:
       type: object
