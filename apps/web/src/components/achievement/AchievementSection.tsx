@@ -244,7 +244,7 @@ function AchievementRow({
   async function remove() {
     if (
       !window.confirm(
-        `"${item.action}" 성과를 삭제할까요?\n30일 동안 휴지통에 보관된 뒤 영구 삭제됩니다.`,
+        `"${item.action}" 성과를 삭제할까요?\n휴지통에 보관된 뒤 설정한 보존 기간(기본 30일)이 지나면 영구 삭제됩니다.`,
       )
     )
       return;

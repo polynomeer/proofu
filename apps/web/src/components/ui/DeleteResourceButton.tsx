@@ -38,7 +38,7 @@ export function DeleteResourceButton({
     const lines = [
       `"${title}" 항목을 삭제할까요?`,
       note,
-      "30일 동안 휴지통에 보관된 뒤 영구 삭제됩니다.",
+      "휴지통에 보관된 뒤 설정한 보존 기간(기본 30일)이 지나면 영구 삭제됩니다.",
     ];
     if (!window.confirm(lines.filter(Boolean).join("\n"))) return;
     setBusy(true);

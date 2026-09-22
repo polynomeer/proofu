@@ -15,12 +15,15 @@ type Settings = Schema<"WorkspaceSettings">;
 type Visibility = Schema<"Visibility">;
 
 /**
- * S01: AI consent for CONFIDENTIAL records and the default visibility of new records.
+ * S01: AI consent for CONFIDENTIAL records, the default visibility of new records, and the
+ * retention windows the worker's sweep applies.
  * Granting consent needs a recent login; a 401 sends the browser through the IdP and back.
  */
 export function WorkspaceSettingsForm({ initial }: { initial: Settings }) {
   const [consent, setConsent] = useState(initial.aiConsent === "CONFIDENTIAL");
   const [visibility, setVisibility] = useState<Visibility>(initial.defaultVisibility);
+  const [trashDays, setTrashDays] = useState(String(initial.retention.trashDays));
+  const [exportDays, setExportDays] = useState(String(initial.retention.exportDays));
   const [version, setVersion] = useState(initial.version);
   const [consentAt, setConsentAt] = useState(initial.aiConsentAt ?? null);
   const [saving, setSaving] = useState(false);
@@ -32,10 +35,24 @@ export function WorkspaceSettingsForm({ initial }: { initial: Settings }) {
     setSaving(true);
     setError(null);
     setSaved(false);
+    const retention = { trashDays: Number(trashDays), exportDays: Number(exportDays) };
+    if (
+      !Number.isInteger(retention.trashDays) ||
+      retention.trashDays < 7 ||
+      retention.trashDays > 365 ||
+      !Number.isInteger(retention.exportDays) ||
+      retention.exportDays < 1 ||
+      retention.exportDays > 90
+    ) {
+      setSaving(false);
+      setError("휴지통 보존은 7–365일, 내보내기 파일 보존은 1–90일 사이여야 합니다.");
+      return;
+    }
     const { data, error: problem } = await api.PUT("/me/settings", {
       body: {
         aiConsent: consent ? "CONFIDENTIAL" : "NONE",
         defaultVisibility: visibility,
+        retention,
         version,
       },
     });
@@ -112,6 +129,39 @@ export function WorkspaceSettingsForm({ initial }: { initial: Settings }) {
           ))}
         </select>
       </Field>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="text-body font-semibold">보존 기간</legend>
+        <p className="text-caption text-text-600">
+          삭제한 경력·프로젝트·성과·주장·Evidence·요구사항은 휴지통에 머문 뒤 영구 삭제되고, 만든
+          문서 파일과 전체 내보내기 ZIP은 기간이 지나면 만료됩니다. 공고·지원·문서와 제출 스냅샷은
+          계정을 삭제할 때까지 남습니다.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <Field id="trash-days" label="휴지통 보존 (일)" help="7–365일. 기본 30일">
+            <input
+              id="trash-days"
+              type="number"
+              min={7}
+              max={365}
+              className={`${inputClass} w-28`}
+              value={trashDays}
+              onChange={(e) => setTrashDays(e.target.value)}
+            />
+          </Field>
+          <Field id="export-days" label="내보내기 파일 보존 (일)" help="1–90일. 기본 7일">
+            <input
+              id="export-days"
+              type="number"
+              min={1}
+              max={90}
+              className={`${inputClass} w-28`}
+              value={exportDays}
+              onChange={(e) => setExportDays(e.target.value)}
+            />
+          </Field>
+        </div>
+      </fieldset>
 
       <div className="flex items-center gap-3">
         <Button type="submit" loading={saving}>
