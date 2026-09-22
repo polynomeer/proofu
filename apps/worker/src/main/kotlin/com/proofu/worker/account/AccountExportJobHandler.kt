@@ -140,9 +140,11 @@ class AccountExportJobHandler(
         val TTL: Duration = Duration.ofDays(7)
 
         private const val BY_WS = "where workspace_id = ? order by created_at"
-        private const val BY_APP = "where application_id in (select id from applications where workspace_id = ?) order by created_at"
+        private const val BY_APP =
+            "where application_id in (select id from applications where workspace_id = ?) order by created_at"
         private const val BY_CLAIM = "where claim_id in (select id from claims where workspace_id = ?)"
-        private const val BY_DOC = "where document_id in (select id from documents where workspace_id = ?) order by created_at"
+        private const val BY_DOC =
+            "where document_id in (select id from documents where workspace_id = ?) order by created_at"
 
         val TABLES: List<Pair<String, String>> =
             listOf(
