@@ -112,7 +112,9 @@ paths:
       description: |
         Granting AI consent (NONE → CONFIDENTIAL) needs a recent login (401
         REAUTHENTICATION_REQUIRED); the grant time is recorded. RESTRICTED data is never sent to
-        a model regardless. `version` guards concurrent saves (409).
+        a model regardless. `retention` sets how long the trash and export files are kept; the
+        worker's retention sweep applies it within the hour. `version` guards concurrent saves
+        (409).
       requestBody:
         required: true
         content:
@@ -2503,14 +2505,32 @@ components:
           type: string
           format: date-time
 
+    RetentionPolicy:
+      description: How long the trash and export files are kept (docs/data/retention.md)
+      type: object
+      required: [trashDays, exportDays]
+      properties:
+        trashDays:
+          description: Soft-deleted source records are purged after this many days
+          type: integer
+          minimum: 7
+          maximum: 365
+        exportDays:
+          description: Document export files and full-data ZIPs expire after this many days
+          type: integer
+          minimum: 1
+          maximum: 90
+
     WorkspaceSettingsInput:
       type: object
-      required: [aiConsent, defaultVisibility]
+      required: [aiConsent, defaultVisibility, retention]
       properties:
         aiConsent:
           $ref: "#/components/schemas/AiConsent"
         defaultVisibility:
           $ref: "#/components/schemas/Visibility"
+        retention:
+          $ref: "#/components/schemas/RetentionPolicy"
         version:
           type: integer
           format: int64

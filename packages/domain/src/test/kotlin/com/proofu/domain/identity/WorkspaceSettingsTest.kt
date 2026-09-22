@@ -39,4 +39,18 @@ class WorkspaceSettingsTest {
             WorkspaceSettings(ws, AiConsent.NONE, Instant.now())
         }.isInstanceOf(DomainRuleViolation::class.java)
     }
+
+    @Test
+    fun `retention windows are bounded and derive cutoffs from now`() {
+        val now = Instant.parse("2026-09-22T00:00:00Z")
+        val policy = RetentionPolicy(trashDays = 10, exportDays = 2)
+        assertThat(policy.trashCutoff(now)).isEqualTo(Instant.parse("2026-09-12T00:00:00Z"))
+        assertThat(policy.exportCutoff(now)).isEqualTo(Instant.parse("2026-09-20T00:00:00Z"))
+        assertThat(policy.exportExpiry(now)).isEqualTo(Instant.parse("2026-09-24T00:00:00Z"))
+        assertThat(WorkspaceSettings(ws).retention).isEqualTo(RetentionPolicy(30, 7))
+        assertThatThrownBy { RetentionPolicy(trashDays = 6) }.isInstanceOf(DomainRuleViolation::class.java)
+        assertThatThrownBy { RetentionPolicy(trashDays = 366) }.isInstanceOf(DomainRuleViolation::class.java)
+        assertThatThrownBy { RetentionPolicy(exportDays = 0) }.isInstanceOf(DomainRuleViolation::class.java)
+        assertThatThrownBy { RetentionPolicy(exportDays = 91) }.isInstanceOf(DomainRuleViolation::class.java)
+    }
 }

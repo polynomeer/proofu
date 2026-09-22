@@ -6,13 +6,17 @@ import com.proofu.domain.common.WorkspaceId
 import com.proofu.domain.common.domainRequire
 import java.time.Instant
 
-/** Per-workspace preferences (S01): what AI may see, and what new career records default to. */
+/**
+ * Per-workspace preferences (S01): what AI may see, what new career records default to, and how
+ * long the trash and export files are kept.
+ */
 data class WorkspaceSettings(
     val workspaceId: WorkspaceId,
     val aiConsent: AiConsent = AiConsent.NONE,
     /** When the user last granted consent; null while NONE. Kept as the record of the decision. */
     val aiConsentAt: Instant? = null,
     val defaultVisibility: Visibility = Visibility.PRIVATE,
+    val retention: RetentionPolicy = RetentionPolicy.DEFAULT,
     val version: Long = 0,
 ) {
     init {

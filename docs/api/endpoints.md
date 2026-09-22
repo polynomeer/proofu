@@ -12,8 +12,8 @@ review: API 릴리스 시
 | --------------------- | --------------------------------------------- | ------------------------------------------------------- |
 | DELETE ✅             | `/me`                                         | 계정 삭제 요청 (202, `account.purge`, 재인증 필요)      |
 | GET, POST ✅          | `/me/exports`                                 | 전체 데이터 내보내기 목록·시작 (202, `account.export`)  |
-| GET ✅                | `/me/exports/{id}/file`                       | ZIP 다운로드 (재인증, 7일 만료)                         |
-| GET, PUT ✅           | `/me/settings`                                | AI 처리 동의·공개 범위 기본값 (동의 부여는 재인증)      |
+| GET ✅                | `/me/exports/{id}/file`                       | ZIP 다운로드 (재인증, 보존 기간 뒤 만료)                |
+| GET, PUT ✅           | `/me/settings`                                | AI 처리 동의·공개 범위 기본값·보존 기간 (동의 부여는 재인증) |
 | GET, PUT ✅           | `/me/profile`                                 | 문서 머리글 프로필 조회·저장 (AI 전송 없음)             |
 | GET                   | `/dashboard` ✅                               | 대시보드 집계 (KPI, 타임라인, 최근 Evidence, 행동 필요) |
 | GET, POST             | `/career-entries` ✅                          | 경력 목록 조회와 생성                                   |
