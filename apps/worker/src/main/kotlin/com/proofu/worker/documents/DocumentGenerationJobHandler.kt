@@ -17,6 +17,7 @@ import com.proofu.worker.jobs.AiFailures
 import com.proofu.worker.jobs.JobFailure
 import com.proofu.worker.jobs.JobHandler
 import com.proofu.worker.jobs.JobRecord
+import com.proofu.worker.jobs.WorkspaceSettingsReader
 import com.proofu.worker.matching.CandidateRepository
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
@@ -39,6 +40,7 @@ class DocumentGenerationJobHandler(
     private val tx: TransactionTemplate,
     private val mapper: ObjectMapper,
     private val ids: IdGenerator,
+    private val settings: WorkspaceSettingsReader,
 ) : JobHandler {
     private val log = LoggerFactory.getLogger(DocumentGenerationJobHandler::class.java)
 
@@ -118,6 +120,7 @@ class DocumentGenerationJobHandler(
                         claims = claims,
                     ),
                     job.id,
+                    settings.consentFor(job.workspaceId),
                 )
             }
         if (draft.output.blocks.isEmpty()) {

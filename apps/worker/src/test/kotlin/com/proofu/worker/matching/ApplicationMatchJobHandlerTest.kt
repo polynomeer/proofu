@@ -95,6 +95,28 @@ class ApplicationMatchJobHandlerTest {
         assertThat(after["user_decision"]).isEqualTo("REJECTED")
         assertThat(after["reason"]).isEqualTo("SaaS 온보딩 재설계가 제품 기획 경험을 뒷받침합니다.") // kept when the new run has none
         assertThat(after["run_job_id"]).isEqualTo(second)
+
+        // With the workspace's AI consent, the confidential claim becomes a candidate and reaches the model.
+        jdbc.update(
+            "insert into workspace_settings (workspace_id, ai_consent, ai_consent_at) values (?, 'CONFIDENTIAL', now())",
+            s.workspaceId,
+        )
+        fake.enqueue(explanation())
+        val third = enqueue(s.workspaceId, s.applicationId)
+        awaitStatus(third, "SUCCEEDED")
+        assertThat(
+            jdbc.queryForObject(
+                "select result ->> 'sensitiveSkipped' from jobs where id = ?",
+                String::class.java,
+                third,
+            ),
+        ).isEqualTo("0")
+        assertThat(
+            fake.requests
+                .last()
+                .documents
+                .map { it.sourceId },
+        ).contains("claim:${s.claimSecret}")
     }
 
     private fun explanation(vararg items: String) =

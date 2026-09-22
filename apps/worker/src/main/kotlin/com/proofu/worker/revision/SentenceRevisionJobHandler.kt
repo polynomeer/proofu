@@ -9,6 +9,7 @@ import com.proofu.worker.jobs.AiFailures
 import com.proofu.worker.jobs.JobFailure
 import com.proofu.worker.jobs.JobHandler
 import com.proofu.worker.jobs.JobRecord
+import com.proofu.worker.jobs.WorkspaceSettingsReader
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
@@ -25,6 +26,7 @@ class SentenceRevisionJobHandler(
     private val content: VersionContentReader,
     private val jdbc: JdbcTemplate,
     private val mapper: ObjectMapper,
+    private val settings: WorkspaceSettingsReader,
 ) : JobHandler {
     private val log = LoggerFactory.getLogger(SentenceRevisionJobHandler::class.java)
 
@@ -74,6 +76,7 @@ class SentenceRevisionJobHandler(
                     WorkspaceId(job.workspaceId),
                     SentenceToRevise(blockId, block.text, facts, mode, language),
                     job.id,
+                    settings.consentFor(job.workspaceId),
                 )
             }
         log.info(

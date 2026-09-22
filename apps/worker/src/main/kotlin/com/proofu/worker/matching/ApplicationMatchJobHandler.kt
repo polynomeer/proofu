@@ -11,6 +11,7 @@ import com.proofu.worker.jobs.AiFailures
 import com.proofu.worker.jobs.JobFailure
 import com.proofu.worker.jobs.JobHandler
 import com.proofu.worker.jobs.JobRecord
+import com.proofu.worker.jobs.WorkspaceSettingsReader
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
@@ -34,6 +35,7 @@ class ApplicationMatchJobHandler(
     private val mapper: ObjectMapper,
     private val clock: Clock,
     private val ids: IdGenerator,
+    private val settings: WorkspaceSettingsReader,
 ) : JobHandler {
     private val log = LoggerFactory.getLogger(ApplicationMatchJobHandler::class.java)
 
@@ -53,7 +55,8 @@ class ApplicationMatchJobHandler(
 
         val requirements = candidates.approvedRequirements(snapshotId)
         val all = candidates.candidates(job.workspaceId)
-        val (eligible, sensitive) = all.partition { it.sensitivity.allowedInAiContextByDefault }
+        val consent = settings.consentFor(job.workspaceId)
+        val (eligible, sensitive) = all.partition { it.sensitivity.allowedInAiContext(consent) }
         val today = LocalDate.now(clock)
 
         // Deterministic scoring: top candidates per requirement, weakest noise dropped.
@@ -96,7 +99,7 @@ class ApplicationMatchJobHandler(
                 null
             } else {
                 AiFailures.guard {
-                    explainer.explain(WorkspaceId(job.workspaceId), toExplain, job.id)
+                    explainer.explain(WorkspaceId(job.workspaceId), toExplain, job.id, consent)
                 }
             }
         val reasons = explained?.explanations?.associateBy { it.requirementId to it.claimId } ?: emptyMap()
