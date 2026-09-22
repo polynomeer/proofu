@@ -59,7 +59,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **비동기 AI 작업**: api는 `JobService.enqueue`로 `jobs`에 넣고 202 + jobId, 웹은 `GET /jobs/{id}`를 폴링, worker의 `JobHandler`(`type` 상수는 api `JobTypes`와 동일)가 실행. AI 결과는 항상 DRAFT/미승인 상태로 저장하고 사용자가 같은 UI에서 승인한다 (예: `posting.analysis` → `Requirement.extracted`).
 - **웹 패턴**: 서버 컴포넌트가 `@/lib/api`로 조회, 폼은 클라이언트 컴포넌트. enum 라벨은 `@/lib/labels` 조회표(알 수 없는 값은 코드 그대로). 페이지 헤더의 primary 버튼은 하나.
 - **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
-- **민감도** `CONFIDENTIAL`/`RESTRICTED`는 동의 없이 AI 컨텍스트에 넣지 않는다. 로그에 본문·프롬프트·토큰 금지.
+- **민감도**: `CONFIDENTIAL`은 워크스페이스 설정의 AI 동의(`workspace_settings.ai_consent`, 부여 시 재인증, 시각 기록)가 있을 때만 AI 컨텍스트에 넣고, `RESTRICTED`는 절대 넣지 않는다(`Sensitivity.allowedInAiContext(consent)`; 잡은 `WorkspaceSettingsReader.consentFor`로 읽어 `AiCall.consentToSensitive`에 전달). 새 경력·프로젝트의 `visibility` 기본값은 `workspace_settings.default_visibility`. 로그에 본문·프롬프트·토큰 금지.
 - **디자인**: 색상·간격은 `tokens.css` 토큰만 사용. 상태는 색상 + 텍스트/아이콘. 점수는 숫자 + 낮음/보통/높음 라벨, 합격 확률로 표현 금지. 탈락 원인은 단정하지 않는다. ATS 검사(`AtsChecker`)도 항목별 PASS/INFO/WARN 사실만 — 점수·확률 없음.
 - **테스트 데이터**는 합성 데이터만 (`fixtures/`).
 
