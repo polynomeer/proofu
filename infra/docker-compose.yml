@@ -18,5 +18,20 @@ services:
       timeout: 3s
       retries: 10
 
+  # Local OIDC issuer (ADR-0010). Realm "proofu", client "proofu-web", user dev@proofu.local / devpass.
+  # Start with: docker compose -f infra/docker-compose.yml --profile auth up -d
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4
+    profiles: ["auth"]
+    command: ["start-dev", "--import-realm", "--http-port=8180"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://localhost:8180
+    ports:
+      - "8180:8180"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+
 volumes:
   postgres-data:
