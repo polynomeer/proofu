@@ -3,13 +3,13 @@ package com.proofu.worker.account
 import com.proofu.worker.jobs.JobFailure
 import com.proofu.worker.jobs.JobHandler
 import com.proofu.worker.jobs.JobRecord
+import com.proofu.worker.jobs.WorkspaceSettingsReader
 import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
 import tools.jackson.databind.ObjectMapper
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
-import java.time.Duration
 import java.util.UUID
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -23,6 +23,7 @@ import java.util.zip.ZipOutputStream
 class AccountExportJobHandler(
     private val jdbc: JdbcTemplate,
     private val mapper: ObjectMapper,
+    private val settings: WorkspaceSettingsReader,
 ) : JobHandler {
     private val log = LoggerFactory.getLogger(AccountExportJobHandler::class.java)
 
@@ -104,7 +105,7 @@ class AccountExportJobHandler(
             MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) },
             bytes.size.toLong(),
             mapper.writeValueAsString(counts),
-            "${TTL.toDays()} days",
+            "${settings.retentionFor(w).exportDays} days",
             exportId,
         )
         log.info("account.export workspace={} bytes={} tables={}", w, bytes.size, counts.size)
@@ -137,7 +138,6 @@ class AccountExportJobHandler(
         /** Must match apps/api JobTypes.ACCOUNT_EXPORT. */
         const val TYPE = "account.export"
         const val MAX_BYTES = 200 * 1024 * 1024
-        val TTL: Duration = Duration.ofDays(7)
 
         private const val BY_WS = "where workspace_id = ? order by created_at"
         private const val BY_APP =

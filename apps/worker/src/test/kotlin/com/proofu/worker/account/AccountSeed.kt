@@ -42,6 +42,12 @@ object AccountSeed {
             ws,
             entry,
         )
+        jdbc.update(
+            "insert into achievements (id, workspace_id, project_id, action, outcome, confidence) values (?, ?, ?, 'a', 'o', 0.8)",
+            UUID.randomUUID(),
+            ws,
+            project,
+        )
         val claim = UUID.randomUUID()
         jdbc.update("insert into claims (id, workspace_id, text, claim_type) values (?, ?, 'c', 'FACT')", claim, ws)
         jdbc.update(

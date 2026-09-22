@@ -3,6 +3,7 @@ package com.proofu.worker.jobs
 import com.proofu.domain.common.AiConsent
 import com.proofu.domain.common.Visibility
 import com.proofu.domain.common.WorkspaceId
+import com.proofu.domain.identity.RetentionPolicy
 import com.proofu.domain.identity.WorkspaceSettings
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
@@ -17,13 +18,18 @@ class WorkspaceSettingsReader(
     fun forWorkspace(workspaceId: UUID): WorkspaceSettings =
         jdbc
             .query(
-                "select ai_consent, ai_consent_at, default_visibility, version from workspace_settings where workspace_id = ?",
+                """
+                select ai_consent, ai_consent_at, default_visibility, trash_retention_days, export_retention_days, version
+                from workspace_settings where workspace_id = ?
+                """.trimIndent(),
                 { rs, _ ->
                     WorkspaceSettings(
                         workspaceId = WorkspaceId(workspaceId),
                         aiConsent = AiConsent.valueOf(rs.getString("ai_consent")),
                         aiConsentAt = rs.getObject("ai_consent_at", OffsetDateTime::class.java)?.toInstant(),
                         defaultVisibility = Visibility.valueOf(rs.getString("default_visibility")),
+                        retention =
+                            RetentionPolicy(rs.getInt("trash_retention_days"), rs.getInt("export_retention_days")),
                         version = rs.getLong("version"),
                     )
                 },
@@ -31,4 +37,6 @@ class WorkspaceSettingsReader(
             ).firstOrNull() ?: WorkspaceSettings(WorkspaceId(workspaceId))
 
     fun consentFor(workspaceId: UUID): AiConsent = forWorkspace(workspaceId).aiConsent
+
+    fun retentionFor(workspaceId: UUID): RetentionPolicy = forWorkspace(workspaceId).retention
 }

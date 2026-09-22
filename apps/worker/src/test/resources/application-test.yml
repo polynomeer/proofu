@@ -6,3 +6,5 @@ spring:
 proofu:
   worker:
     poll-interval: 200ms
+    # Tests drive RetentionSweeper.sweep directly; keep the timer out of the way.
+    retention-initial-delay: 1h

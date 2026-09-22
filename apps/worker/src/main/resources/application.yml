@@ -17,6 +17,8 @@ proofu:
   worker:
     poll-interval: ${WORKER_POLL_INTERVAL:2s}
     batch-size: ${WORKER_BATCH_SIZE:5}
+    retention-interval: ${WORKER_RETENTION_INTERVAL:1h}
+    retention-initial-delay: ${WORKER_RETENTION_INITIAL_DELAY:1m}
   ai:
     provider: ${AI_PROVIDER:fake}
     api-key: ${ANTHROPIC_API_KEY:}
