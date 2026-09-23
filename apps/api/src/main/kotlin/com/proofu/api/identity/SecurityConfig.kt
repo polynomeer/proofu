@@ -99,6 +99,9 @@ class SecurityConfig(
                 "/actuator/health",
                 "/actuator/health/**",
                 "/actuator/info",
+                // The scrape carries no personal data and Prometheus cannot hold a token; it is
+                // kept off the public port instead (docs/operations/monitoring.md §스크랩 경로 보호).
+                "/actuator/prometheus",
                 "/api/v1/openapi.json",
                 "/api/v1/docs/**",
             )

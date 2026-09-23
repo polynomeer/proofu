@@ -57,6 +57,14 @@ class OidcAuthTest {
         .exchange()
 
     @Test
+    fun `health and the metrics scrape stay reachable without a token, everything else does not`() {
+        get("/actuator/health", null).expectStatus().isOk
+        get("/actuator/prometheus", null).expectStatus().isOk
+        get("/actuator/env", null).expectStatus().isUnauthorized
+        get("/api/v1/dashboard", null).expectStatus().isUnauthorized
+    }
+
+    @Test
     fun `a verified token provisions the user once and scopes every call to their workspace`() {
         val subject = UUID.randomUUID().toString()
         get(

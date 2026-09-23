@@ -30,6 +30,7 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.boot.starter.actuator)
+    runtimeOnly(libs.micrometer.registry.prometheus)
     implementation(libs.spring.boot.starter.security.oauth2.resource.server)
     implementation(libs.springdoc.webmvc.ui)
     implementation(libs.jackson.module.kotlin)

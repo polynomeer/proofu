@@ -1,6 +1,7 @@
 package com.proofu.api.audit
 
 import com.proofu.api.identity.WorkspaceContext
+import com.proofu.api.web.RequestLogFilter
 import com.proofu.domain.common.IdGenerator
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
@@ -9,8 +10,8 @@ import java.security.MessageDigest
 import java.util.UUID
 
 /**
- * Appends to audit_events. Only hashes of the before/after state are stored so the
- * audit trail never carries career text or other personal data.
+ * Appends to audit_events. Only hashes of the before/after state are stored so the audit trail
+ * never carries career text or other personal data; the request id ties a row to its log line.
  */
 @Component
 class AuditLog(
@@ -28,8 +29,9 @@ class AuditLog(
     ) {
         jdbc.update(
             """
-            insert into audit_events (id, workspace_id, actor_id, actor_type, action, target_type, target_id, before_hash, after_hash)
-            values (?, ?, ?, 'USER', ?, ?, ?, ?, ?)
+            insert into audit_events
+              (id, workspace_id, actor_id, actor_type, action, target_type, target_id, before_hash, after_hash, request_id)
+            values (?, ?, ?, 'USER', ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             ids.next(),
             workspace.workspaceId.value,
@@ -39,6 +41,7 @@ class AuditLog(
             targetId,
             before?.let(::hash),
             after?.let(::hash),
+            RequestLogFilter.current(),
         )
     }
 

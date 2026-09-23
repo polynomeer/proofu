@@ -41,11 +41,13 @@ server:
     include-stacktrace: never
     include-message: never
 
+# Deployments set MANAGEMENT_SERVER_PORT to move health and the metrics scrape off the public
+# port (Spring binds that env var to management.server.port); unset means the same port.
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:

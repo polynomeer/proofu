@@ -56,6 +56,10 @@ class ProductionProfileTest {
         assertThat(jdbc.queryForObject("select count(*) from workspaces", Long::class.java)).isZero()
         assertThat(environment.getProperty("proofu.ai.provider")).isEqualTo("anthropic")
         assertThat(environment.getProperty("logging.level.com.proofu")).isEqualTo("info")
+        // Health and the metrics scrape stay on; deployments move them off the public port.
+        assertThat(environment.getProperty("management.endpoints.web.exposure.include"))
+            .isEqualTo("health,info,prometheus")
+        assertThat(environment.getProperty("management.endpoint.health.show-details")).isEqualTo("never")
 
         // The interim header no longer identifies anyone.
         client
