@@ -158,6 +158,8 @@ class AccountExportJobHandler(
                 "projects" to "select * from projects $BY_WS",
                 "achievements" to "select * from achievements $BY_WS",
                 "skills" to "select * from skills $BY_WS",
+                "project_skills" to
+                    "select ps.* from project_skills ps join projects p on p.id = ps.project_id where p.workspace_id = ?",
                 "capabilities" to "select * from capabilities $BY_WS",
                 "claims" to "select * from claims $BY_WS",
                 "claim_sources" to "select * from claim_sources $BY_CLAIM",

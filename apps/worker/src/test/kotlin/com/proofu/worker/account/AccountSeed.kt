@@ -48,6 +48,13 @@ object AccountSeed {
             ws,
             project,
         )
+        val skill = UUID.randomUUID()
+        jdbc.update(
+            "insert into skills (id, workspace_id, canonical_name, category) values (?, ?, 'Kotlin', 'PROGRAMMING_LANGUAGE')",
+            skill,
+            ws,
+        )
+        jdbc.update("insert into project_skills (project_id, skill_id) values (?, ?)", project, skill)
         val claim = UUID.randomUUID()
         jdbc.update("insert into claims (id, workspace_id, text, claim_type) values (?, ?, 'c', 'FACT')", claim, ws)
         jdbc.update(
