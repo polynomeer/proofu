@@ -66,6 +66,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **웹 패턴**: 서버 컴포넌트가 `@/lib/api`로 조회, 폼은 클라이언트 컴포넌트. enum 라벨은 `@/lib/labels` 조회표(알 수 없는 값은 코드 그대로). 페이지 헤더의 primary 버튼은 하나.
 - **AI 출력**은 `AllowedSources` 화이트리스트로 서버 검증. `INFERRED`/`UNSUPPORTED` 블록은 사용자 승인 없이 내보내지 않는다. AI는 Evidence 검증 상태를 올릴 수 없다.
 - **민감도**: `CONFIDENTIAL`은 워크스페이스 설정의 AI 동의(`workspace_settings.ai_consent`, 부여 시 재인증, 시각 기록)가 있을 때만 AI 컨텍스트에 넣고, `RESTRICTED`는 절대 넣지 않는다(`Sensitivity.allowedInAiContext(consent)`; 잡은 `WorkspaceSettingsReader.consentFor`로 읽어 `AiCall.consentToSensitive`에 전달). 새 경력·프로젝트의 `visibility` 기본값은 `workspace_settings.default_visibility`. 로그에 본문·프롬프트·토큰 금지.
+- **접근성**: WCAG 2.2 AA가 기준이고 `apps/e2e/tests/accessibility.spec.ts`(axe-core)가 주요 화면·상세·폼·모바일 폭에서 **위반 0**을 강제한다. 새 화면을 추가하면 이 목록에도 넣는다. 본문 안 링크는 밑줄(색상만으로 구분 금지), 폼 오류는 `Field`가 `aria-describedby`로 연결, 앱 셸 첫 요소는 스킵 링크(`docs/design/accessibility.md`).
 - **디자인**: 색상·간격은 `tokens.css` 토큰만 사용. 상태는 색상 + 텍스트/아이콘. 점수는 숫자 + 낮음/보통/높음 라벨, 합격 확률로 표현 금지. 탈락 원인은 단정하지 않는다. ATS 검사(`AtsChecker`)도 항목별 PASS/INFO/WARN 사실만 — 점수·확률 없음.
 - **테스트 데이터**는 합성 데이터만 (`fixtures/`).
 
