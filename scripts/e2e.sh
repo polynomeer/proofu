@@ -3,6 +3,7 @@
 # (oidc mode, fake AI provider), the mock IdP and a production build of the web app.
 #   scripts/e2e.sh            # full run
 #   E2E_KEEP=1 scripts/e2e.sh # leave the stack running afterwards
+#   DATABASE_URL=... scripts/e2e.sh  # use a Postgres that is already running (CI service, other port)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 log="${E2E_LOG_DIR:-/tmp/proofu-e2e}"; mkdir -p "$log"
@@ -21,7 +22,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-docker compose -f infra/docker-compose.yml up -d postgres >/dev/null
+if [ -z "${DATABASE_URL:-}" ]; then
+  docker compose -f infra/docker-compose.yml up -d postgres >/dev/null
+else
+  echo "using DATABASE_URL from the environment; not starting the docker postgres"
+fi
 ./gradlew :api:bootJar :worker:bootJar -q
 pnpm --filter web build >"$log/web-build.log" 2>&1
 
