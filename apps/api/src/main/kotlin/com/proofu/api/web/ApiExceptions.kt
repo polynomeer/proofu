@@ -20,6 +20,12 @@ class InvalidRequestException(
     val fieldErrors: Map<String, String> = emptyMap(),
 ) : RuntimeException(message)
 
+/** A record the workspace already has under the same name (skills are one record per name). */
+class DuplicateResourceException(
+    resource: String,
+    name: String,
+) : RuntimeException("$resource \"$name\" already exists in this workspace")
+
 /** A contract path whose integration does not exist yet (URL fetching, career-ops, iterview). */
 class NotImplementedException(
     feature: String,

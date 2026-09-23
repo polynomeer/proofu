@@ -75,6 +75,9 @@ class ApiExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ExportNotReadyException::class)
     fun onExportNotReady(e: ExportNotReadyException): ProblemDetail = problem(ErrorCode.EXPORT_NOT_READY, e.message)
 
+    @ExceptionHandler(DuplicateResourceException::class)
+    fun onDuplicate(e: DuplicateResourceException): ProblemDetail = problem(ErrorCode.CONFLICT_DUPLICATE, e.message)
+
     @ExceptionHandler(StaleVersionException::class)
     fun onStaleVersion(e: StaleVersionException): ProblemDetail = problem(ErrorCode.CONFLICT_STALE_VERSION, e.message)
 
