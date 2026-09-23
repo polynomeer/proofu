@@ -2758,6 +2758,13 @@ components:
           properties:
             id:
               $ref: "#/components/schemas/Uuid"
+            aliases:
+              type: array
+              items:
+                type: string
+            revision:
+              type: integer
+              format: int64
             createdAt:
               type: string
               format: date-time

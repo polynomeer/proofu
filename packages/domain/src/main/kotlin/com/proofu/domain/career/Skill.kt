@@ -23,14 +23,18 @@ data class Skill(
 ) {
     init {
         domainRequire(canonicalName.isNotBlank()) { "skill name must not be blank" }
-        domainRequire(canonicalName.length <= MAX_NAME_LENGTH) { "skill name must be at most $MAX_NAME_LENGTH characters" }
+        domainRequire(
+            canonicalName.length <= MAX_NAME_LENGTH,
+        ) { "skill name must be at most $MAX_NAME_LENGTH characters" }
         domainRequire(aliases.size <= MAX_ALIASES) { "a skill may carry at most $MAX_ALIASES aliases" }
         aliases.forEach {
             domainRequire(it.isNotBlank()) { "skill alias must not be blank" }
             domainRequire(it.length <= MAX_NAME_LENGTH) { "skill alias must be at most $MAX_NAME_LENGTH characters" }
         }
         val names = (aliases + canonicalName).map(::normalizeName)
-        domainRequire(names.size == names.toSet().size) { "skill aliases must differ from each other and from the name" }
+        domainRequire(
+            names.size == names.toSet().size,
+        ) { "skill aliases must differ from each other and from the name" }
     }
 
     /** Every spelling this skill answers to, for duplicate detection and lookup. */

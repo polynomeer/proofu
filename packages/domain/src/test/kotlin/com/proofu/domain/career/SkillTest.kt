@@ -41,7 +41,11 @@ class SkillTest {
     @Test
     fun `name is required and bounded`() {
         assertThatThrownBy { skill("  ") }.isInstanceOf(DomainRuleViolation::class.java)
-        assertThatThrownBy { skill("k".repeat(Skill.MAX_NAME_LENGTH + 1)) }.isInstanceOf(DomainRuleViolation::class.java)
+        assertThatThrownBy {
+            skill(
+                "k".repeat(Skill.MAX_NAME_LENGTH + 1),
+            )
+        }.isInstanceOf(DomainRuleViolation::class.java)
         assertThat(skill("k".repeat(Skill.MAX_NAME_LENGTH)).canonicalName).hasSize(Skill.MAX_NAME_LENGTH)
     }
 
