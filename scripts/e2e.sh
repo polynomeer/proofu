@@ -32,7 +32,7 @@ pnpm --filter web build >"$log/web-build.log" 2>&1
 
 node apps/web/scripts/mock-idp.mjs >"$log/mock-idp.log" 2>&1 & pids+=($!)
 java -jar apps/api/build/libs/api-*[!plain].jar >"$log/api.log" 2>&1 & pids+=($!)
-java -jar apps/worker/build/libs/worker-*[!plain].jar >"$log/worker.log" 2>&1 & pids+=($!)
+java -jar apps/worker/build/libs/worker-*[!plain].jar --server.port=8091 >"$log/worker.log" 2>&1 & pids+=($!)
 (cd apps/web && exec pnpm start -p 3111) >"$log/web.log" 2>&1 & pids+=($!)
 
 for i in $(seq 1 90); do
