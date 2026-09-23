@@ -8,10 +8,6 @@ spring:
   threads:
     virtual:
       enabled: true
-  main:
-    web-application-type: none
-    # Virtual-thread schedulers are daemon threads; without this the JVM exits right after startup.
-    keep-alive: true
 
 proofu:
   worker:
@@ -27,6 +23,20 @@ proofu:
     workspace-hourly-job-limit: ${AI_WORKSPACE_HOURLY_JOB_LIMIT:30}
     deployment-daily-budget-usd: ${AI_DAILY_BUDGET_USD:50}
     max-input-tokens: ${AI_MAX_INPUT_TOKENS:50000}
+
+server:
+  # Health and the metrics scrape only; 8090 keeps clear of the api and common local services.
+  port: ${PORT:8090}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
 
 logging:
   level:

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component
 class JobPoller(
     private val repository: JobRepository,
     private val properties: WorkerProperties,
+    private val metrics: JobMetrics,
     handlers: List<JobHandler>,
 ) {
     private val log = LoggerFactory.getLogger(JobPoller::class.java)
@@ -34,20 +35,31 @@ class JobPoller(
         if (handler == null) {
             log.error("No handler for job type {} (jobId={})", job.type, job.id)
             repository.fail(job, "UNKNOWN_JOB_TYPE", retry = false)
+            metrics.completed(job.type, "failed", 0)
             return
         }
+        val startedAt = System.nanoTime()
         try {
             val result = handler.handle(job)
             repository.succeed(job.id, result)
             log.info("Job {} ({}) succeeded on attempt {}", job.id, job.type, job.attempts)
+            metrics.completed(job.type, "succeeded", System.nanoTime() - startedAt)
         } catch (e: JobFailure) {
             log.warn("Job {} ({}) failed with {}: {}", job.id, job.type, e.errorCode, e.message)
             repository.fail(job, e.errorCode, e.retryable)
+            metrics.completed(job.type, outcomeOf(job, e.retryable), System.nanoTime() - startedAt)
         } catch (
             @Suppress("TooGenericExceptionCaught") e: Exception,
         ) {
             log.error("Job {} ({}) crashed on attempt {}", job.id, job.type, job.attempts, e)
             repository.fail(job, "UNHANDLED_ERROR", retry = true)
+            metrics.completed(job.type, outcomeOf(job, retryable = true), System.nanoTime() - startedAt)
         }
     }
+
+    /** A job that will be tried again is not a failure yet; only the last attempt counts as one. */
+    private fun outcomeOf(
+        job: JobRecord,
+        retryable: Boolean,
+    ) = if (retryable && job.retriesLeft) "retrying" else "failed"
 }

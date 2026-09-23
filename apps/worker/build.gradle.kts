@@ -21,6 +21,10 @@ dependencies {
     implementation(project(":document-renderer"))
 
     implementation(libs.spring.boot.starter)
+    // A small HTTP surface for the platform: health probes and the metrics scrape only.
+    implementation(libs.spring.boot.starter.webmvc)
+    implementation(libs.spring.boot.starter.actuator)
+    runtimeOnly(libs.micrometer.registry.prometheus)
     implementation(libs.spring.boot.starter.jackson)
     implementation(libs.spring.boot.starter.data.jdbc)
     implementation(libs.jackson.module.kotlin)
