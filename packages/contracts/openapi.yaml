@@ -2829,15 +2829,7 @@ components:
     CapabilityCategory:
       type: string
       enum:
-        [
-          TECHNICAL,
-          PROBLEM_SOLVING,
-          SYSTEM_DESIGN,
-          EXECUTION,
-          COLLABORATION,
-          LEADERSHIP,
-          LEARNING,
-        ]
+        [TECHNICAL, PROBLEM_SOLVING, SYSTEM_DESIGN, EXECUTION, COLLABORATION, LEADERSHIP, LEARNING]
 
     CapabilityEvidenceStatus:
       description: Derived from the linked evidence; the tool never turns evidence into a level
