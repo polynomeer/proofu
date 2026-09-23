@@ -35,3 +35,18 @@ review: 분기 및 중대 변경 시
 - 서버는 모든 리소스 요청에서 workspace 소유권을 검증하며 클라이언트 전달 ID를 신뢰하지 않습니다.
 - 운영자 접근은 시간 제한, 승인, 목적 기록, 감사 로그를 적용하고 원문 열람을 최소화합니다.
 - 서비스 계정과 워커는 작업에 필요한 최소 권한만 가집니다.
+
+## 구현 (현재 코드)
+
+| 통제               | 어디서                                                                                                                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 교차 사용자 접근   | 모든 조회·변경이 `WorkspaceContext`의 workspace로 한정되고 다른 workspace 리소스는 404. API 통합 테스트가 워크스페이스별로 검증                                                               |
+| 인증·재인증        | ADR-0010 (`SecurityConfig`, `OidcWorkspaceResolver`), 민감 작업은 `requireRecentAuthentication`                                                                                               |
+| 브라우저 실행 경계 | 웹 응답마다 nonce 기반 CSP(`proxy.ts` + `src/lib/security-headers.ts`)와 `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS. 인라인 스크립트는 허용하지 않는다 |
+| 세션 탈취          | 세션·액세스 토큰은 암호화된 httpOnly 쿠키(SameSite=Lax)에만 있고 브라우저 JS는 토큰을 보지 못한다(BFF)                                                                                        |
+| 과도한 로그        | 요청 로그는 메서드·URI 템플릿·status·durationMs·requestId만. 본문·프롬프트·토큰 금지(`docs/operations/monitoring.md`)                                                                         |
+| 링크 탈취          | 내보내기 다운로드는 API 경유 + 재인증 + `no-store`, 전체 내보내기는 보존 기간 뒤 만료                                                                                                         |
+| 프롬프트 인젝션    | 원문은 `document` 블록으로 격리, 참조는 `AllowedSources` 화이트리스트로 재검증(ADR-0008)                                                                                                      |
+| 공급망             | pnpm·Gradle 잠금 파일, Dependabot 주간 PR, `dependency-audit.yml`(주간 `pnpm audit` + 의존성 그래프 제출)                                                                                     |
+
+아직 없는 것: 파일 악성코드 검사(객체 저장소 확정 후), 이상 탐지·세션 회수 운영 절차, SBOM 서명, 분산 추적.

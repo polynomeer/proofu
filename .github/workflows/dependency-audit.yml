@@ -1,0 +1,41 @@
+# Known-vulnerability check, weekly and on demand. Kept out of the PR path: an advisory
+# published after a green PR is not that PR's fault, but it still has to reach someone.
+name: Dependency audit
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # Monday 09:00 KST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm:
+    name: pnpm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Audit (high and critical)
+        run: pnpm audit --audit-level=high
+
+  jvm:
+    name: Gradle dependency report
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          # Fails the job when a resolved dependency has a known vulnerability.
+          dependency-graph: generate-and-submit
+      - run: ./gradlew :api:dependencies :worker:dependencies --configuration runtimeClasspath --no-daemon
