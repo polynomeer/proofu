@@ -501,6 +501,152 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /projects/{id}/skills:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: listProjectSkills
+      summary: Skills linked to a project
+      responses:
+        "200":
+          description: Skills
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Skill"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      tags: [career]
+      operationId: setProjectSkills
+      summary: Replace the project's skill set
+      description: The whole set is replaced; skills must belong to the same workspace.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [skillIds]
+              properties:
+                skillIds:
+                  type: array
+                  maxItems: 50
+                  items:
+                    $ref: "#/components/schemas/Uuid"
+      responses:
+        "200":
+          description: Skills after the change
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Skill"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /skills:
+    get:
+      tags: [career]
+      operationId: listSkills
+      summary: Skills of the workspace, newest first
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/SkillCategory"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of skills
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [career]
+      operationId: createSkill
+      summary: Register a skill
+      description: |
+        The name and aliases must not collide with an existing skill of the workspace, ignoring
+        case and spacing (409 CONFLICT_DUPLICATE).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Skill"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /skills/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: getSkill
+      summary: One skill
+      responses:
+        "200":
+          description: Skill
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Skill"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [career]
+      operationId: updateSkill
+      summary: Update a skill (requires revision)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Skill"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [career]
+      operationId: deleteSkill
+      summary: Soft-delete a skill; its project links are removed
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
   /achievements/{id}:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -2232,12 +2378,17 @@ components:
         - FORBIDDEN_WORKSPACE
         - NOT_FOUND
         - CONFLICT_STALE_VERSION
+        - CONFLICT_DUPLICATE
         - INVALID_STATUS_TRANSITION
         - SNAPSHOT_IMMUTABLE
         - DOMAIN_RULE_VIOLATION
         - UNSUPPORTED_CLAIM_IN_EXPORT
+        - EXPORT_NOT_READY
         - RATE_LIMITED
         - AI_PROVIDER_UNAVAILABLE
+        - AI_RATE_LIMITED
+        - AI_BILLING_BLOCKED
+        - AI_CONFIGURATION_ERROR
         - AI_REFUSED
         - AI_OUTPUT_INVALID
         - AI_BUDGET_EXCEEDED
@@ -2247,6 +2398,10 @@ components:
     Visibility:
       type: string
       enum: [PRIVATE, SELECTIVE, PUBLIC]
+    ProficiencyLevel:
+      description: Five-level scale; self-assessment and evidence-based judgement stay separate
+      type: string
+      enum: [NOVICE, PRACTITIONER, INDEPENDENT, ADVANCED, STRATEGIC]
     CareerEntryType:
       type: string
       enum: [EMPLOYMENT, EDUCATION, TRAINING, AWARD, CERTIFICATION, OTHER]
@@ -2550,6 +2705,76 @@ components:
               description: 0 until first saved
               type: integer
               format: int64
+
+    SkillCategory:
+      type: string
+      enum:
+        [
+          PROGRAMMING_LANGUAGE,
+          FRAMEWORK,
+          PLATFORM,
+          DATA,
+          TOOL,
+          METHOD,
+          DOMAIN,
+          SPOKEN_LANGUAGE,
+          OTHER,
+        ]
+
+    SkillInput:
+      type: object
+      required: [canonicalName, category]
+      properties:
+        canonicalName:
+          type: string
+          maxLength: 120
+        category:
+          $ref: "#/components/schemas/SkillCategory"
+        aliases:
+          description: Other spellings this skill answers to
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 120
+        proficiency:
+          description: The user's own assessment; evidence never raises it
+          oneOf:
+            - $ref: "#/components/schemas/ProficiencyLevel"
+            - type: "null"
+        lastUsedAt:
+          type: [string, "null"]
+          format: date
+        revision:
+          description: Required on PATCH
+          type: integer
+          format: int64
+
+    Skill:
+      allOf:
+        - $ref: "#/components/schemas/SkillInput"
+        - type: object
+          required: [id, aliases, revision, createdAt, updatedAt]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    SkillPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Skill"
+        nextCursor:
+          type: [string, "null"]
 
     ProfileLink:
       type: object

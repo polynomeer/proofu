@@ -20,6 +20,9 @@ review: API 릴리스 시
 | GET, POST             | `/projects` ✅                                | 프로젝트 목록(경력별 필터)과 생성                            |
 | GET, PATCH, DELETE    | `/projects/{id}` ✅                           | 프로젝트 상세, 변경, 삭제                                    |
 | GET, POST             | `/projects/{id}/achievements` ✅              | 프로젝트 성과 목록과 생성                                    |
+| GET, PUT              | `/projects/{id}/skills` ✅                    | 프로젝트에 연결된 기술 조회·집합 교체                        |
+| GET, POST             | `/skills` ✅                                  | 기술 목록(분류 필터)과 등록                                  |
+| GET, PATCH, DELETE    | `/skills/{id}` ✅                             | 기술 상세, 변경, 삭제(휴지통)                                |
 | GET, PATCH, DELETE    | `/achievements/{id}` ✅                       | 성과 상세, 변경, 삭제                                        |
 | GET, PATCH, DELETE    | `/career-entries/{id}` ✅                     | 경력 상세, 변경, 삭제                                        |
 | GET, POST             | `/evidence` ✅                                | Evidence 목록과 등록 (파일 제외)                             |
