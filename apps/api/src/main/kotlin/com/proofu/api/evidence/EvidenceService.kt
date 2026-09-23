@@ -134,7 +134,7 @@ class EvidenceService(
         return response
     }
 
-    /** Soft delete. Links are removed so affected claims fall back to UNSUPPORTED. */
+    /** Soft delete. Links go too, so affected claims fall back to UNSUPPORTED and capabilities lose the evidence. */
     @Transactional
     fun delete(
         workspace: WorkspaceContext,
@@ -148,6 +148,7 @@ class EvidenceService(
         entity.revision += 1
         repository.saveAndFlush(entity)
         jdbc.update("delete from claim_evidence where evidence_id = ?", entity.id)
+        jdbc.update("delete from capability_evidence where evidence_id = ?", entity.id)
         audit.record(workspace, "evidence.deleted", TARGET, entity.id, before = before)
     }
 
