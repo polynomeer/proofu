@@ -16,7 +16,7 @@ const STEPS: { title: string; body: string; href: string; label: string }[] = [
   },
   {
     title: "주장에 Evidence 연결",
-    body: "문서에서 말하고 싶은 문장(Claim)을 경력 기록에 대해 만들고, 링크·메모 등 Evidence를 연결합니다. 검증 상태는 사용자만 올릴 수 있습니다.",
+    body: "문서에서 말하고 싶은 문장(Claim)을 경력 기록에 대해 만들고, 링크·메모 등 Evidence를 연결합니다. 검증 상태는 사용자만 올릴 수 있습니다. 역량은 '무엇을 할 수 있는가'를 정의하고 같은 Evidence로 뒷받침합니다.",
     href: "/evidence",
     label: "Evidence",
   },

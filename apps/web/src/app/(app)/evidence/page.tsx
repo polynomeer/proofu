@@ -64,7 +64,14 @@ export default async function EvidencePage({ searchParams }: { searchParams: Sea
       <PageHeader
         title="Evidence"
         description="주장을 뒷받침하는 근거 자료입니다. 링크, 저장소, 지표, 인증서, 메모를 등록하고 경력의 주장에 연결합니다."
-        action={addAction}
+        action={
+          <div className="flex gap-2">
+            <ButtonLink variant="secondary" href="/evidence/capabilities">
+              역량 관리
+            </ButtonLink>
+            {addAction}
+          </div>
+        }
       />
       <div className="mb-4 flex flex-col gap-2">
         <nav aria-label="유형 필터" className="flex flex-wrap gap-2">

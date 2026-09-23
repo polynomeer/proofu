@@ -34,6 +34,33 @@ export const CAREER_ENTRY_TYPES: readonly Schema<"CareerEntryType">[] = [
 
 export const VISIBILITIES: readonly Schema<"Visibility">[] = ["PRIVATE", "SELECTIVE", "PUBLIC"];
 
+export const capabilityCategoryLabel = labelsOf<Schema<"CapabilityCategory">>({
+  TECHNICAL: "기술 역량",
+  PROBLEM_SOLVING: "문제 해결",
+  SYSTEM_DESIGN: "시스템 설계",
+  EXECUTION: "실행",
+  COLLABORATION: "협업",
+  LEADERSHIP: "리더십",
+  LEARNING: "학습",
+});
+
+export const CAPABILITY_CATEGORIES: readonly Schema<"CapabilityCategory">[] = [
+  "TECHNICAL",
+  "PROBLEM_SOLVING",
+  "SYSTEM_DESIGN",
+  "EXECUTION",
+  "COLLABORATION",
+  "LEADERSHIP",
+  "LEARNING",
+];
+
+/** Derived from linked evidence; the tool never turns evidence into a level. */
+export const capabilityEvidenceStatusLabel = labelsOf<Schema<"CapabilityEvidenceStatus">>({
+  NONE: "근거 없음",
+  UNVERIFIED: "미검증 근거",
+  VERIFIED: "검증된 근거",
+});
+
 export const skillCategoryLabel = labelsOf<Schema<"SkillCategory">>({
   PROGRAMMING_LANGUAGE: "프로그래밍 언어",
   FRAMEWORK: "프레임워크·라이브러리",
