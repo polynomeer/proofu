@@ -33,9 +33,9 @@ interface EvidenceRepository : JpaRepository<EvidenceEntity, UUID> {
                    or to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(body, ''))
                       @@ plainto_tsquery('simple', cast(:q as varchar)))
               and (cast(:cursorDate as date) is null
-                   or cast(captured_at as date) < cast(:cursorDate as date)
-                   or (cast(captured_at as date) = cast(:cursorDate as date) and id < cast(:cursorId as uuid)))
-            order by cast(captured_at as date) desc, id desc
+                   or cast((captured_at at time zone 'UTC') as date) < cast(:cursorDate as date)
+                   or (cast((captured_at at time zone 'UTC') as date) = cast(:cursorDate as date) and id < cast(:cursorId as uuid)))
+            order by cast((captured_at at time zone 'UTC') as date) desc, id desc
             limit :limit
             """,
     )

@@ -10,6 +10,7 @@ review: API 릴리스 시
 - 리소스 생성은 `201`, 비동기 작업 접수는 `202`와 `jobId`를 반환합니다.
 - 오류는 RFC 9457 Problem Details 형식: `type`, `title`, `status`, `detail`, `instance`, `code`, `fieldErrors[]`.
 - 페이지네이션은 안정된 cursor 방식이며 최대 크기를 제한합니다 (`?cursor=&limit=`, 기본 20, 최대 100).
+- cursor는 `(날짜, id)` keyset(`DateIdCursor`)입니다. 시각 컬럼으로 묶을 때는 SQL에서 `cast((ts at time zone 'UTC') as date)`로, 코드에서는 UTC로 날짜를 계산합니다 — Postgres의 `cast(ts as date)`는 **세션 시간대**를 따르므로 서버 시간대가 다르면 다음 페이지가 빈 채로 돌아옵니다.
 - 변경 요청은 요청 ID(`X-Request-Id`)와 감사 actor를 기록하고 비밀 또는 원문 콘텐츠는 로그에서 제거합니다.
 - 멱등성이 필요한 생성 API는 `Idempotency-Key` 헤더를 받습니다.
 - 낙관적 잠금: 변경 요청은 `version`(또는 `revision`)을 포함하고 불일치 시 `409` + `code: CONFLICT_STALE_VERSION`.

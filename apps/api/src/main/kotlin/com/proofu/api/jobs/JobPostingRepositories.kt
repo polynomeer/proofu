@@ -42,9 +42,9 @@ interface JobPostingRepository : JpaRepository<JobPostingEntity, UUID> {
                       and to_tsvector('simple', p.company || ' ' || p.role_title || ' ' || s.raw_text)
                           @@ plainto_tsquery('simple', cast(:q as varchar))))
               and (cast(:cursorDate as date) is null
-                   or cast(p.updated_at as date) < cast(:cursorDate as date)
-                   or (cast(p.updated_at as date) = cast(:cursorDate as date) and p.id < cast(:cursorId as uuid)))
-            order by cast(p.updated_at as date) desc, p.id desc
+                   or cast((p.updated_at at time zone 'UTC') as date) < cast(:cursorDate as date)
+                   or (cast((p.updated_at at time zone 'UTC') as date) = cast(:cursorDate as date) and p.id < cast(:cursorId as uuid)))
+            order by cast((p.updated_at at time zone 'UTC') as date) desc, p.id desc
             limit :limit
             """,
     )

@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 
 /**
@@ -45,7 +46,7 @@ class SkillService(
         val page = rows.take(limit)
         val next =
             if (rows.size > limit) {
-                DateIdCursor(LocalDate.ofInstant(checkNotNull(page.last().createdAt), clock.zone), page.last().id)
+                DateIdCursor(utcDate(checkNotNull(page.last().createdAt)), page.last().id)
                     .encode()
             } else {
                 null
@@ -192,6 +193,9 @@ class SkillService(
                 .firstOrNull() ?: return
         throw DuplicateResourceException(TARGET, clash.canonicalName)
     }
+
+    /** Cursor dates are UTC days, matching the `at time zone 'UTC'` bucket in the query. */
+    private fun utcDate(at: Instant): LocalDate = LocalDate.ofInstant(at, ZoneOffset.UTC)
 
     private companion object {
         const val TARGET = "skill"

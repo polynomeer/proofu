@@ -67,9 +67,9 @@ class DocumentService(
                        or a.company ilike '%' || cast(? as varchar) || '%'
                        or a.role_title ilike '%' || cast(? as varchar) || '%')
                   and (cast(? as date) is null
-                       or cast(d.updated_at as date) < cast(? as date)
-                       or (cast(d.updated_at as date) = cast(? as date) and d.id < cast(? as uuid)))
-                order by cast(d.updated_at as date) desc, d.id desc
+                       or cast((d.updated_at at time zone 'UTC') as date) < cast(? as date)
+                       or (cast((d.updated_at at time zone 'UTC') as date) = cast(? as date) and d.id < cast(? as uuid)))
+                order by cast((d.updated_at at time zone 'UTC') as date) desc, d.id desc
                 limit ?
                 """.trimIndent(),
                 { rs, _ ->

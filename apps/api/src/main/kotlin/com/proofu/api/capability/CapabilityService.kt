@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.UUID
 
 /**
@@ -44,7 +45,7 @@ class CapabilityService(
         val evidence = evidenceOf(page.map { it.id })
         val next =
             if (rows.size > limit) {
-                DateIdCursor(LocalDate.ofInstant(checkNotNull(page.last().createdAt), clock.zone), page.last().id)
+                DateIdCursor(utcDate(checkNotNull(page.last().createdAt)), page.last().id)
                     .encode()
             } else {
                 null
@@ -219,6 +220,9 @@ class CapabilityService(
             throw DomainRuleViolation("a capability cannot be nested under one of its own descendants")
         }
     }
+
+    /** Cursor dates are UTC days, matching the `at time zone 'UTC'` bucket in the query. */
+    private fun utcDate(at: Instant): LocalDate = LocalDate.ofInstant(at, ZoneOffset.UTC)
 
     private companion object {
         const val TARGET = "capability"

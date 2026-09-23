@@ -169,6 +169,24 @@ class SkillApiTest {
     }
 
     @Test
+    fun `paging holds across a day boundary wherever the server and the database sit`() {
+        // Two rows either side of midnight UTC; the cursor buckets on the UTC day, so the page
+        // after the first row is the older one no matter what time zone the session runs in.
+        val late = support.create(workspaceId, "/api/v1/skills", """{"canonicalName":"Late","category":"TOOL"}""")
+        val early = support.create(workspaceId, "/api/v1/skills", """{"canonicalName":"Early","category":"TOOL"}""")
+        jdbc.update("update skills set created_at = timestamptz '2026-09-23 23:30:00+00' where id = ?", early)
+        jdbc.update("update skills set created_at = timestamptz '2026-09-24 00:30:00+00' where id = ?", late)
+        jdbc.execute("set time zone 'Asia/Seoul'")
+
+        val first = support.getJson(workspaceId, "/api/v1/skills?limit=1")
+        assertThat(support.titles(first, "canonicalName")).containsExactly("Late")
+        val next = first["nextCursor"] as String
+        val second = support.getJson(workspaceId, "/api/v1/skills?limit=1&cursor=$next")
+        assertThat(support.titles(second, "canonicalName")).containsExactly("Early")
+        jdbc.execute("set time zone 'UTC'")
+    }
+
+    @Test
     fun `project links are replaced as a set and drop when the skill goes to the trash`() {
         val entry =
             support.create(
