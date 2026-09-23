@@ -698,6 +698,126 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /capabilities:
+    get:
+      tags: [career]
+      operationId: listCapabilities
+      summary: Capabilities of the workspace, newest first
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/CapabilityCategory"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of capabilities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapabilityPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [career]
+      operationId: createCapability
+      summary: Define a capability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CapabilityInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capability"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /capabilities/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: getCapability
+      summary: One capability with its linked evidence
+      responses:
+        "200":
+          description: Capability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capability"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [career]
+      operationId: updateCapability
+      summary: Update a capability (requires revision)
+      description: |
+        A capability may not be nested under itself or one of its own descendants
+        (422 DOMAIN_RULE_VIOLATION).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CapabilityInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capability"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [career]
+      operationId: deleteCapability
+      summary: Soft-delete a capability; its children go to the trash with it
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /capabilities/{id}/evidence:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: [career]
+      operationId: setCapabilityEvidence
+      summary: Replace the evidence linked to a capability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evidenceIds]
+              properties:
+                evidenceIds:
+                  type: array
+                  maxItems: 50
+                  items:
+                    $ref: "#/components/schemas/Uuid"
+      responses:
+        "200":
+          description: Capability after the change
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Capability"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /evidence:
     get:
       tags: [evidence]
@@ -2705,6 +2825,99 @@ components:
               description: 0 until first saved
               type: integer
               format: int64
+
+    CapabilityCategory:
+      type: string
+      enum:
+        [
+          TECHNICAL,
+          PROBLEM_SOLVING,
+          SYSTEM_DESIGN,
+          EXECUTION,
+          COLLABORATION,
+          LEADERSHIP,
+          LEARNING,
+        ]
+
+    CapabilityEvidenceStatus:
+      description: Derived from the linked evidence; the tool never turns evidence into a level
+      type: string
+      enum: [NONE, UNVERIFIED, VERIFIED]
+
+    CapabilityInput:
+      type: object
+      required: [name, definition, category]
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        definition:
+          description: What the person can do, stated as behaviour
+          type: string
+        category:
+          $ref: "#/components/schemas/CapabilityCategory"
+        selfAssessedLevel:
+          description: The user's own assessment; evidence never raises it
+          oneOf:
+            - $ref: "#/components/schemas/ProficiencyLevel"
+            - type: "null"
+        evidenceCriteria:
+          description: What evidence the user requires of themselves to claim it
+          type: [string, "null"]
+        parentId:
+          oneOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        revision:
+          description: Required on PATCH
+          type: integer
+          format: int64
+
+    CapabilityEvidence:
+      type: object
+      required: [id, title, verification]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        title:
+          type: string
+        verification:
+          $ref: "#/components/schemas/VerificationStatus"
+
+    Capability:
+      allOf:
+        - $ref: "#/components/schemas/CapabilityInput"
+        - type: object
+          required: [id, evidence, evidenceStatus, revision, createdAt, updatedAt]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            evidence:
+              type: array
+              items:
+                $ref: "#/components/schemas/CapabilityEvidence"
+            evidenceStatus:
+              $ref: "#/components/schemas/CapabilityEvidenceStatus"
+            revision:
+              type: integer
+              format: int64
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    CapabilityPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Capability"
+        nextCursor:
+          type: [string, "null"]
 
     SkillCategory:
       type: string

@@ -23,6 +23,9 @@ review: API 릴리스 시
 | GET, PUT              | `/projects/{id}/skills` ✅                    | 프로젝트에 연결된 기술 조회·집합 교체                        |
 | GET, POST             | `/skills` ✅                                  | 기술 목록(분류 필터)과 등록                                  |
 | GET, PATCH, DELETE    | `/skills/{id}` ✅                             | 기술 상세, 변경, 삭제(휴지통)                                |
+| GET, POST             | `/capabilities` ✅                            | 역량 목록(분류 필터)과 등록                                  |
+| GET, PATCH, DELETE    | `/capabilities/{id}` ✅                       | 역량 상세, 변경, 삭제(하위 역량 포함)                        |
+| PUT                   | `/capabilities/{id}/evidence` ✅              | 역량의 Evidence 연결 집합 교체                               |
 | GET, PATCH, DELETE    | `/achievements/{id}` ✅                       | 성과 상세, 변경, 삭제                                        |
 | GET, PATCH, DELETE    | `/career-entries/{id}` ✅                     | 경력 상세, 변경, 삭제                                        |
 | GET, POST             | `/evidence` ✅                                | Evidence 목록과 등록 (파일 제외)                             |
