@@ -31,13 +31,21 @@ export default async function CareerPage({ searchParams }: { searchParams: Searc
       <Icon name="plus" size={16} />새 경력 추가
     </ButtonLink>
   );
+  const headerActions = (
+    <div className="flex gap-2">
+      <ButtonLink variant="secondary" href="/career/skills">
+        기술 관리
+      </ButtonLink>
+      {addAction}
+    </div>
+  );
 
   return (
     <>
       <PageHeader
         title="커리어"
         description="경력, 학력, 자격, 수상을 사실 단위로 관리합니다. 이 기록이 모든 지원 문서의 원천입니다."
-        action={addAction}
+        action={headerActions}
       />
       <div className="mb-4">
         <TypeFilter current={typeFilter} q={q} />

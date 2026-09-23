@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { AchievementSection } from "@/components/achievement/AchievementSection";
 import { ClaimPanel } from "@/components/claim/ClaimPanel";
+import { ProjectSkills } from "@/components/skill/ProjectSkills";
 import { ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
@@ -27,12 +28,16 @@ export default async function ProjectPage({ params }: { params: Params }) {
   const { data: project } = await api.GET("/projects/{id}", { params: { path: { id } } });
   if (!project) notFound();
 
-  const [achievements, claims, entry] = await Promise.all([
+  const [achievements, claims, entry, projectSkills, allSkills] = await Promise.all([
     api.GET("/projects/{id}/achievements", { params: { path: { id } } }),
     api.GET("/claims", { params: { query: { projectId: id } } }),
     project.careerEntryId
       ? api.GET("/career-entries/{id}", { params: { path: { id: project.careerEntryId } } })
       : Promise.resolve({ data: undefined }),
+    api
+      .GET("/projects/{id}/skills", { params: { path: { id } } })
+      .catch(() => ({ data: undefined })),
+    api.GET("/skills", { params: { query: { limit: 100 } } }).catch(() => ({ data: undefined })),
   ]);
 
   return (
@@ -66,6 +71,11 @@ export default async function ProjectPage({ params }: { params: Params }) {
             projectId={project.id}
             initialItems={achievements.data?.items ?? []}
             initialClaims={claims.data?.items ?? []}
+          />
+          <ProjectSkills
+            projectId={project.id}
+            available={allSkills.data?.items ?? []}
+            initialItems={projectSkills.data?.items ?? []}
           />
           <section className="rounded-md border border-border-300 bg-surface-000 p-4">
             <ClaimPanel

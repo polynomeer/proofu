@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "도움말" };
 const STEPS: { title: string; body: string; href: string; label: string }[] = [
   {
     title: "경력을 사실 단위로 기록",
-    body: "경력·학력·자격을 등록하고 프로젝트와 성과를 붙입니다. 성과는 행동이 아니라 결과(수치·기간)로 씁니다.",
+    body: "경력·학력·자격을 등록하고 프로젝트와 성과를 붙입니다. 성과는 행동이 아니라 결과(수치·기간)로 씁니다. 자주 쓰는 언어·도구는 기술로 한 번만 등록해 프로젝트에 연결합니다.",
     href: "/career",
     label: "커리어",
   },

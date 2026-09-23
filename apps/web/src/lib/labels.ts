@@ -34,6 +34,47 @@ export const CAREER_ENTRY_TYPES: readonly Schema<"CareerEntryType">[] = [
 
 export const VISIBILITIES: readonly Schema<"Visibility">[] = ["PRIVATE", "SELECTIVE", "PUBLIC"];
 
+export const skillCategoryLabel = labelsOf<Schema<"SkillCategory">>({
+  PROGRAMMING_LANGUAGE: "프로그래밍 언어",
+  FRAMEWORK: "프레임워크·라이브러리",
+  PLATFORM: "플랫폼·인프라",
+  DATA: "데이터·분석",
+  TOOL: "도구",
+  METHOD: "방법론·프로세스",
+  DOMAIN: "도메인 지식",
+  SPOKEN_LANGUAGE: "외국어",
+  OTHER: "기타",
+});
+
+export const SKILL_CATEGORIES: readonly Schema<"SkillCategory">[] = [
+  "PROGRAMMING_LANGUAGE",
+  "FRAMEWORK",
+  "PLATFORM",
+  "DATA",
+  "TOOL",
+  "METHOD",
+  "DOMAIN",
+  "SPOKEN_LANGUAGE",
+  "OTHER",
+];
+
+/** Self-assessment only; Evidence never raises it (docs/domain/career-data-model.md §역량 체계). */
+export const proficiencyLabel = labelsOf<Schema<"ProficiencyLevel">>({
+  NOVICE: "입문",
+  PRACTITIONER: "실무",
+  INDEPENDENT: "독립 수행",
+  ADVANCED: "고급",
+  STRATEGIC: "전략",
+});
+
+export const PROFICIENCY_LEVELS: readonly Schema<"ProficiencyLevel">[] = [
+  "NOVICE",
+  "PRACTITIONER",
+  "INDEPENDENT",
+  "ADVANCED",
+  "STRATEGIC",
+];
+
 export const evidenceTypeLabel = labelsOf<Schema<"EvidenceType">>({
   FILE: "파일",
   URL: "링크",
