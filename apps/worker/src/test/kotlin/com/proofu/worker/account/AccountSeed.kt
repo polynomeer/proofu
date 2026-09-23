@@ -55,6 +55,12 @@ object AccountSeed {
             ws,
         )
         jdbc.update("insert into project_skills (project_id, skill_id) values (?, ?)", project, skill)
+        val capability = UUID.randomUUID()
+        jdbc.update(
+            "insert into capabilities (id, workspace_id, name, definition, category) values (?, ?, '설계', '설계한다', 'SYSTEM_DESIGN')",
+            capability,
+            ws,
+        )
         val claim = UUID.randomUUID()
         jdbc.update("insert into claims (id, workspace_id, text, claim_type) values (?, ?, 'c', 'FACT')", claim, ws)
         jdbc.update(
@@ -73,6 +79,7 @@ object AccountSeed {
             claim,
             evidence,
         )
+        jdbc.update("insert into capability_evidence (capability_id, evidence_id) values (?, ?)", capability, evidence)
         val posting = UUID.randomUUID()
         val snapshot = UUID.randomUUID()
         jdbc.update(

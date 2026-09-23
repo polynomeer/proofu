@@ -161,6 +161,8 @@ class AccountExportJobHandler(
                 "project_skills" to
                     "select ps.* from project_skills ps join projects p on p.id = ps.project_id where p.workspace_id = ?",
                 "capabilities" to "select * from capabilities $BY_WS",
+                "capability_evidence" to
+                    "select ce.* from capability_evidence ce join capabilities c on c.id = ce.capability_id where c.workspace_id = ?",
                 "claims" to "select * from claims $BY_WS",
                 "claim_sources" to "select * from claim_sources $BY_CLAIM",
                 "evidence" to "select * from evidence $BY_WS",
