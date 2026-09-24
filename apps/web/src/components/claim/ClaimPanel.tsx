@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Field, inputClass, textareaClass } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { api } from "@/lib/api";
+import { PICKER_LIMIT } from "@/lib/limits";
 import {
   CLAIM_TYPES,
   RELATIONS,
@@ -198,7 +199,14 @@ function LinkEvidencePanel({
     >
       {problem ? <ErrorState title="연결할 수 없습니다" description={problem} /> : null}
       <div className="grid gap-3 sm:grid-cols-3">
-        <Field id={`${prefix}-evidence`} label="Evidence" required>
+        <Field
+          id={`${prefix}-evidence`}
+          label="Evidence"
+          required
+          help={
+            (evidence ?? []).length >= PICKER_LIMIT ? `최근 ${PICKER_LIMIT}건만 표시` : undefined
+          }
+        >
           <select
             id={`${prefix}-evidence`}
             className={inputClass}
@@ -383,7 +391,7 @@ export function ClaimPanel({
   useEffect(() => {
     if (claims.length === 0 || evidence !== null) return;
     api
-      .GET("/evidence", { params: { query: { limit: 100 } } })
+      .GET("/evidence", { params: { query: { limit: PICKER_LIMIT } } })
       .then((r) => setEvidence(r.data?.items ?? []))
       .catch(() => setEvidence([]));
   }, [claims.length, evidence]);

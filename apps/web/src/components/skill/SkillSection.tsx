@@ -10,7 +10,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Field, inputClass } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
+import { LoadMore } from "@/components/ui/LoadMore";
 import { api } from "@/lib/api";
+import { PAGE_LIMIT } from "@/lib/limits";
 import { formatDate } from "@/lib/format";
 import {
   PROFICIENCY_LEVELS,
@@ -239,8 +241,15 @@ function SkillRow({
  * F01 기술: one record per name in the workspace. The list is the source for the skills a
  * project claims; matching does not score skills (docs/domain/career-data-model.md §기술).
  */
-export function SkillSection({ initialItems }: { initialItems: Skill[] }) {
+export function SkillSection({
+  initialItems,
+  initialCursor,
+}: {
+  initialItems: Skill[];
+  initialCursor: string | null;
+}) {
   const [items, setItems] = useState(initialItems);
+  const [cursor, setCursor] = useState(initialCursor);
   const [adding, setAdding] = useState(false);
 
   const byCategory = SKILL_CATEGORIES.map((c) => ({
@@ -295,6 +304,21 @@ export function SkillSection({ initialItems }: { initialItems: Skill[] }) {
           </div>
         ))
       )}
+
+      <LoadMore
+        cursor={cursor}
+        fetchPage={async (next) => {
+          const { data, error } = await api.GET("/skills", {
+            params: { query: { cursor: next, limit: PAGE_LIMIT } },
+          });
+          if (!data) throw new Error(error?.detail ?? "failed");
+          return data;
+        }}
+        onLoaded={(more, next) => {
+          setItems((list) => [...list, ...more]);
+          setCursor(next);
+        }}
+      />
     </section>
   );
 }

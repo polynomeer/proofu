@@ -10,7 +10,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Field, inputClass, textareaClass } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
+import { LoadMore } from "@/components/ui/LoadMore";
 import { api } from "@/lib/api";
+import { PAGE_LIMIT } from "@/lib/limits";
 import {
   CAPABILITY_CATEGORIES,
   PROFICIENCY_LEVELS,
@@ -188,11 +190,13 @@ function CapabilityForm({
 function EvidencePicker({
   capability,
   evidence,
+  capped,
   onSaved,
   onCancel,
 }: {
   capability: Capability;
   evidence: Evidence[];
+  capped: boolean;
   onSaved: (c: Capability) => void;
   onCancel: () => void;
 }) {
@@ -225,6 +229,12 @@ function EvidencePicker({
 
   return (
     <div className="flex flex-col gap-2">
+      {capped ? (
+        <p className="text-caption text-text-600">
+          최근 Evidence {evidence.length}건만 보여 줍니다. 찾는 항목이 없으면 Evidence 화면에서
+          연결하세요.
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className="text-caption text-warning-700">
           {error}
@@ -276,6 +286,7 @@ function CapabilityCard({
   nested,
   parents,
   evidence,
+  evidenceCapped,
   onChanged,
   onDeleted,
 }: {
@@ -283,6 +294,7 @@ function CapabilityCard({
   nested: Capability[];
   parents: Capability[];
   evidence: Evidence[];
+  evidenceCapped: boolean;
   onChanged: (c: Capability) => void;
   onDeleted: (ids: string[]) => void;
 }) {
@@ -378,6 +390,7 @@ function CapabilityCard({
             <EvidencePicker
               capability={capability}
               evidence={evidence}
+              capped={evidenceCapped}
               onSaved={(c) => {
                 onChanged(c);
                 setLinking(false);
@@ -406,12 +419,17 @@ function CapabilityCard({
  */
 export function CapabilitySection({
   initialItems,
+  initialCursor,
   evidence,
+  evidenceCapped,
 }: {
   initialItems: Capability[];
+  initialCursor: string | null;
   evidence: Evidence[];
+  evidenceCapped: boolean;
 }) {
   const [items, setItems] = useState(initialItems);
+  const [cursor, setCursor] = useState(initialCursor);
   const [adding, setAdding] = useState(false);
 
   const byCategory = CAPABILITY_CATEGORIES.map((category) => ({
@@ -468,6 +486,7 @@ export function CapabilitySection({
                   nested={items.filter((child) => child.parentId === c.id)}
                   parents={items}
                   evidence={evidence}
+                  evidenceCapped={evidenceCapped}
                   onChanged={(next) =>
                     setItems((list) => list.map((i) => (i.id === next.id ? next : i)))
                   }
@@ -478,6 +497,21 @@ export function CapabilitySection({
           </div>
         ))
       )}
+
+      <LoadMore
+        cursor={cursor}
+        fetchPage={async (next) => {
+          const { data, error } = await api.GET("/capabilities", {
+            params: { query: { cursor: next, limit: PAGE_LIMIT } },
+          });
+          if (!data) throw new Error(error?.detail ?? "failed");
+          return data;
+        }}
+        onLoaded={(more, next) => {
+          setItems((list) => [...list, ...more]);
+          setCursor(next);
+        }}
+      />
     </section>
   );
 }

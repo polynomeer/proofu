@@ -8,6 +8,7 @@ import type { Schema } from "@proofu/contracts";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { api } from "@/lib/api";
+import { PICKER_LIMIT } from "@/lib/limits";
 import { proficiencyLabel, skillCategoryLabel } from "@/lib/labels";
 
 type Skill = Schema<"Skill">;
@@ -85,6 +86,12 @@ export function ProjectSkills({
           </p>
         ) : (
           <>
+            {available.length >= PICKER_LIMIT ? (
+              <p className="mt-3 text-caption text-text-600">
+                최근 기술 {available.length}개만 보여 줍니다. 찾는 기술이 없으면 커리어 → 기술에서
+                확인하세요.
+              </p>
+            ) : null}
             <ul className="mt-3 flex flex-col gap-1">
               {available.map((s) => (
                 <li key={s.id}>

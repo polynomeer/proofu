@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
+import { PAGE_LIMIT } from "@/lib/limits";
 
 export const metadata: Metadata = { title: "기술" };
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 /** F01 기술 (docs/ux/information-architecture.md: 커리어 → 기술). */
 export default async function SkillsPage() {
   const { data } = await api
-    .GET("/skills", { params: { query: { limit: 100 } } })
+    .GET("/skills", { params: { query: { limit: PAGE_LIMIT } } })
     .catch(() => ({ data: undefined }));
 
   return (
@@ -34,7 +35,7 @@ export default async function SkillsPage() {
           description="API 서버에 연결할 수 없거나 응답이 올바르지 않습니다. 잠시 후 새로고침하세요."
         />
       ) : (
-        <SkillSection initialItems={data.items} />
+        <SkillSection initialItems={data.items} initialCursor={data.nextCursor ?? null} />
       )}
     </>
   );

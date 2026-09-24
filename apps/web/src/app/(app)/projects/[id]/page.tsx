@@ -11,6 +11,7 @@ import { DeleteResourceButton } from "@/components/ui/DeleteResourceButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
 import { formatDateTime, formatMonth } from "@/lib/format";
+import { PICKER_LIMIT } from "@/lib/limits";
 import { visibilityLabel } from "@/lib/labels";
 
 type Params = Promise<{ id: string }>;
@@ -37,7 +38,9 @@ export default async function ProjectPage({ params }: { params: Params }) {
     api
       .GET("/projects/{id}/skills", { params: { path: { id } } })
       .catch(() => ({ data: undefined })),
-    api.GET("/skills", { params: { query: { limit: 100 } } }).catch(() => ({ data: undefined })),
+    api
+      .GET("/skills", { params: { query: { limit: PICKER_LIMIT } } })
+      .catch(() => ({ data: undefined })),
   ]);
 
   return (

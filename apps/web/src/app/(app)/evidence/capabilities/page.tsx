@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
+import { PAGE_LIMIT, PICKER_LIMIT } from "@/lib/limits";
 
 export const metadata: Metadata = { title: "역량" };
 export const dynamic = "force-dynamic";
@@ -14,9 +15,11 @@ export const dynamic = "force-dynamic";
 export default async function CapabilitiesPage() {
   const [capabilities, evidence] = await Promise.all([
     api
-      .GET("/capabilities", { params: { query: { limit: 100 } } })
+      .GET("/capabilities", { params: { query: { limit: PAGE_LIMIT } } })
       .catch(() => ({ data: undefined })),
-    api.GET("/evidence", { params: { query: { limit: 100 } } }).catch(() => ({ data: undefined })),
+    api
+      .GET("/evidence", { params: { query: { limit: PICKER_LIMIT } } })
+      .catch(() => ({ data: undefined })),
   ]);
 
   return (
@@ -39,7 +42,9 @@ export default async function CapabilitiesPage() {
       ) : (
         <CapabilitySection
           initialItems={capabilities.data.items}
+          initialCursor={capabilities.data.nextCursor ?? null}
           evidence={evidence.data?.items ?? []}
+          evidenceCapped={(evidence.data?.items ?? []).length >= PICKER_LIMIT}
         />
       )}
     </>

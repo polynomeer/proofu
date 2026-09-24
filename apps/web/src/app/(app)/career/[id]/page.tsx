@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProjectList } from "@/components/project/ProjectList";
@@ -13,6 +14,7 @@ import { formatDateTime, formatPeriod } from "@/lib/format";
 import { careerEntryTypeLabel, visibilityLabel } from "@/lib/labels";
 
 type Params = Promise<{ id: string }>;
+type SearchParams = Promise<{ cursor?: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { id } = await params;
@@ -22,12 +24,19 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return { title: data?.title ?? "커리어 상세" };
 }
 
-export default async function CareerEntryPage({ params }: { params: Params }) {
+export default async function CareerEntryPage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { id } = await params;
   const { data: entry } = await api.GET("/career-entries/{id}", { params: { path: { id } } });
   if (!entry) notFound();
+  const { cursor } = await searchParams;
   const { data: projects } = await api.GET("/projects", {
-    params: { query: { careerEntryId: id, limit: 50 } },
+    params: { query: { careerEntryId: id, cursor, limit: 20 } },
   });
   const addProject = (
     <ButtonLink variant="secondary" href={`/projects/new?careerEntryId=${entry.id}`}>
@@ -83,7 +92,17 @@ export default async function CareerEntryPage({ params }: { params: Params }) {
                 action={addProject}
               />
             ) : (
-              <ProjectList items={projects.items} />
+              <>
+                <ProjectList items={projects.items} />
+                {projects.nextCursor ? (
+                  <Link
+                    href={`/career/${entry.id}?cursor=${encodeURIComponent(projects.nextCursor)}`}
+                    className="mt-3 inline-flex h-10 items-center rounded-md border border-border-300 bg-surface-000 px-4 text-body font-semibold hover:bg-surface-050"
+                  >
+                    다음 프로젝트
+                  </Link>
+                ) : null}
+              </>
             )}
           </section>
         </div>

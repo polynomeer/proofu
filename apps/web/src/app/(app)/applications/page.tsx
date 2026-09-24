@@ -73,34 +73,42 @@ export default async function ApplicationsPage() {
           action={addAction}
         />
       ) : (
-        <div className="-mx-4 overflow-x-auto px-4 pb-2 md:-mx-6 md:px-6">
-          <div className="grid min-w-[1080px] grid-cols-6 gap-3">
-            {APPLICATION_BOARD_COLUMNS.map((col) => {
-              const items = data.items.filter((a) => col.statuses.includes(a.status));
-              return (
-                <section
-                  key={col.key}
-                  aria-label={col.label}
-                  className="flex flex-col gap-2 rounded-md bg-surface-050 p-2"
-                >
-                  <h2 className="flex items-center justify-between px-1 text-caption font-semibold text-text-600">
-                    {col.label}
-                    <span className="tabular-nums">{items.length}</span>
-                  </h2>
-                  {items.length === 0 ? (
-                    <p className="px-1 py-2 text-caption text-text-600">없음</p>
-                  ) : (
-                    <ul className="flex flex-col gap-2">
-                      {items.map((a) => (
-                        <Card key={a.id} a={a} showStatus={col.statuses.length > 1} />
-                      ))}
-                    </ul>
-                  )}
-                </section>
-              );
-            })}
+        <>
+          {data.truncated ? (
+            <p className="mb-3 text-caption text-text-600">
+              최근에 움직인 지원 건 {data.items.length}건만 보여 줍니다. 더 오래된 건은 공고
+              화면에서 찾을 수 있습니다.
+            </p>
+          ) : null}
+          <div className="-mx-4 overflow-x-auto px-4 pb-2 md:-mx-6 md:px-6">
+            <div className="grid min-w-[1080px] grid-cols-6 gap-3">
+              {APPLICATION_BOARD_COLUMNS.map((col) => {
+                const items = data.items.filter((a) => col.statuses.includes(a.status));
+                return (
+                  <section
+                    key={col.key}
+                    aria-label={col.label}
+                    className="flex flex-col gap-2 rounded-md bg-surface-050 p-2"
+                  >
+                    <h2 className="flex items-center justify-between px-1 text-caption font-semibold text-text-600">
+                      {col.label}
+                      <span className="tabular-nums">{items.length}</span>
+                    </h2>
+                    {items.length === 0 ? (
+                      <p className="px-1 py-2 text-caption text-text-600">없음</p>
+                    ) : (
+                      <ul className="flex flex-col gap-2">
+                        {items.map((a) => (
+                          <Card key={a.id} a={a} showStatus={col.statuses.length > 1} />
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );
