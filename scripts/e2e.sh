@@ -27,18 +27,35 @@ if [ -z "${DATABASE_URL:-}" ]; then
 else
   echo "using DATABASE_URL from the environment; not starting the docker postgres"
 fi
+# A server left over from an earlier run would answer the health checks and the suite would
+# silently test yesterday's build.
+for port in 8080 8091 8181 3111; do
+  if lsof -iTCP:"$port" -sTCP:LISTEN -n -P >/dev/null 2>&1; then
+    echo "port $port is already in use; stop the leftover process (E2E_KEEP from a previous run?)" >&2
+    exit 1
+  fi
+done
+
 ./gradlew :api:bootJar :worker:bootJar -q
 pnpm --filter web build >"$log/web-build.log" 2>&1
 
 node apps/web/scripts/mock-idp.mjs >"$log/mock-idp.log" 2>&1 & pids+=($!)
 java -jar apps/api/build/libs/api-*[!plain].jar >"$log/api.log" 2>&1 & pids+=($!)
-java -jar apps/worker/build/libs/worker-*[!plain].jar --server.port=8091 >"$log/worker.log" 2>&1 & pids+=($!)
-(cd apps/web && exec pnpm start -p 3111) >"$log/web.log" 2>&1 & pids+=($!)
 
+# The api owns the migrations; a worker that starts first polls a table that does not exist yet.
 for i in $(seq 1 90); do
-  curl -sf http://localhost:8080/actuator/health >/dev/null && curl -sf -o /dev/null http://localhost:3111/auth/signed-out && break
+  curl -sf http://localhost:8080/actuator/health >/dev/null && break
   sleep 2
 done
 curl -sf http://localhost:8080/actuator/health >/dev/null || { echo "api did not start; see $log/api.log" >&2; exit 1; }
+
+java -jar apps/worker/build/libs/worker-*[!plain].jar --server.port=8091 >"$log/worker.log" 2>&1 & pids+=($!)
+(cd apps/web && exec pnpm start -p 3111) >"$log/web.log" 2>&1 & pids+=($!)
+
+for i in $(seq 1 60); do
+  curl -sf -o /dev/null http://localhost:3111/auth/signed-out && break
+  sleep 2
+done
+curl -sf -o /dev/null http://localhost:3111/auth/signed-out || { echo "web did not start; see $log/web.log" >&2; exit 1; }
 
 pnpm --filter e2e e2e "$@"
