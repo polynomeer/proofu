@@ -154,7 +154,7 @@ test("접근성: 열린 폼과 모바일 폭에서도 위반이 없다", async (
   ).toEqual([]);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ["/", "/career", "/applications"]) {
+  for (const path of ["/", "/career", "/applications", "/more"]) {
     expect(await scan(page, path), `mobile ${path}`).toEqual([]);
   }
 });
