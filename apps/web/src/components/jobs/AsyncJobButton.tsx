@@ -16,6 +16,7 @@ const POLL_MS = 1500;
 const TIMEOUT_MS = 120_000;
 
 export const AI_JOB_ERRORS: Record<string, string> = {
+  LEASE_EXPIRED: "작업이 중단되어 다시 시도했지만 끝내지 못했습니다. 다시 실행해 주세요.",
   AI_BUDGET_EXCEEDED: "AI 예산 한도에 도달해 실행하지 못했습니다.",
   AI_REFUSED: "AI 제공자가 이 요청을 처리하지 않았습니다.",
   AI_OUTPUT_INVALID: "AI 응답이 검증을 통과하지 못했습니다. 다시 시도하세요.",
