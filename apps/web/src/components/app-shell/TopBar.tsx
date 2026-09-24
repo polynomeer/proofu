@@ -1,6 +1,9 @@
 import { Icon } from "@/components/ui/Icon";
 
-/** Global search, notifications and user menu (docs/design/components.md §상단 바). */
+/**
+ * Global search and the user menu (docs/design/components.md §상단 바). Notifications are not
+ * built yet, so the bar does not show a bell that does nothing.
+ */
 export function TopBar({ userName, canSignOut }: { userName: string; canSignOut: boolean }) {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border-300 bg-surface-000 px-4 md:px-6">
@@ -23,14 +26,6 @@ export function TopBar({ userName, canSignOut }: { userName: string; canSignOut:
         />
       </form>
       <div className="ml-auto flex items-center gap-2">
-        <button
-          type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-md text-text-600 hover:bg-surface-050"
-          aria-label="알림"
-          title="알림"
-        >
-          <Icon name="bell" />
-        </button>
         <span className="flex h-10 items-center gap-2 rounded-md px-2 text-body">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 text-text-600">
             <Icon name="user" size={16} />
