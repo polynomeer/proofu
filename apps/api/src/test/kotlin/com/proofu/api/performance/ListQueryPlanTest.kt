@@ -139,6 +139,10 @@ class ListQueryPlanTest {
         private const val ROWS = 20_000
         private val WORKSPACE: UUID = UUID.fromString("00000000-0000-7000-8000-0000000000ff")
         private val USER: UUID = UUID.fromString("00000000-0000-7000-8000-0000000000fe")
+
+        /** A neighbour holding as much again: without one, scanning the table looks cheap. */
+        private val NEIGHBOUR: UUID = UUID.fromString("00000000-0000-7000-8000-0000000000fd")
+        private val NEIGHBOUR_USER: UUID = UUID.fromString("00000000-0000-7000-8000-0000000000fc")
         private var seeded = false
 
         @JvmStatic
@@ -155,6 +159,17 @@ class ListQueryPlanTest {
                 "$USER@example.com",
             )
             jdbc.update("insert into workspaces (id, owner_user_id, name) values (?, ?, 'perf')", WORKSPACE, USER)
+            jdbc.update(
+                "insert into users (id, oidc_subject, oidc_issuer, email, display_name) values (?, ?, 'test', ?, 'perf')",
+                NEIGHBOUR_USER,
+                "perf-$NEIGHBOUR_USER",
+                "$NEIGHBOUR_USER@example.com",
+            )
+            jdbc.update(
+                "insert into workspaces (id, owner_user_id, name) values (?, ?, 'perf-neighbour')",
+                NEIGHBOUR,
+                NEIGHBOUR_USER,
+            )
             jdbc.execute(
                 """
                 insert into career_entries (workspace_id, type, title, start_date)
@@ -221,6 +236,38 @@ class ListQueryPlanTest {
                 from applications a where a.workspace_id = '$WORKSPACE'
                 """.trimIndent(),
             )
+            // One row nobody else looks like: search behaviour on a distinctive term (V16's
+            // trigram indexes are for exactly this) is exercised by SearchApiTest, which cares
+            // about results; plans for substring search depend on the planner's own cost
+            // estimates and are not asserted here.
+            jdbc.update(
+                "insert into career_entries (workspace_id, type, title, start_date) values (?, 'EMPLOYMENT', '코틀린특이값 엔지니어', date '2020-01-01')",
+                WORKSPACE,
+            )
+            jdbc.update(
+                "insert into skills (workspace_id, canonical_name, category) values (?, '코틀린특이값', 'PROGRAMMING_LANGUAGE')",
+                WORKSPACE,
+            )
+            jdbc.update(
+                """
+                insert into evidence (workspace_id, type, title, source, uri, captured_at)
+                values (?, 'URL', '코틀린특이값 대시보드', 'USER_INPUT', 'https://example.test/one', now())
+                """.trimIndent(),
+                WORKSPACE,
+            )
+            listOf(
+                "career_entries" to "type, title, start_date",
+                "skills" to "canonical_name, category, created_at",
+                "evidence" to "type, title, source, uri, captured_at",
+                "capabilities" to "name, definition, category, created_at",
+            ).forEach { (table, columns) ->
+                jdbc.execute(
+                    """
+                    insert into $table (workspace_id, $columns)
+                    select '$NEIGHBOUR', $columns from $table where workspace_id = '$WORKSPACE'
+                    """.trimIndent(),
+                )
+            }
             listOf(
                 "career_entries",
                 "projects",

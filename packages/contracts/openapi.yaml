@@ -251,6 +251,41 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /search:
+    get:
+      tags: [career]
+      operationId: search
+      summary: One query across the workspace, grouped by what was found
+      description: |
+        Matches career entries, projects, skills, evidence and postings. Each group carries at
+        most `limit` rows and the total the workspace holds, so a user can tell that more exists.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 120
+        - name: limit
+          in: query
+          required: false
+          description: Rows per group
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 5
+      responses:
+        "200":
+          description: Results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /career-entries:
     get:
       tags: [career]
@@ -2913,6 +2948,49 @@ components:
             $ref: "#/components/schemas/Capability"
         nextCursor:
           type: [string, "null"]
+
+    SearchHit:
+      type: object
+      required: [id, title, href]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        title:
+          type: string
+        subtitle:
+          type: [string, "null"]
+        href:
+          description: Where the web app shows this record
+          type: string
+
+    SearchGroup:
+      type: object
+      required: [total, items]
+      properties:
+        total:
+          description: How many records of this kind match, before the per-group limit
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchHit"
+
+    SearchResults:
+      type: object
+      required: [query, careerEntries, projects, skills, evidence, postings]
+      properties:
+        query:
+          type: string
+        careerEntries:
+          $ref: "#/components/schemas/SearchGroup"
+        projects:
+          $ref: "#/components/schemas/SearchGroup"
+        skills:
+          $ref: "#/components/schemas/SearchGroup"
+        evidence:
+          $ref: "#/components/schemas/SearchGroup"
+        postings:
+          $ref: "#/components/schemas/SearchGroup"
 
     SkillCategory:
       type: string
