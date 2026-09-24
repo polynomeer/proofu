@@ -6,7 +6,9 @@ review: API 릴리스 시
 
 # 주요 엔드포인트
 
-정식 계약은 `packages/contracts/openapi.yaml`입니다. ✅ 는 API 구현 완료.
+정식 계약은 `packages/contracts/openapi.yaml`입니다. ✅ 는 구현 완료, ⛔ 는 계약에는 있으나 외부 결정이 남아 **501 `NOT_IMPLEMENTED`** 로 답하는 경로입니다(404가 아닙니다).
+
+계약과 런타임 문서(`/api/v1/openapi.json`)의 오퍼레이션 목록은 CI(`scripts/contract-diff.sh`)가 비교해 한쪽에만 있으면 빌드를 실패시킵니다.
 
 | 메서드                | 경로                                          | 목적                                                         |
 | --------------------- | --------------------------------------------- | ------------------------------------------------------------ |
@@ -35,7 +37,7 @@ review: API 릴리스 시
 | GET, PATCH, DELETE    | `/claims/{id}` ✅                             | Claim 상세(파생 상태·연결), 변경, 삭제                       |
 | DELETE                | `/claims/{id}/evidence/{evidenceId}` ✅       | Claim–Evidence 연결 해제                                     |
 | POST ✅               | `/claims/{id}/evidence`                       | Claim과 Evidence 연결                                        |
-| POST                  | `/files/upload-sessions`                      | 파일 업로드 세션 생성                                        |
+| POST ⛔               | `/files/upload-sessions`                      | 파일 업로드 세션 생성                                        |
 | GET                   | `/job-postings` ✅                            | 공고 목록 (최신 스냅샷 요약)                                 |
 | GET, DELETE           | `/job-postings/{id}` ✅                       | 공고 상세 (스냅샷 목록), 삭제                                |
 | GET                   | `/job-posting-snapshots/{id}` ✅              | 불변 스냅샷 원문 조회                                        |
@@ -64,5 +66,5 @@ review: API 릴리스 시
 | GET, POST ✅          | `/applications/{id}/reviews`                  | 서류 결과 회고 목록과 생성                                   |
 | GET ✅                | `/applications/{id}/review-context`           | 회고 비교 대상(공고·제출 스냅샷·문서 사실·매칭 판정)         |
 | GET, PATCH, DELETE    | `/reviews/{id}` ✅                            | 회고 상세, 변경, 삭제                                        |
-| POST                  | `/applications/{id}/interview-handoffs`       | iterview 인계 요청                                           |
+| POST ⛔               | `/applications/{id}/interview-handoffs`       | iterview 인계 요청                                           |
 | GET                   | `/jobs/{id}`                                  | 비동기 작업 상태와 결과 조회                                 |

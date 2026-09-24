@@ -3,33 +3,45 @@
 #
 # Usage: scripts/contract-diff.sh packages/contracts/openapi.yaml runtime-openapi.json
 #
-# Prints operations (METHOD path) present in one document but not the other.
-# Exits 1 when the runtime spec lacks anything the contract declares, because a
-# generated client would call an endpoint that does not exist.
+# Prints operations (METHOD path) present in one document but not the other. Paths are compared
+# without the server base path (the contract declares `servers: /api/v1`, the runtime document
+# spells it into every path) and without parameter names, so `{id}` and `{applicationId}` are
+# the same operation.
+#
+# Exits 1 on any difference: a generated client would call an endpoint that does not exist, and
+# an endpoint the contract never declared is one nobody reviewed.
 set -euo pipefail
 
 contract="$1"
 runtime="$2"
 
-# Emits "METHOD /path" lines. YAML is read with PyYAML when available, else Ruby's stdlib.
+# Emits "METHOD /path" lines. YAML goes through redocly (a contracts dev dependency) first,
+# so nothing here depends on a Python YAML module being present.
+normalize='import json,re,sys
+API_PREFIX = "/api/v1"
+d = json.load(open(sys.argv[1]))
+server = ((d.get("servers") or [{}])[0].get("url") or "").rstrip("/")
+base = re.sub(r"^https?://[^/]+", "", server)
+for path, item in sorted((d.get("paths") or {}).items()):
+    shape = path[len(base):] if base and path.startswith(base) else path
+    # springdoc writes the whole path; the contract keeps the prefix in `servers`.
+    if shape.startswith(API_PREFIX):
+        shape = shape[len(API_PREFIX):]
+    shape = re.sub(r"\{[^}]+\}", "{}", shape)
+    for method in sorted(item):
+        if method.lower() in ("get", "post", "put", "patch", "delete"):
+            print(method.upper(), shape)'
+
 operations() {
   local file="$1"
-  if [[ "$file" == *.json ]]; then
-    python3 -c 'import json,sys
-d=json.load(open(sys.argv[1]))
-for p,i in sorted((d.get("paths") or {}).items()):
-    for m in sorted(i):
-        if m.lower() in ("get","post","put","patch","delete"): print(m.upper(), p)' "$file"
-  elif python3 -c 'import yaml' 2>/dev/null; then
-    python3 -c 'import yaml,sys
-d=yaml.safe_load(open(sys.argv[1]))
-for p,i in sorted((d.get("paths") or {}).items()):
-    for m in sorted(i):
-        if m.lower() in ("get","post","put","patch","delete"): print(m.upper(), p)' "$file"
-  else
-    ruby -ryaml -e 'd=YAML.safe_load(File.read(ARGV[0]))
-(d["paths"]||{}).sort.each{|p,i| i.keys.sort.each{|m| puts "#{m.upcase} #{p}" if %w[get post put patch delete].include?(m.downcase)}}' "$file"
+  if [[ "$file" != *.json ]]; then
+    local bundled
+    bundled="$(mktemp -t contract-bundle-XXXXXX).json"
+    pnpm --filter contracts exec redocly bundle "$(cd "$(dirname "$file")" && pwd)/$(basename "$file")" \
+      --ext json -o "$bundled" >/dev/null
+    file="$bundled"
   fi
+  python3 -c "$normalize" "$file"
 }
 
 declared=$(operations "$contract" | sort)
@@ -48,4 +60,4 @@ if [[ -n "$extra" ]]; then
 fi
 [[ -z "$missing" && -z "$extra" ]] && echo "Contract and runtime spec declare the same operations."
 
-[[ -z "$missing" ]]
+[[ -z "$missing" && -z "$extra" ]]
