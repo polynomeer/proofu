@@ -12,7 +12,13 @@ import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
 import { formatDate, formatPeriod } from "@/lib/format";
-import { CAREER_ENTRY_TYPES, careerEntryTypeLabel, evidenceTypeLabel } from "@/lib/labels";
+import {
+  CAREER_ENTRY_TYPES,
+  careerEntryTypeLabel,
+  evidenceTypeLabel,
+  proficiencyLabel,
+  skillCategoryLabel,
+} from "@/lib/labels";
 
 export const metadata: Metadata = { title: "커리어 대시보드" };
 
@@ -189,11 +195,50 @@ export default async function DashboardPage({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
-          <h2 className="mb-3 text-section-title">주요 스킬</h2>
-          <EmptyState
-            title="스킬 관리는 준비 중입니다"
-            description="경력과 프로젝트에서 스킬을 추출해 근거와 함께 보여줄 예정입니다."
-          />
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-section-title">주요 기술</h2>
+            {data.topSkills.total > 0 ? (
+              <Link
+                href="/career/skills"
+                className="text-body font-semibold text-primary-600 hover:underline"
+              >
+                전체보기 →
+              </Link>
+            ) : null}
+          </div>
+          {data.topSkills.total === 0 ? (
+            <EmptyState
+              title="아직 등록한 기술이 없습니다"
+              description="자주 쓰는 언어·도구를 등록하고 프로젝트에 연결하면, 무엇이 기록으로 뒷받침되는지 여기서 한눈에 보입니다."
+              action={
+                <ButtonLink variant="secondary" href="/career/skills">
+                  기술 등록하기
+                </ButtonLink>
+              }
+            />
+          ) : (
+            <ul className="flex flex-col divide-y divide-border-300">
+              {data.topSkills.items.map((skill) => (
+                <li key={skill.id} className="flex flex-wrap items-center gap-2 py-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="text-body font-semibold">{skill.canonicalName}</span>
+                    <span className="block text-caption text-text-600">
+                      {skillCategoryLabel(skill.category)}
+                      {skill.proficiency
+                        ? ` · 자기평가 ${proficiencyLabel(skill.proficiency)}`
+                        : ""}
+                      {skill.lastUsedAt ? ` · 마지막 사용 ${formatDate(skill.lastUsedAt)}` : ""}
+                    </span>
+                  </span>
+                  <Chip tone={skill.projectCount > 0 ? "verified" : "neutral"}>
+                    {skill.projectCount > 0
+                      ? `프로젝트 ${skill.projectCount}`
+                      : "연결된 프로젝트 없음"}
+                  </Chip>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
         <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
           <div className="mb-3 flex items-center justify-between">

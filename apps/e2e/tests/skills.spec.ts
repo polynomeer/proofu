@@ -48,6 +48,15 @@ test("커리어: 기술을 등록해 중복을 막고 프로젝트에 연결한�
   // The link survives a reload and follows the skill, not a copy of its name.
   await page.reload();
   await expect(page.getByText("Spring Boot · 고급")).toBeVisible();
+
+  // The dashboard reports what the record backs, not what the level claims.
+  await page.goto("/");
+  const skills = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "주요 기술" }) });
+  await expect(skills.getByText("Spring Boot", { exact: true })).toBeVisible();
+  await expect(skills.getByText("프로젝트 1")).toBeVisible();
+  await expect(skills.getByText(/자기평가 고급/)).toBeVisible();
 });
 
 test("커리어: 기술이 한 페이지를 넘으면 더 보기로 이어서 보여 준다", async ({ page }) => {
