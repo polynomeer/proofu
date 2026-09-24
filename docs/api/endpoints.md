@@ -18,6 +18,7 @@ review: API 릴리스 시
 | GET, PUT ✅           | `/me/settings`                                | AI 처리 동의·공개 범위 기본값·보존 기간 (동의 부여는 재인증) |
 | GET, PUT ✅           | `/me/profile`                                 | 문서 머리글 프로필 조회·저장 (AI 전송 없음)                  |
 | GET                   | `/dashboard` ✅                               | 대시보드 집계 (KPI, 타임라인, 최근 Evidence, 행동 필요)      |
+| GET ✅                | `/search`                                     | 전역 검색 (커리어·프로젝트·기술·Evidence·공고, 유형별 그룹)  |
 | GET, POST             | `/career-entries` ✅                          | 경력 목록 조회와 생성                                        |
 | GET, POST             | `/projects` ✅                                | 프로젝트 목록(경력별 필터)과 생성                            |
 | GET, PATCH, DELETE    | `/projects/{id}` ✅                           | 프로젝트 상세, 변경, 삭제                                    |

@@ -27,6 +27,7 @@ review: 릴리스 계획 시
 | 보안 헤더 (CSP nonce, 기본 헤더)                                                                    | `security.spec.ts`          | 위반 0, 요청마다 새 nonce                                                              |
 | 접근성 (WCAG 2.2 AA 자동 검사)                                                                      | `accessibility.spec.ts`     | axe-core로 10개 목록 화면 + 상세·폼·모바일·열린 폼, 스킵 링크                          |
 | 공통 상태 (404 주소·없는 리소스)                                                                    | `states.spec.ts`            | 앱 셸 안 404와 루트 404 구분                                                           |
+| 전역 검색                                                                                           | `search.spec.ts`            | 상단 검색창 → 그룹 결과 → 상세로 이동, 별칭 매칭                                       |
 | 1 (경력·프로젝트·성과·Claim·Evidence)                                                               | `journey.spec.ts` beforeAll | API 시드. 파일 Evidence는 객체 저장소 확정 후                                          |
 | 2 공고·추출·승인 / 3 매칭·채택 / 4–5 초안·승인·버전·비교 / 6 DOCX·PDF / 7 제출 스냅샷 불변 / 8 회고 | `journey.spec.ts`           | 가짜 AI 제공자, 실제 렌더러·다운로드                                                   |
 | 9 iterview 인계                                                                                     | —                           | 연동 계약 TBD                                                                          |
