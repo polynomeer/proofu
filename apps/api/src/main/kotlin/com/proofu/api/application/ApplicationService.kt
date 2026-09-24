@@ -38,17 +38,22 @@ class ApplicationService(
         status: ApplicationStatus?,
         includeTerminal: Boolean,
     ): ApplicationList {
-        val rows = repository.board(workspace.workspaceId.value, status?.name, includeTerminal, TERMINAL, BOARD_LIMIT)
+        // One row past the cap, so the board can say it is not showing everything.
+        val claimed =
+            repository.board(workspace.workspaceId.value, status?.name, includeTerminal, TERMINAL, BOARD_LIMIT + 1)
+        val rows = claimed.take(BOARD_LIMIT)
         val postingIds = postingIds(rows.map { it.snapshotId })
         val changedAt = lastStatusChange(rows.map { it.id })
         return ApplicationList(
-            rows.map {
-                ApplicationResponse.from(
-                    it,
-                    postingIds.getValue(it.snapshotId),
-                    changedAt[it.id] ?: checkNotNull(it.createdAt),
-                )
-            },
+            items =
+                rows.map {
+                    ApplicationResponse.from(
+                        it,
+                        postingIds.getValue(it.snapshotId),
+                        changedAt[it.id] ?: checkNotNull(it.createdAt),
+                    )
+                },
+            truncated = claimed.size > BOARD_LIMIT,
         )
     }
 

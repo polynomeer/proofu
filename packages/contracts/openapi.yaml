@@ -1436,12 +1436,15 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required: [items, truncated]
                 properties:
                   items:
                     type: array
                     items:
                       $ref: "#/components/schemas/Application"
+                  truncated:
+                    description: True when applications exist beyond the board's cap
+                    type: boolean
         default:
           $ref: "#/components/responses/Problem"
     post:

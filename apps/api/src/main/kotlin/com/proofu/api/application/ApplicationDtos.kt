@@ -115,4 +115,6 @@ data class ApplicationDetail(
 
 data class ApplicationList(
     val items: List<ApplicationResponse>,
+    /** The board shows the most recently changed applications; older ones exist beyond this. */
+    val truncated: Boolean,
 )
