@@ -3,6 +3,8 @@ package com.proofu.api.dashboard
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.domain.applications.ApplicationStatus
 import com.proofu.domain.career.CareerEntryType
+import com.proofu.domain.career.ProficiencyLevel
+import com.proofu.domain.career.SkillCategory
 import com.proofu.domain.evidence.EvidenceType
 import com.proofu.domain.evidence.VerificationStatus
 import org.springframework.jdbc.core.JdbcTemplate
@@ -41,6 +43,7 @@ class DashboardService(
             kpis = kpis,
             timeline = timeline(ws, timelineType),
             recentEvidence = recentEvidence(ws),
+            topSkills = topSkills(ws),
             attention = attention(ws, kpis),
         )
     }
@@ -206,6 +209,46 @@ class DashboardService(
         )
 
     /**
+     * Skills ordered by how much of the record stands behind them — projects linked, then last
+     * use. The level shown is the user's own assessment; this order is not a judgement of it.
+     */
+    private fun topSkills(ws: UUID): TopSkills {
+        val total =
+            jdbc.queryForObject(
+                "select count(*) from skills where workspace_id = ? and deleted_at is null",
+                Int::class.java,
+                ws,
+            ) ?: 0
+        if (total == 0) return TopSkills(0, emptyList())
+        val items =
+            jdbc.query(
+                """
+                select s.id, s.canonical_name, s.category, s.proficiency, s.last_used_at,
+                       count(p.id) as project_count
+                from skills s
+                left join project_skills ps on ps.skill_id = s.id
+                left join projects p on p.id = ps.project_id and p.deleted_at is null
+                where s.workspace_id = ? and s.deleted_at is null
+                group by s.id
+                order by count(p.id) desc, s.last_used_at desc nulls last, s.created_at desc, s.id desc
+                limit $TOP_SKILLS_LIMIT
+                """.trimIndent(),
+                { rs, _ ->
+                    TopSkillItem(
+                        id = rs.getObject("id", UUID::class.java),
+                        canonicalName = rs.getString("canonical_name"),
+                        category = SkillCategory.valueOf(rs.getString("category")),
+                        proficiency = rs.getString("proficiency")?.let(ProficiencyLevel::valueOf),
+                        lastUsedAt = rs.getDate("last_used_at")?.toLocalDate(),
+                        projectCount = rs.getInt("project_count"),
+                    )
+                },
+                ws,
+            )
+        return TopSkills(total, items)
+    }
+
+    /**
      * Up to [MAX_ATTENTION] items in [AttentionCode] order: application deadlines and results
      * first, then the AI approval queue, then gaps in the evidence chain.
      */
@@ -305,6 +348,7 @@ class DashboardService(
 
     private companion object {
         const val TIMELINE_LIMIT = 5
+        const val TOP_SKILLS_LIMIT = 6
         const val RECENT_EVIDENCE_LIMIT = 4
         const val MAX_ATTENTION = 3
         const val DEADLINE_WINDOW_DAYS = 7L

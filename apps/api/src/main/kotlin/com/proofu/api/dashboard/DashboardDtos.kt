@@ -1,6 +1,8 @@
 package com.proofu.api.dashboard
 
 import com.proofu.domain.career.CareerEntryType
+import com.proofu.domain.career.ProficiencyLevel
+import com.proofu.domain.career.SkillCategory
 import com.proofu.domain.evidence.EvidenceType
 import com.proofu.domain.evidence.VerificationStatus
 import java.time.Instant
@@ -61,6 +63,21 @@ data class RecentEvidenceItem(
     val capturedAt: Instant,
 )
 
+data class TopSkillItem(
+    val id: UUID,
+    val canonicalName: String,
+    val category: SkillCategory,
+    /** The user's own assessment; nothing here raises it. */
+    val proficiency: ProficiencyLevel?,
+    val lastUsedAt: LocalDate?,
+    val projectCount: Int,
+)
+
+data class TopSkills(
+    val total: Int,
+    val items: List<TopSkillItem>,
+)
+
 /** Ordered by how urgently the user should act; the dashboard shows the first few. */
 enum class AttentionCode {
     NO_CAREER_ENTRIES,
@@ -83,5 +100,6 @@ data class DashboardSummary(
     val kpis: DashboardKpis,
     val timeline: List<TimelineItem>,
     val recentEvidence: List<RecentEvidenceItem>,
+    val topSkills: TopSkills,
     val attention: List<AttentionItem>,
 )

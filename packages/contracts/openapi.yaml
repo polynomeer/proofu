@@ -2366,7 +2366,7 @@ components:
 
     DashboardSummary:
       type: object
-      required: [kpis, timeline, recentEvidence, attention]
+      required: [kpis, timeline, recentEvidence, topSkills, attention]
       properties:
         kpis:
           type: object
@@ -2462,6 +2462,37 @@ components:
               capturedAt:
                 type: string
                 format: date-time
+        topSkills:
+          description: |
+            Registered skills ordered by how much of the career record backs them: the number of
+            projects they are linked to, then how recently they were used. Not a ranking of
+            ability — the level shown is the user's own.
+          type: object
+          required: [total, items]
+          properties:
+            total:
+              type: integer
+            items:
+              type: array
+              items:
+                type: object
+                required: [id, canonicalName, category, projectCount]
+                properties:
+                  id:
+                    $ref: "#/components/schemas/Uuid"
+                  canonicalName:
+                    type: string
+                  category:
+                    $ref: "#/components/schemas/SkillCategory"
+                  proficiency:
+                    oneOf:
+                      - $ref: "#/components/schemas/ProficiencyLevel"
+                      - type: "null"
+                  lastUsedAt:
+                    type: [string, "null"]
+                    format: date
+                  projectCount:
+                    type: integer
         attention:
           type: array
           description: |

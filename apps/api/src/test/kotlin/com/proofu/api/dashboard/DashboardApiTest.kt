@@ -46,6 +46,65 @@ class DashboardApiTest {
     private fun Map<String, Any?>.kpi(name: String) = (this["kpis"] as Map<String, Any?>)[name] as Map<String, Any?>
 
     @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `top skills are ordered by the record behind them, not by the level claimed`() {
+        val empty = dashboard()["topSkills"] as Map<String, Any?>
+        assertThat(empty["total"]).isEqualTo(0)
+        assertThat(empty["items"] as List<*>).isEmpty()
+
+        val entry =
+            support.create(
+                workspaceId,
+                "/api/v1/career-entries",
+                """{"type":"EMPLOYMENT","title":"엔지니어","startDate":"2021-01-01"}""",
+            )
+        val used =
+            support.create(
+                workspaceId,
+                "/api/v1/skills",
+                """{"canonicalName":"Kotlin","category":"PROGRAMMING_LANGUAGE","proficiency":"PRACTITIONER","lastUsedAt":"2026-01-01"}""",
+            )
+        // Claims the highest level but nothing uses it: the record, not the claim, decides order.
+        support.create(
+            workspaceId,
+            "/api/v1/skills",
+            """{"canonicalName":"COBOL","category":"PROGRAMMING_LANGUAGE","proficiency":"STRATEGIC"}""",
+        )
+        val recent =
+            support.create(
+                workspaceId,
+                "/api/v1/skills",
+                """{"canonicalName":"Figma","category":"TOOL","lastUsedAt":"2026-06-01"}""",
+            )
+        repeat(2) { i ->
+            val project =
+                support.create(
+                    workspaceId,
+                    "/api/v1/projects",
+                    """{"careerEntryId":"$entry","name":"프로젝트 $i","role":"리드","summary":"요약"}""",
+                )
+            client
+                .put()
+                .uri("/api/v1/projects/$project/skills")
+                .header(HeaderWorkspaceResolver.HEADER, workspaceId.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"skillIds":["$used"]}""")
+                .exchange()
+                .expectStatus()
+                .isOk
+        }
+
+        val top = dashboard()["topSkills"] as Map<String, Any?>
+        assertThat(top["total"]).isEqualTo(3)
+        val items = top["items"] as List<Map<String, Any?>>
+        assertThat(items.map { it["canonicalName"] }).containsExactly("Kotlin", "Figma", "COBOL")
+        assertThat(items.first()["projectCount"]).isEqualTo(2)
+        assertThat(items.first()["proficiency"]).isEqualTo("PRACTITIONER")
+        assertThat(items.last()["projectCount"]).isEqualTo(0)
+        assertThat(items.map { it["id"] }).contains(used.toString(), recent.toString())
+    }
+
+    @Test
     fun `empty workspace reports zeros and asks for the first career entry`() {
         val d = dashboard()
         assertThat(d.kpi("careerEntries")["total"]).isEqualTo(0)
