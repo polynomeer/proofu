@@ -2,7 +2,7 @@ package com.proofu.api.jobs
 
 import com.proofu.api.audit.AuditLog
 import com.proofu.api.identity.WorkspaceContext
-import com.proofu.api.web.DateIdCursor
+import com.proofu.api.web.InstantIdCursor
 import com.proofu.api.web.InvalidRequestException
 import com.proofu.api.web.NotImplementedException
 import com.proofu.api.web.ResourceNotFoundException
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
-import java.time.ZoneOffset
 import java.util.UUID
 
 @Service
@@ -119,14 +118,14 @@ class JobPostingService(
     fun list(
         workspace: WorkspaceContext,
         q: String?,
-        cursor: DateIdCursor?,
+        cursor: InstantIdCursor?,
         limit: Int,
     ): JobPostingPage {
         val rows =
             postings.page(
                 workspace.workspaceId.value,
                 q?.trim()?.ifEmpty { null },
-                cursor?.date,
+                cursor?.at,
                 cursor?.id,
                 limit + 1,
             )
@@ -134,7 +133,7 @@ class JobPostingService(
         val next =
             if (rows.size > limit) {
                 val last = page.last()
-                DateIdCursor(checkNotNull(last.updatedAt).atZone(ZoneOffset.UTC).toLocalDate(), last.id).encode()
+                InstantIdCursor(checkNotNull(last.updatedAt), last.id).encode()
             } else {
                 null
             }

@@ -2,7 +2,7 @@ package com.proofu.api.evidence
 
 import com.proofu.api.audit.AuditLog
 import com.proofu.api.identity.WorkspaceContext
-import com.proofu.api.web.DateIdCursor
+import com.proofu.api.web.InstantIdCursor
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.api.web.StaleVersionException
 import com.proofu.domain.common.Confidence
@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
-import java.time.ZoneOffset
 import java.util.UUID
 
 @Service
@@ -35,7 +34,7 @@ class EvidenceService(
         type: EvidenceType?,
         verification: VerificationStatus?,
         q: String?,
-        cursor: DateIdCursor?,
+        cursor: InstantIdCursor?,
         limit: Int,
     ): EvidencePage {
         val rows =
@@ -44,7 +43,7 @@ class EvidenceService(
                 type?.name,
                 verification?.name,
                 q?.trim()?.ifEmpty { null },
-                cursor?.date,
+                cursor?.at,
                 cursor?.id,
                 limit + 1,
             )
@@ -52,7 +51,7 @@ class EvidenceService(
         val next =
             if (rows.size > limit) {
                 val last = page.last()
-                DateIdCursor(last.capturedAt.atZone(ZoneOffset.UTC).toLocalDate(), last.id).encode()
+                InstantIdCursor(last.capturedAt, last.id).encode()
             } else {
                 null
             }

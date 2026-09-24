@@ -3,8 +3,8 @@ package com.proofu.api.skill
 import com.proofu.api.audit.AuditLog
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.project.ProjectRepository
-import com.proofu.api.web.DateIdCursor
 import com.proofu.api.web.DuplicateResourceException
+import com.proofu.api.web.InstantIdCursor
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.api.web.StaleVersionException
 import com.proofu.domain.career.Skill
@@ -17,8 +17,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.UUID
 
 /**
@@ -38,16 +36,15 @@ class SkillService(
     fun list(
         workspace: WorkspaceContext,
         category: SkillCategory?,
-        cursor: DateIdCursor?,
+        cursor: InstantIdCursor?,
         limit: Int,
     ): SkillPage {
         val rows =
-            repository.page(workspace.workspaceId.value, category?.name, cursor?.date, cursor?.id, limit + 1)
+            repository.page(workspace.workspaceId.value, category?.name, cursor?.at, cursor?.id, limit + 1)
         val page = rows.take(limit)
         val next =
             if (rows.size > limit) {
-                DateIdCursor(utcDate(checkNotNull(page.last().createdAt)), page.last().id)
-                    .encode()
+                InstantIdCursor(checkNotNull(page.last().createdAt), page.last().id).encode()
             } else {
                 null
             }
@@ -193,9 +190,6 @@ class SkillService(
                 .firstOrNull() ?: return
         throw DuplicateResourceException(TARGET, clash.canonicalName)
     }
-
-    /** Cursor dates are UTC days, matching the `at time zone 'UTC'` bucket in the query. */
-    private fun utcDate(at: Instant): LocalDate = LocalDate.ofInstant(at, ZoneOffset.UTC)
 
     private companion object {
         const val TARGET = "skill"

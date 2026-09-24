@@ -4,7 +4,7 @@ import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
-import java.time.LocalDate
+import java.time.Instant
 import java.util.UUID
 
 interface SkillRepository : JpaRepository<SkillEntity, UUID> {
@@ -33,17 +33,16 @@ interface SkillRepository : JpaRepository<SkillEntity, UUID> {
             where workspace_id = :workspaceId
               and deleted_at is null
               and (cast(:category as text) is null or category = cast(:category as text))
-              and (cast(:cursorDate as date) is null
-                   or cast((created_at at time zone 'UTC') as date) < cast(:cursorDate as date)
-                   or (cast((created_at at time zone 'UTC') as date) = cast(:cursorDate as date) and id < cast(:cursorId as uuid)))
-            order by cast((created_at at time zone 'UTC') as date) desc, id desc
+              and (cast(:cursorAt as timestamptz) is null
+                   or (created_at, id) < (cast(:cursorAt as timestamptz), cast(:cursorId as uuid)))
+            order by created_at desc, id desc
             limit :limit
             """,
     )
     fun page(
         workspaceId: UUID,
         category: String?,
-        cursorDate: LocalDate?,
+        cursorAt: Instant?,
         cursorId: UUID?,
         limit: Int,
     ): List<SkillEntity>

@@ -2,7 +2,7 @@ package com.proofu.api.capability
 
 import com.proofu.api.audit.AuditLog
 import com.proofu.api.identity.WorkspaceContext
-import com.proofu.api.web.DateIdCursor
+import com.proofu.api.web.InstantIdCursor
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.api.web.StaleVersionException
 import com.proofu.domain.career.CapabilityCategory
@@ -16,8 +16,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.UUID
 
 /**
@@ -37,16 +35,15 @@ class CapabilityService(
     fun list(
         workspace: WorkspaceContext,
         category: CapabilityCategory?,
-        cursor: DateIdCursor?,
+        cursor: InstantIdCursor?,
         limit: Int,
     ): CapabilityPage {
-        val rows = repository.page(workspace.workspaceId.value, category?.name, cursor?.date, cursor?.id, limit + 1)
+        val rows = repository.page(workspace.workspaceId.value, category?.name, cursor?.at, cursor?.id, limit + 1)
         val page = rows.take(limit)
         val evidence = evidenceOf(page.map { it.id })
         val next =
             if (rows.size > limit) {
-                DateIdCursor(utcDate(checkNotNull(page.last().createdAt)), page.last().id)
-                    .encode()
+                InstantIdCursor(checkNotNull(page.last().createdAt), page.last().id).encode()
             } else {
                 null
             }
@@ -220,9 +217,6 @@ class CapabilityService(
             throw DomainRuleViolation("a capability cannot be nested under one of its own descendants")
         }
     }
-
-    /** Cursor dates are UTC days, matching the `at time zone 'UTC'` bucket in the query. */
-    private fun utcDate(at: Instant): LocalDate = LocalDate.ofInstant(at, ZoneOffset.UTC)
 
     private companion object {
         const val TARGET = "capability"

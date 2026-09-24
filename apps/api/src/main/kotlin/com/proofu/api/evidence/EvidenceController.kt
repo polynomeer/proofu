@@ -2,7 +2,7 @@ package com.proofu.api.evidence
 
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.web.ApiPaths
-import com.proofu.api.web.DateIdCursor
+import com.proofu.api.web.InstantIdCursor
 import com.proofu.api.web.InvalidRequestException
 import com.proofu.domain.evidence.EvidenceType
 import com.proofu.domain.evidence.VerificationStatus
@@ -35,7 +35,7 @@ class EvidenceController(
         @RequestParam(required = false) q: String?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) limit: Int,
-    ): EvidencePage = service.list(workspace, type, verification, q, cursor?.let(DateIdCursor::decode), limit)
+    ): EvidencePage = service.list(workspace, type, verification, q, cursor?.let(InstantIdCursor::decode), limit)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

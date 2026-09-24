@@ -3,7 +3,7 @@ package com.proofu.api.document
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.job.AcceptedJob
 import com.proofu.api.web.ApiPaths
-import com.proofu.api.web.DateIdCursor
+import com.proofu.api.web.InstantIdCursor
 import com.proofu.domain.documents.DocumentType
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
@@ -46,7 +46,7 @@ class DocumentController(
         @RequestParam(required = false) type: DocumentType?,
         @RequestParam(required = false) q: String?,
     ): DocumentPage =
-        documents.list(workspace, type, q?.trim()?.ifEmpty { null }, cursor?.let(DateIdCursor::decode), limit)
+        documents.list(workspace, type, q?.trim()?.ifEmpty { null }, cursor?.let(InstantIdCursor::decode), limit)
 
     @GetMapping("/applications/{id}/documents")
     fun listForApplication(

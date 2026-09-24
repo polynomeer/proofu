@@ -2,7 +2,7 @@ package com.proofu.api.jobs
 
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.web.ApiPaths
-import com.proofu.api.web.DateIdCursor
+import com.proofu.api.web.InstantIdCursor
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -29,7 +29,7 @@ class JobPostingController(
         @RequestParam(required = false) q: String?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) limit: Int,
-    ): JobPostingPage = service.list(workspace, q, cursor?.let(DateIdCursor::decode), limit)
+    ): JobPostingPage = service.list(workspace, q, cursor?.let(InstantIdCursor::decode), limit)
 
     @PostMapping("/job-postings/import")
     @ResponseStatus(HttpStatus.CREATED)

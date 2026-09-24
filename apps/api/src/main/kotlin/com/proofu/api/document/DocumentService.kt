@@ -5,7 +5,7 @@ import com.proofu.api.audit.AuditLog
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.job.JobService
 import com.proofu.api.job.JobTypes
-import com.proofu.api.web.DateIdCursor
+import com.proofu.api.web.InstantIdCursor
 import com.proofu.api.web.ResourceNotFoundException
 import com.proofu.api.web.StaleVersionException
 import com.proofu.domain.applications.ApplicationStatus
@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.Instant
 import java.time.OffsetDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 
 @Service
@@ -43,7 +42,7 @@ class DocumentService(
         workspace: WorkspaceContext,
         type: DocumentType?,
         q: String?,
-        cursor: DateIdCursor?,
+        cursor: InstantIdCursor?,
         limit: Int,
     ): DocumentPage {
         val rows =
@@ -66,10 +65,9 @@ class DocumentService(
                        or d.title ilike '%' || cast(? as varchar) || '%'
                        or a.company ilike '%' || cast(? as varchar) || '%'
                        or a.role_title ilike '%' || cast(? as varchar) || '%')
-                  and (cast(? as date) is null
-                       or cast((d.updated_at at time zone 'UTC') as date) < cast(? as date)
-                       or (cast((d.updated_at at time zone 'UTC') as date) = cast(? as date) and d.id < cast(? as uuid)))
-                order by cast((d.updated_at at time zone 'UTC') as date) desc, d.id desc
+                  and (cast(? as timestamptz) is null
+                       or (d.updated_at, d.id) < (cast(? as timestamptz), cast(? as uuid)))
+                order by d.updated_at desc, d.id desc
                 limit ?
                 """.trimIndent(),
                 { rs, _ ->
@@ -97,9 +95,8 @@ class DocumentService(
                 q,
                 q,
                 q,
-                cursor?.date,
-                cursor?.date,
-                cursor?.date,
+                cursor?.at?.let { java.sql.Timestamp.from(it) },
+                cursor?.at?.let { java.sql.Timestamp.from(it) },
                 cursor?.id,
                 limit + 1,
             )
@@ -107,7 +104,7 @@ class DocumentService(
         val next =
             if (rows.size > limit) {
                 val last = page.last()
-                DateIdCursor(last.updatedAt.atZone(ZoneOffset.UTC).toLocalDate(), last.id).encode()
+                InstantIdCursor(last.updatedAt, last.id).encode()
             } else {
                 null
             }

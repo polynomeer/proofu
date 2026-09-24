@@ -4,7 +4,7 @@ import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
-import java.time.LocalDate
+import java.time.Instant
 import java.util.UUID
 
 interface JobPostingRepository : JpaRepository<JobPostingEntity, UUID> {
@@ -41,17 +41,16 @@ interface JobPostingRepository : JpaRepository<JobPostingEntity, UUID> {
                     where s.posting_id = p.id
                       and to_tsvector('simple', p.company || ' ' || p.role_title || ' ' || s.raw_text)
                           @@ plainto_tsquery('simple', cast(:q as varchar))))
-              and (cast(:cursorDate as date) is null
-                   or cast((p.updated_at at time zone 'UTC') as date) < cast(:cursorDate as date)
-                   or (cast((p.updated_at at time zone 'UTC') as date) = cast(:cursorDate as date) and p.id < cast(:cursorId as uuid)))
-            order by cast((p.updated_at at time zone 'UTC') as date) desc, p.id desc
+              and (cast(:cursorAt as timestamptz) is null
+                   or (p.updated_at, p.id) < (cast(:cursorAt as timestamptz), cast(:cursorId as uuid)))
+            order by p.updated_at desc, p.id desc
             limit :limit
             """,
     )
     fun page(
         workspaceId: UUID,
         q: String?,
-        cursorDate: LocalDate?,
+        cursorAt: Instant?,
         cursorId: UUID?,
         limit: Int,
     ): List<JobPostingEntity>

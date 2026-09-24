@@ -2,7 +2,7 @@ package com.proofu.api.capability
 
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.web.ApiPaths
-import com.proofu.api.web.DateIdCursor
+import com.proofu.api.web.InstantIdCursor
 import com.proofu.api.web.InvalidRequestException
 import com.proofu.domain.career.CapabilityCategory
 import jakarta.validation.Valid
@@ -33,7 +33,7 @@ class CapabilityController(
         @RequestParam(required = false) category: CapabilityCategory?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) limit: Int,
-    ): CapabilityPage = service.list(workspace, category, cursor?.let(DateIdCursor::decode), limit)
+    ): CapabilityPage = service.list(workspace, category, cursor?.let(InstantIdCursor::decode), limit)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
