@@ -34,7 +34,11 @@ export function BottomNav() {
       })}
       <Link
         href="/more"
-        className="flex h-14 flex-col items-center justify-center gap-1 text-caption text-text-600"
+        aria-current={isActive(pathname, "/more") ? "page" : undefined}
+        className={[
+          "flex h-14 flex-col items-center justify-center gap-1 text-caption",
+          isActive(pathname, "/more") ? "font-semibold text-primary-600" : "text-text-600",
+        ].join(" ")}
       >
         <Icon name="more" />
         더보기

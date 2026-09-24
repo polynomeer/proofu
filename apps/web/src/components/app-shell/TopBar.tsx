@@ -32,8 +32,9 @@ export function TopBar({ userName, canSignOut }: { userName: string; canSignOut:
           </span>
           <span className="hidden sm:inline">{userName}</span>
         </span>
+        {/* On a phone the bar has no room for this; 더보기 carries sign-out there. */}
         {canSignOut ? (
-          <form action="/auth/logout" method="post">
+          <form action="/auth/logout" method="post" className="hidden md:block">
             <button
               type="submit"
               className="h-10 rounded-md px-3 text-body text-text-600 hover:bg-surface-050"
