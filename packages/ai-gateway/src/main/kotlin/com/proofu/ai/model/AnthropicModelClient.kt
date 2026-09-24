@@ -15,6 +15,7 @@ import com.anthropic.models.messages.StopReason
 import com.anthropic.models.messages.TextBlockParam
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.kotlinModule
+import java.time.Duration
 
 /**
  * Anthropic Messages API adapter (ADR-0008).
@@ -27,7 +28,17 @@ import tools.jackson.module.kotlin.kotlinModule
 class AnthropicModelClient(
     private val client: AnthropicClient,
 ) : ModelClient {
-    constructor(apiKey: String) : this(AnthropicOkHttpClient.builder().apiKey(apiKey).build())
+    constructor(apiKey: String) : this(
+        AnthropicOkHttpClient
+            .builder()
+            .apiKey(apiKey)
+            // One call must end well inside the worker's job lease, otherwise a job still in
+            // flight is presumed lost and re-run — paying for the same answer twice. The worker
+            // already retries the job, so the SDK retries once at most.
+            .timeout(REQUEST_TIMEOUT)
+            .maxRetries(1)
+            .build(),
+    )
 
     override fun complete(request: ModelRequest): ModelOutcome {
         val params =
@@ -124,5 +135,8 @@ class AnthropicModelClient(
 
     private companion object {
         val MAPPER: JsonMapper = JsonMapper.builder().addModule(kotlinModule()).build()
+
+        /** Worst case per call is this times (1 + maxRetries); keep that under the job lease. */
+        val REQUEST_TIMEOUT: Duration = Duration.ofMinutes(4)
     }
 }
