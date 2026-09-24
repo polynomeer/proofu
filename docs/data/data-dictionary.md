@@ -56,3 +56,7 @@ review: 스키마 변경 시
 - 스키마 변경은 전진 호환되는 expand → migrate → contract 순서로 배포합니다.
 - 프로덕션 마이그레이션은 롤백 SQL보다 데이터 보존형 보상 마이그레이션을 우선합니다.
 - Flyway 파일명: `V{n}__{snake_case_description}.sql`, 위치 `migrations/`.
+
+## 목록 인덱스
+
+각 목록 화면은 `(workspace_id, 정렬 시각 DESC, id DESC) WHERE deleted_at IS NULL` 부분 인덱스로 페이지를 넘깁니다(V15). 정렬 기준을 바꾸면 인덱스도 함께 바꿉니다 — `ListQueryPlanTest`가 2만 행 워크스페이스에서 실행 계획을 검사해, 정렬이 끼어들거나 20행을 얻기 위해 수백 행 넘게 읽으면 실패합니다.
