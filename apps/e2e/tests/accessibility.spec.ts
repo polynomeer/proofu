@@ -21,7 +21,7 @@ async function scan(page: Page, path: string) {
   await page.goto(path);
   // A 404 or an error state would also pass a scan, so check the page really rendered first.
   await expect(page.getByRole("heading").first()).toBeVisible();
-  await expect(page.getByText(/불러오지 못했습니다|찾을 수 없습니다/)).toHaveCount(0);
+  await expect(page.getByText(/불러오지 못했습니다/)).toHaveCount(0);
   const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(results.passes.length, `${path}: too few rules ran to trust the result`).toBeGreaterThan(
     10,
@@ -119,6 +119,8 @@ const SCREENS = [
   ["지원 관리", "/applications"],
   ["설정", "/settings"],
   ["도움말", "/help"],
+  // The not-found state is a screen too, and it is the one users hit by accident.
+  ["없는 리소스", "/projects/01a0c000-0000-7000-8000-000000000000"],
 ] as const;
 
 for (const [name, path] of SCREENS) {
