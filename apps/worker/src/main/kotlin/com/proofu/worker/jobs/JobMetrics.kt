@@ -40,6 +40,14 @@ class JobMetrics(
         registry.counter("proofu.jobs.completed", "type", type, "outcome", outcome).increment()
     }
 
+    /** A job whose worker vanished: back in the queue, or failed when its attempts ran out. */
+    fun recovered(
+        type: String,
+        outcome: String,
+    ) {
+        registry.counter("proofu.jobs.recovered", "type", type, "outcome", outcome).increment()
+    }
+
     /** Queue depth and the age of the oldest waiting job, refreshed on a timer, not per scrape. */
     @Scheduled(fixedDelayString = "\${proofu.worker.metrics-interval:15s}")
     fun refresh() {

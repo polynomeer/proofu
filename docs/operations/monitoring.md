@@ -29,17 +29,17 @@ review: 릴리스 및 장애 후
 
 ## 구현 (현재 코드)
 
-| 신호      | 어디서                                                                                                                                                                                 |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 요청 로그 | api `RequestLogFilter` — 요청마다 한 줄: `method`, URI 템플릿, `status`, `durationMs`, `requestId`. 본문·쿼리 문자열·토큰은 남기지 않는다                                              |
-| requestId | 클라이언트가 `X-Request-Id`를 보내면 쓰고(64자·`[A-Za-z0-9._-]`만) 아니면 생성. 응답 헤더와 MDC, `audit_events.request_id`에 같은 값이 들어간다                                        |
-| 메트릭    | api(기본 8080)·worker(기본 8090) `/actuator/prometheus` (Micrometer). api는 `http_server_requests`(URI 템플릿 태그), worker는 아래 잡 메트릭                                           |
-| 잡 메트릭 | worker `JobMetrics` — `proofu_jobs_completed_total{type,outcome}`, `proofu_jobs_duration_seconds{type}`, `proofu_jobs_queued`, `proofu_jobs_oldest_age_seconds`, `proofu_jobs_running` |
-| 감사      | `audit_events` (해시만, 보존 정책 별도)                                                                                                                                                |
+| 신호      | 어디서                                                                                                                                                                                                                              |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 요청 로그 | api `RequestLogFilter` — 요청마다 한 줄: `method`, URI 템플릿, `status`, `durationMs`, `requestId`. 본문·쿼리 문자열·토큰은 남기지 않는다                                                                                           |
+| requestId | 클라이언트가 `X-Request-Id`를 보내면 쓰고(64자·`[A-Za-z0-9._-]`만) 아니면 생성. 응답 헤더와 MDC, `audit_events.request_id`에 같은 값이 들어간다                                                                                     |
+| 메트릭    | api(기본 8080)·worker(기본 8090) `/actuator/prometheus` (Micrometer). api는 `http_server_requests`(URI 템플릿 태그), worker는 아래 잡 메트릭                                                                                        |
+| 잡 메트릭 | worker `JobMetrics` — `proofu_jobs_completed_total{type,outcome}`, `proofu_jobs_duration_seconds{type}`, `proofu_jobs_queued`, `proofu_jobs_oldest_age_seconds`, `proofu_jobs_running`, `proofu_jobs_recovered_total{type,outcome}` |
+| 감사      | `audit_events` (해시만, 보존 정책 별도)                                                                                                                                                                                             |
 
 **workspace id는 메트릭 라벨로 쓰지 않습니다**(고카디널리티). 워크스페이스 단위 수치가 필요하면 `audit_events`·`ai_executions`를 질의합니다. 로그에는 워크스페이스·잡 식별자까지만 남기고 본문·프롬프트·토큰은 어느 레벨에서도 남기지 않습니다.
 
-`proofu_jobs_oldest_age_seconds`가 큐 지연 SLI(가장 오래된 작업 10분)를, `proofu_jobs_completed_total{outcome="failed"}` 비율이 생성 완료율 SLI를 채웁니다. 추적(트레이싱)은 아직 붙이지 않았습니다.
+`proofu_jobs_oldest_age_seconds`가 큐 지연 SLI(가장 오래된 작업 10분)를, `proofu_jobs_completed_total{outcome="failed"}` 비율이 생성 완료율 SLI를 채웁니다. `proofu_jobs_recovered_total`은 워커가 죽어 리스가 만료된 잡 수입니다 — 0이 정상이고, 반복되면 워커가 재시작 중이거나 핸들러가 리스보다 오래 걸린다는 뜻입니다(ADR-0004). 추적(트레이싱)은 아직 붙이지 않았습니다.
 
 ## 스크랩 경로 보호
 

@@ -13,6 +13,8 @@ proofu:
   worker:
     poll-interval: ${WORKER_POLL_INTERVAL:2s}
     batch-size: ${WORKER_BATCH_SIZE:5}
+    job-lease: ${WORKER_JOB_LEASE:15m}
+    reaper-interval: ${WORKER_REAPER_INTERVAL:1m}
     retention-interval: ${WORKER_RETENTION_INTERVAL:1h}
     retention-initial-delay: ${WORKER_RETENTION_INITIAL_DELAY:1m}
   ai:
