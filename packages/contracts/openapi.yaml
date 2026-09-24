@@ -2819,6 +2819,10 @@ components:
       type: string
       enum: [NONE, CONFIDENTIAL]
 
+    AccountExportStatus:
+      type: string
+      enum: [REQUESTED, READY, FAILED, EXPIRED]
+
     AccountExport:
       type: object
       required: [id, status, createdAt]
@@ -2826,8 +2830,7 @@ components:
         id:
           $ref: "#/components/schemas/Uuid"
         status:
-          type: string
-          enum: [REQUESTED, READY, FAILED, EXPIRED]
+          $ref: "#/components/schemas/AccountExportStatus"
         errorCode:
           type: string
         sizeBytes:

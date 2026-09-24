@@ -23,6 +23,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm turbo run lint typecheck build
+      - name: Enum values agree across domain, database and contract
+        run: python3 scripts/check-enums.py
 
   jvm:
     name: Domain, API and worker

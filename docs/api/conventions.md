@@ -49,3 +49,7 @@ review: API 릴리스 시
 | `AI_OUTPUT_INVALID`           | 502    | 모델 출력이 스키마·참조 검증에 실패해 채택하지 않음                  |
 | `AI_BUDGET_EXCEEDED`          | 429    | 워크스페이스 월 예산·시간당 한도 또는 배포 일일 예산 초과 (ADR-0008) |
 | `NOT_IMPLEMENTED`             | 501    | 계약에는 있으나 연동이 아직 없는 경로 (URL 수집, career-ops)         |
+
+## enum 일치
+
+도메인 enum·`migrations/`의 CHECK·`openapi.yaml`의 스키마는 `scripts/check-enums.py`가 CI에서 대조합니다. 값이 Kotlin에 없는 어휘(잡 상태, 감사 actor 등)는 계약 스키마나 스크립트의 목록이 원천이라고 명시해야 하며, 어느 쪽도 주장하지 않는 새 enum 컬럼이 생기면 실패합니다.
