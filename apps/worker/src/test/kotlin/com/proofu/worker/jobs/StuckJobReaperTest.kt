@@ -3,18 +3,21 @@ package com.proofu.worker.jobs
 import com.proofu.worker.TestcontainersConfiguration
 import io.micrometer.core.instrument.MeterRegistry
 import org.assertj.core.api.Assertions.assertThat
-import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
-import java.time.Duration
 import java.util.UUID
 
-/** A worker that dies mid-job must not leave the user polling forever. */
-@SpringBootTest
+/**
+ * A worker that dies mid-job must not leave the user polling forever. The poller is parked for
+ * this class so the state right after a reap can be read; jobs are handed to it deliberately.
+ */
+@SpringBootTest(
+    properties = ["proofu.worker.poll-interval=1h", "proofu.worker.reaper-initial-delay=1h"],
+)
 @Import(TestcontainersConfiguration::class)
 @ActiveProfiles("test")
 class StuckJobReaperTest {
@@ -29,6 +32,9 @@ class StuckJobReaperTest {
 
     @Autowired
     lateinit var registry: MeterRegistry
+
+    @Autowired
+    lateinit var poller: JobPoller
 
     private fun workspace(): UUID {
         val userId = UUID.randomUUID()
@@ -108,33 +114,35 @@ class StuckJobReaperTest {
         ).isEqualTo(1.0)
 
         // Requeued means really requeued: the poller picks it up and reports the unknown type.
-        await().atMost(Duration.ofSeconds(15)).untilAsserted {
-            assertThat(status(lost)).isEqualTo("FAILED:UNKNOWN_JOB_TYPE")
-        }
+        poller.poll()
+        assertThat(status(lost)).isEqualTo("FAILED:UNKNOWN_JOB_TYPE")
         // Nothing left to reap.
         reaper.reap()
         assertThat(status(fresh)).isEqualTo("RUNNING:-")
     }
 
     @Test
-    fun `a stuck job stops blocking the next request for the same work`() {
+    fun `a stuck job with no attempts left stops blocking the next request for the same work`() {
         val ws = workspace()
-        val stuck =
-            abandoned(ws, attempts = 1, ageMinutes = properties.jobLease.toMinutes() + 1, type = "account.export")
-        // The API deduplicates against QUEUED and RUNNING rows, so this one would block forever.
-        assertThat(
-            jdbc.queryForObject(
-                "select count(*) from jobs where workspace_id = ? and status in ('QUEUED', 'RUNNING')",
-                Long::class.java,
-                ws,
-            ),
-        ).isEqualTo(1L)
+        val lease = properties.jobLease.toMinutes()
+        // The API deduplicates against QUEUED and RUNNING rows, so a lost claim blocks the work.
+        val spent = abandoned(ws, attempts = 3, ageMinutes = lease + 1, type = "account.export")
+        val retrying = abandoned(ws, attempts = 1, ageMinutes = lease + 1, type = "document.export")
+        assertThat(blocking(ws)).isEqualTo(2L)
 
         reaper.reap()
-        await().atMost(Duration.ofSeconds(15)).untilAsserted {
-            assertThat(
-                jdbc.queryForObject("select status from jobs where id = ?", String::class.java, stuck),
-            ).isIn("SUCCEEDED", "FAILED")
-        }
+
+        // Attempts spent: the job is finished and the user can ask again.
+        assertThat(status(spent)).isEqualTo("FAILED:LEASE_EXPIRED")
+        // Attempts left: still queued on purpose — the work is pending, not abandoned.
+        assertThat(status(retrying)).isEqualTo("QUEUED:LEASE_EXPIRED")
+        assertThat(blocking(ws)).isEqualTo(1L)
     }
+
+    private fun blocking(workspace: UUID): Long =
+        jdbc.queryForObject(
+            "select count(*) from jobs where workspace_id = ? and status in ('QUEUED', 'RUNNING')",
+            Long::class.java,
+            workspace,
+        ) ?: 0L
 }
