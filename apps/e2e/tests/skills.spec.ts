@@ -49,3 +49,21 @@ test("커리어: 기술을 등록해 중복을 막고 프로젝트에 연결한�
   await page.reload();
   await expect(page.getByText("Spring Boot · 고급")).toBeVisible();
 });
+
+test("커리어: 기술이 한 페이지를 넘으면 더 보기로 이어서 보여 준다", async ({ page }) => {
+  const sub = unique("skills-page");
+  await switchUser(sub, "기술 페이지 테스트");
+  const api = await apiAs(sub);
+  // One past the page size, so the list must offer the rest instead of stopping.
+  for (let i = 0; i < 51; i++) {
+    await created(api, "/skills", { canonicalName: `스킬 ${i}`, category: "TOOL" });
+  }
+  await api.dispose();
+
+  await page.goto("/career/skills");
+  const rows = page.getByRole("listitem").filter({ hasText: /^스킬 / });
+  await expect(rows).toHaveCount(50);
+  await page.getByRole("button", { name: "더 보기" }).click();
+  await expect(rows).toHaveCount(51);
+  await expect(page.getByRole("button", { name: "더 보기" })).toBeHidden();
+});
