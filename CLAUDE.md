@@ -22,6 +22,9 @@
 ## 명령
 
 ```bash
+scripts/dev.sh                                      # 스택 전체(도커·api·worker·mock IdP·웹). Ctrl-C면 정리
+scripts/doctor.sh                                   # 이 머신이 돌릴 수 있는지 점검
+scripts/verify.sh                                   # 커밋 전 관문 전부 (--e2e까지)
 docker compose -f infra/docker-compose.yml up -d   # PostgreSQL 16 (localhost:5432, proofu/proofu)
 pnpm install && pnpm check                          # web + contracts: lint, typecheck, test
 pnpm dev --filter web                               # http://localhost:3000 (/api/* → :8080 rewrite)
@@ -33,6 +36,8 @@ scripts/e2e.sh                                      # Playwright 여정 (docker 
 ```
 
 JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 항상 `./gradlew` 사용.
+`scripts/`의 스크립트는 상단 주석과 `--help`에 사용법이 있고, 공통 함수는 `scripts/lib/common.sh`,
+실행 로그는 git에 올리지 않는 `logs/`에 쌓입니다(`scripts/README.md`).
 
 ## 규칙
 

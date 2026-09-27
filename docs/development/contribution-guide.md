@@ -57,6 +57,17 @@ subject는 영문 명령형 소문자, 마침표 없이 72자 이내. body는 �
 ## 로컬 개발
 
 ```bash
+scripts/doctor.sh    # JDK·node·pnpm·도커·포트 점검 (읽기 전용)
+scripts/dev.sh       # 스택 전체: 도커(필요하면 직접 켠다)·api·worker·mock IdP·웹 dev 서버
+scripts/verify.sh    # 커밋 전 관문 전부: format, enum, pnpm check, gradlew check (--e2e까지)
+```
+
+`scripts/dev.sh`는 이미 쓰고 있는 포트를 비켜 가고(5432·8080·8090·3000·8181 → 그 위 첫 빈 포트),
+프로세스별 로그를 `logs/dev/`에 남기며, 실패하면 `logs/dev/failure-<시각>.log`에 설정과 로그를 모아 둡니다.
+Ctrl-C는 **이 스크립트가 띄운 것만** 정리하고, 남은 것이 있으면 `scripts/stop.sh`가 치웁니다.
+각각 직접 돌리려면:
+
+```bash
 docker compose -f infra/docker-compose.yml up -d   # PostgreSQL 16
 pnpm install && pnpm dev --filter web               # http://localhost:3000
 ./gradlew :api:bootRun                         # http://localhost:8080/api/v1
@@ -70,7 +81,8 @@ pnpm check                                          # web/contracts lint + typec
 
 ## 로그인 흐름을 로컬에서 돌리기
 
-기본(`AUTH_MODE=header`)은 로그인 없이 시드 workspace로 동작합니다. OIDC 흐름을 보려면:
+`scripts/dev.sh`는 기본이 OIDC + mock IdP라 로그인·로그아웃이 그대로 동작하고, 로그인 없이 보려면
+`scripts/dev.sh --auth header`입니다. 손으로 띄울 때는 `AUTH_MODE=header`가 기본이고, OIDC 흐름은:
 
 ```bash
 node apps/web/scripts/mock-idp.mjs   # 로그인 폼 없는 가짜 IdP, http://localhost:8181/realms/mock
