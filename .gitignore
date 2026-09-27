@@ -34,6 +34,9 @@ build/
 *.log
 hs_err_pid*
 
+# Script output (scripts/dev.sh, scripts/verify.sh, scripts/db.sh)
+logs/
+
 # Generated
 packages/contracts/generated/
 apps/api/src/main/resources/db/migration/
