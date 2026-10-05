@@ -19,7 +19,7 @@
 | 도메인    | [career-data-model](domain/career-data-model.md) · [evidence-model](domain/evidence-model.md) · [application-lifecycle](domain/application-lifecycle.md) · [version-lineage](domain/version-lineage.md)  |
 | UX        | [information-architecture](ux/information-architecture.md) · [screen-specifications](ux/screen-specifications.md)                                                                                        |
 | 디자인    | [brand](design/brand.md) · [design-tokens](design/design-tokens.md) · [components](design/components.md) · [screens](design/screens.md) · [accessibility](design/accessibility.md)                       |
-| 아키텍처  | [system-overview](architecture/system-overview.md) · [non-functional](architecture/non-functional.md) · [ADR](architecture/adr/)                                                                         |
+| 아키텍처  | [system-overview](architecture/system-overview.md) · [non-functional](architecture/non-functional.md) · [ADR](architecture/adr/) · [초기 기술 선택 비교](architecture/tech-selection.md)                 |
 | 데이터    | [erd](data/erd.md) · [data-dictionary](data/data-dictionary.md) · [retention](data/retention.md)                                                                                                         |
 | API       | [conventions](api/conventions.md) · [endpoints](api/endpoints.md) · [events](api/events.md) · [career-ops](api/career-ops.md) · [iterview](api/iterview.md) · OpenAPI: `packages/contracts/openapi.yaml` |
 | AI        | [ai-feature-spec](ai/ai-feature-spec.md) · [grounding-policy](ai/grounding-policy.md) · [evaluation](ai/evaluation.md)                                                                                   |
