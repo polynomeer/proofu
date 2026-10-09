@@ -110,7 +110,7 @@ export function DocumentEditor({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border-300 bg-surface-000 px-4 py-3">
+      <div className="sticky top-16 z-[5] flex flex-wrap items-center justify-between gap-3 rounded-md border border-border-300 bg-surface-000 px-4 py-3 shadow-1">
         <div className="flex flex-wrap items-center gap-3 text-caption text-text-600">
           <span>
             블록 {blocks.length}개 ·{" "}
@@ -139,96 +139,105 @@ export function DocumentEditor({
       </div>
       {problem ? <ErrorState title="저장할 수 없습니다" description={problem} /> : null}
 
-      {sections.map((section) => {
-        const own = blocks.filter((b) => sectionOf(b.blockId) === section.id);
-        return (
-          <section
-            key={section.id}
-            id={`section-${section.id}`}
-            className="rounded-md border border-border-300 bg-surface-000 p-4"
-          >
-            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-              <div>
-                <h2 className="text-card-title">{section.title}</h2>
-                <p className="text-caption text-text-600">{section.guidance}</p>
+      <article className="flex flex-col gap-8 rounded-lg border border-border-300 bg-surface-000 px-4 py-6 md:px-10 md:py-9">
+        {sections.map((section) => {
+          const own = blocks.filter((b) => sectionOf(b.blockId) === section.id);
+          return (
+            <section key={section.id} id={`section-${section.id}`} className="scroll-mt-20">
+              <div className="mb-3 flex flex-wrap items-end justify-between gap-2 border-b border-border-300 pb-2">
+                <div>
+                  <h2 className="text-section-title">{section.title}</h2>
+                  <p className="text-caption text-text-600">{section.guidance}</p>
+                </div>
+                <Button variant="tertiary" onClick={() => add(section.id)}>
+                  <Icon name="plus" size={16} />
+                  문장 추가
+                </Button>
               </div>
-              <Button variant="tertiary" onClick={() => add(section.id)}>
-                <Icon name="plus" size={16} />
-                문장 추가
-              </Button>
-            </div>
-            {own.length === 0 ? (
-              <p className="text-caption text-text-600">
-                이 섹션에는 아직 문장이 없습니다. 근거가 없는 문장을 직접 쓰면 “근거 없음”으로
-                표시되며 내보내기 전에 승인해야 합니다.
-              </p>
-            ) : (
-              <ul className="flex flex-col gap-3">
-                {own.map((b) => (
-                  <li
-                    key={b.blockId}
-                    className="flex flex-col gap-2 rounded-md border border-border-300 bg-surface-050 p-3"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <CertaintyChip value={b.certainty} approved={b.approvedByUser} />
-                      <span className="text-caption text-text-600">
-                        주장 {b.claimRefs?.length ?? 0} · Evidence {b.evidenceRefs?.length ?? 0} ·
-                        요구사항 {b.requirementRefs?.length ?? 0}
-                      </span>
-                      <span className="ml-auto flex items-center gap-2">
-                        {b.certainty !== "SUPPORTED" ? (
-                          <label className="flex items-center gap-1 text-caption">
-                            <input
-                              type="checkbox"
-                              checked={b.approvedByUser ?? false}
-                              onChange={(e) =>
-                                update(b.blockId, { approvedByUser: e.target.checked })
-                              }
-                            />
-                            내보내기 승인
-                          </label>
+              {own.length === 0 ? (
+                <p className="text-caption text-text-600">
+                  이 섹션에는 아직 문장이 없습니다. 근거가 없는 문장을 직접 쓰면 “근거 없음”으로
+                  표시되며 내보내기 전에 승인해야 합니다.
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {own.map((b) => {
+                    const needsApproval = b.certainty !== "SUPPORTED" && !b.approvedByUser;
+                    return (
+                      <li
+                        key={b.blockId}
+                        className={[
+                          "flex flex-col gap-2 rounded-md border p-3",
+                          needsApproval
+                            ? "border-dashed border-warning-600 bg-warning-050"
+                            : "border-transparent hover:border-border-300",
+                        ].join(" ")}
+                      >
+                        <textarea
+                          aria-label={`${section.title} 문장 ${b.blockId}`}
+                          className={`${textareaClass} bg-surface-000`}
+                          value={b.text}
+                          onChange={(e) => update(b.blockId, { text: e.target.value })}
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <CertaintyChip value={b.certainty} approved={b.approvedByUser} />
+                          <span className="text-caption text-text-600 tabular-nums">
+                            {b.blockId} · 주장 {b.claimRefs?.length ?? 0} · Evidence{" "}
+                            {b.evidenceRefs?.length ?? 0} · 요구사항{" "}
+                            {b.requirementRefs?.length ?? 0}
+                          </span>
+                          <span className="ml-auto flex items-center gap-2">
+                            {b.certainty !== "SUPPORTED" ? (
+                              <label className="flex min-h-9 items-center gap-1.5 rounded-md border border-border-300 bg-surface-000 px-2.5 text-caption font-semibold">
+                                <input
+                                  type="checkbox"
+                                  checked={b.approvedByUser ?? false}
+                                  onChange={(e) =>
+                                    update(b.blockId, { approvedByUser: e.target.checked })
+                                  }
+                                />
+                                내보내기 승인
+                              </label>
+                            ) : null}
+                            <Button
+                              variant="tertiary"
+                              onClick={() => remove(b.blockId)}
+                              aria-label={`${b.blockId} 삭제`}
+                            >
+                              삭제
+                            </Button>
+                          </span>
+                        </div>
+                        {(b.warnings ?? []).length > 0 ? (
+                          <ul className="flex flex-col gap-1 text-caption text-warning-700">
+                            {b.warnings!.map((w) => (
+                              <li key={w} className="flex items-center gap-1">
+                                <Icon name="alert" size={16} />
+                                {w}
+                              </li>
+                            ))}
+                          </ul>
                         ) : null}
-                        <Button
-                          variant="tertiary"
-                          onClick={() => remove(b.blockId)}
-                          aria-label={`${b.blockId} 삭제`}
-                        >
-                          삭제
-                        </Button>
-                      </span>
-                    </div>
-                    <textarea
-                      aria-label={`${section.title} 문장 ${b.blockId}`}
-                      className={textareaClass}
-                      value={b.text}
-                      onChange={(e) => update(b.blockId, { text: e.target.value })}
-                    />
-                    {(b.warnings ?? []).length > 0 ? (
-                      <ul className="flex flex-col gap-1 text-caption text-warning-700">
-                        {b.warnings!.map((w) => (
-                          <li key={w} className="flex items-center gap-1">
-                            <Icon name="alert" size={16} />
-                            {w}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    <ReviseSentence
-                      documentId={documentId}
-                      versionId={
-                        initialBlocks.some((x) => x.blockId === b.blockId) ? parentVersionId : null
-                      }
-                      blockId={b.blockId}
-                      currentText={b.text}
-                      onApply={(text) => update(b.blockId, { text })}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        );
-      })}
+                        <ReviseSentence
+                          documentId={documentId}
+                          versionId={
+                            initialBlocks.some((x) => x.blockId === b.blockId)
+                              ? parentVersionId
+                              : null
+                          }
+                          blockId={b.blockId}
+                          currentText={b.text}
+                          onApply={(text) => update(b.blockId, { text })}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          );
+        })}
+      </article>
     </div>
   );
 }
