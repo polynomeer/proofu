@@ -5,6 +5,7 @@ import type { Schema } from "@proofu/contracts";
 
 import { ApplicationStatusChip } from "@/components/application/chips";
 import { ButtonLink } from "@/components/ui/Button";
+import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Icon } from "@/components/ui/Icon";
@@ -32,7 +33,7 @@ function Card({ a, showStatus }: { a: Application; showStatus: boolean }) {
         <span className="flex flex-wrap items-center gap-2 text-caption text-text-600 tabular-nums">
           {showStatus ? <ApplicationStatusChip value={a.status} /> : null}
           {a.status === "DOCUMENT_REJECTED" || a.status === "NO_RESPONSE" ? (
-            <span className="font-semibold text-warning-700">회고 필요</span>
+            <Chip tone="review">회고 필요</Chip>
           ) : null}
           {a.deadlineAt ? (
             <span className="font-semibold text-text-900">{formatDday(a.deadlineAt)}</span>
