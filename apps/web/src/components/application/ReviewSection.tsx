@@ -126,7 +126,7 @@ function ReviewForm({
     <form
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-4 rounded-md border border-primary-600/40 bg-surface-050 p-4"
+      className="flex flex-col gap-4 rounded-md border border-primary-600 bg-surface-000 p-4 md:p-5"
     >
       {problem ? <ErrorState title="저장할 수 없습니다" description={problem} /> : null}
       <Field
@@ -172,20 +172,39 @@ function ReviewForm({
           onChange={(e) => set("rationale", e.target.value)}
         />
       </Field>
-      <Field id={`${prefix}-confidence`} label="신뢰도" required>
-        <select
-          id={`${prefix}-confidence`}
-          className={inputClass}
-          value={values.confidence ?? "LOW"}
-          onChange={(e) => set("confidence", e.target.value as Confidence)}
-        >
-          {CONFIDENCE.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+      <fieldset className="flex flex-col gap-1.5">
+        <legend className="mb-1.5 text-body font-semibold">
+          신뢰도
+          <span className="ml-1 text-warning-700" aria-hidden>
+            *
+          </span>
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {CONFIDENCE.map((c) => {
+            const checked = (values.confidence ?? "LOW") === c.value;
+            return (
+              <label
+                key={c.value}
+                className={[
+                  "flex min-h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-body",
+                  checked
+                    ? "border-primary-600 bg-primary-050 font-semibold text-primary-700"
+                    : "border-border-300 bg-surface-000",
+                ].join(" ")}
+              >
+                <input
+                  type="radio"
+                  name={`${prefix}-confidence`}
+                  value={c.value}
+                  checked={checked}
+                  onChange={() => set("confidence", c.value)}
+                />
+                {c.label}
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
           id={`${prefix}-action`}
@@ -326,7 +345,7 @@ export function ReviewSection({
   }
 
   return (
-    <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+    <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-section-title">서류 회고</h2>
         {canReview && editing === null ? (
@@ -341,60 +360,75 @@ export function ReviewSection({
         지원에서 확인할 계획을 남깁니다.
       </p>
 
-      {canReview && context ? <ReviewComparison context={context} onQuote={quote} /> : null}
+      <div
+        className={
+          canReview && context
+            ? "grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)]"
+            : ""
+        }
+      >
+        <div className="flex min-w-0 flex-col gap-4">
+          {editing === "new" ? (
+            <ReviewForm
+              applicationId={applicationId}
+              quotes={quotes}
+              onSaved={(r) => {
+                setReviews((list) => [...list, r]);
+                setEditing(null);
+                setQuotes([]);
+                router.refresh();
+              }}
+              onCancel={() => {
+                setEditing(null);
+                setQuotes([]);
+              }}
+            />
+          ) : null}
 
-      {editing === "new" ? (
-        <ReviewForm
-          applicationId={applicationId}
-          quotes={quotes}
-          onSaved={(r) => {
-            setReviews((list) => [...list, r]);
-            setEditing(null);
-            setQuotes([]);
-            router.refresh();
-          }}
-          onCancel={() => {
-            setEditing(null);
-            setQuotes([]);
-          }}
-        />
-      ) : null}
-
-      {reviews.length === 0 && editing !== "new" ? (
-        <EmptyState
-          title={canReview ? "아직 회고가 없습니다" : "서류 결과가 나오면 회고를 쓸 수 있습니다"}
-          description={
-            canReview
-              ? "관찰한 사실 하나와 가설 하나면 충분합니다. 첫 회고를 저장하면 이 지원은 회고 완료로 이동합니다."
-              : "서류 탈락 또는 무응답으로 상태를 바꾼 뒤 회고를 기록하세요."
-          }
-        />
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {reviews.map((r) =>
-            editing === r.id ? (
-              <li key={r.id}>
-                <ReviewForm
-                  applicationId={applicationId}
-                  initial={r}
-                  onSaved={(saved) => {
-                    setReviews((list) => list.map((x) => (x.id === saved.id ? saved : x)));
-                    setEditing(null);
-                  }}
-                  onCancel={() => setEditing(null)}
-                />
-              </li>
-            ) : (
-              <ReviewCard
-                key={r.id}
-                review={r}
-                onEdit={() => setEditing(r.id)}
-                onDeleted={() => setReviews((list) => list.filter((x) => x.id !== r.id))}
-              />
-            ),
+          {reviews.length === 0 && editing !== "new" ? (
+            <EmptyState
+              title={
+                canReview ? "아직 회고가 없습니다" : "서류 결과가 나오면 회고를 쓸 수 있습니다"
+              }
+              description={
+                canReview
+                  ? "관찰한 사실 하나와 가설 하나면 충분합니다. 첫 회고를 저장하면 이 지원은 회고 완료로 이동합니다."
+                  : "서류 탈락 또는 무응답으로 상태를 바꾼 뒤 회고를 기록하세요."
+              }
+            />
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {reviews.map((r) =>
+                editing === r.id ? (
+                  <li key={r.id}>
+                    <ReviewForm
+                      applicationId={applicationId}
+                      initial={r}
+                      onSaved={(saved) => {
+                        setReviews((list) => list.map((x) => (x.id === saved.id ? saved : x)));
+                        setEditing(null);
+                      }}
+                      onCancel={() => setEditing(null)}
+                    />
+                  </li>
+                ) : (
+                  <ReviewCard
+                    key={r.id}
+                    review={r}
+                    onEdit={() => setEditing(r.id)}
+                    onDeleted={() => setReviews((list) => list.filter((x) => x.id !== r.id))}
+                  />
+                ),
+              )}
+            </ul>
           )}
-        </ul>
-      )}
+        </div>
+        {canReview && context ? (
+          <div className="min-w-0 lg:sticky lg:top-20">
+            <ReviewComparison context={context} onQuote={quote} />
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

@@ -76,14 +76,14 @@ export function ReviewComparison({
   );
 
   return (
-    <div className="mb-4 flex flex-col gap-3 rounded-md border border-border-300 bg-surface-050 p-4">
+    <div className="flex flex-col gap-3 rounded-md border border-border-300 bg-surface-050 p-4">
       <h3 className="text-card-title">비교 대상</h3>
       <p className="text-caption text-text-600">
         기록된 사실만 보여줍니다. 탈락 원인은 알 수 없으므로 아래 줄을 인용할 때도 가설로
         표현하세요.
       </p>
 
-      <dl className="grid gap-x-3 gap-y-2 text-body sm:grid-cols-[112px_1fr]">
+      <dl className="grid gap-x-3 gap-y-2 text-body sm:grid-cols-[96px_minmax(0,1fr)]">
         <dt className="text-text-600">공고 스냅샷</dt>
         <dd className="flex flex-wrap items-center gap-2">
           <Link
