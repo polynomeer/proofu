@@ -76,31 +76,42 @@ export default async function DocumentPage({ params }: { params: Params }) {
         </span>
       </p>
 
-      <div className="grid gap-6 lg:grid-cols-[240px_1fr_320px]">
+      <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)] 2xl:grid-cols-[240px_minmax(0,1fr)_320px]">
         <nav
           aria-label="문서 구조"
-          className="h-fit rounded-md border border-border-300 bg-surface-000 p-4"
+          className="flex h-fit flex-col gap-1 rounded-md border border-border-300 bg-surface-000 p-3 lg:sticky lg:top-20"
         >
-          <h2 className="text-card-title">문서 구조</h2>
-          <ol className="mt-2 flex flex-col gap-1 text-body">
+          <h2 className="px-2 pb-1 text-caption font-semibold text-text-600">문서 구조</h2>
+          <ol className="flex flex-col gap-0.5 text-body">
             {doc.sections.map((s) => {
               const own = blocks.filter((b) => b.blockId.startsWith(`${s.id}-`));
               const pending = own.filter(
                 (b) => b.certainty !== "SUPPORTED" && !b.approvedByUser,
               ).length;
               return (
-                <li key={s.id} className="flex items-center justify-between gap-2">
-                  <a href={`#section-${s.id}`} className="hover:underline">
-                    {s.title}
+                <li key={s.id}>
+                  <a
+                    href={`#section-${s.id}`}
+                    className="flex min-h-10 items-center justify-between gap-2 rounded-md px-2 hover:bg-surface-050"
+                  >
+                    <span>{s.title}</span>
+                    {pending > 0 ? (
+                      <Chip tone="review">미승인 {pending}</Chip>
+                    ) : (
+                      <span className="text-caption text-text-600 tabular-nums">{own.length}</span>
+                    )}
                   </a>
-                  <span className="text-caption text-text-600 tabular-nums">
-                    {own.length}
-                    {pending > 0 ? <span className="text-warning-700"> · {pending}</span> : null}
-                  </span>
                 </li>
               );
             })}
           </ol>
+          {doc.pendingApprovalCount > 0 ? (
+            <p className="mt-3 rounded-md bg-surface-050 p-3 text-caption text-text-600">
+              <span className="block font-semibold text-text-900">내보내기 전 확인</span>
+              근거 없음·추론 문장 {doc.pendingApprovalCount}개를 승인하거나 고쳐야 내보낼 수
+              있습니다.
+            </p>
+          ) : null}
         </nav>
 
         <div className="min-w-0">
@@ -126,7 +137,7 @@ export default async function DocumentPage({ params }: { params: Params }) {
           />
         </div>
 
-        <aside className="flex h-fit flex-col gap-4">
+        <aside className="grid h-fit gap-4 md:grid-cols-2 lg:col-span-2 2xl:col-span-1 2xl:grid-cols-1">
           <div className="rounded-md border border-border-300 bg-surface-000 p-4">
             <h2 className="text-card-title">근거로 채택한 주장</h2>
             {accepted.length === 0 ? (
