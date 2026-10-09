@@ -24,9 +24,9 @@ export const metadata: Metadata = { title: "커리어 대시보드" };
 
 function chip(active: boolean) {
   return [
-    "inline-flex h-8 items-center rounded-md border px-3 text-caption",
+    "inline-flex h-8 items-center rounded-sm border px-3 text-caption",
     active
-      ? "border-primary-600 bg-primary-600 font-semibold text-white"
+      ? "border-primary-600 bg-primary-050 font-semibold text-primary-700"
       : "border-border-300 bg-surface-000 text-text-900 hover:bg-surface-050",
   ].join(" ");
 }
@@ -83,7 +83,7 @@ export default async function DashboardPage({
 
       <section
         aria-label="핵심 지표"
-        className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+        className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"
       >
         <KpiCard
           icon="briefcase"
@@ -121,6 +121,7 @@ export default async function DashboardPage({
           label="근거 연결률"
           value={kpis.evidenceCoverage.ratio}
           unit="%"
+          progress={kpis.evidenceCoverage.claims > 0 ? kpis.evidenceCoverage.ratio : undefined}
           caption={
             kpis.evidenceCoverage.claims > 0
               ? `주장 ${kpis.evidenceCoverage.claims}개 중 ${kpis.evidenceCoverage.supported}개에 근거 연결`
@@ -130,79 +131,102 @@ export default async function DashboardPage({
         />
       </section>
 
-      <section className="mb-6 rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-section-title">커리어 타임라인</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <nav aria-label="타임라인 필터" className="flex flex-wrap gap-1.5">
-              <Link href="/" className={chip(!timelineType)}>
-                전체
-              </Link>
-              {CAREER_ENTRY_TYPES.map((t) => (
-                <Link key={t} href={`/?timeline=${t}`} className={chip(timelineType === t)}>
-                  {careerEntryTypeLabel(t)}
-                </Link>
-              ))}
-            </nav>
-            <Link
-              href="/career"
-              className="text-body font-semibold text-primary-600 hover:underline"
-            >
-              전체보기 →
-            </Link>
-          </div>
-        </div>
-        {data.timeline.length === 0 ? (
-          <EmptyState
-            title={timelineType ? "해당 유형의 경력이 없습니다" : "아직 경력이 없습니다"}
-            description="샘플 데이터는 만들지 않습니다. 실제 경력을 입력하면 여기에 시간순으로 표시됩니다."
-          />
-        ) : (
-          <ol className="divide-y divide-border-300">
-            {data.timeline.map((e) => (
-              <li key={e.id}>
+      <div className="mb-6 grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <section className="min-w-0 rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-section-title">커리어 타임라인</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <nav aria-label="타임라인 필터" className="flex flex-wrap gap-1.5">
                 <Link
-                  href={`/career/${e.id}`}
-                  className="grid grid-cols-[auto_1fr_auto] items-start gap-4 py-3 hover:bg-surface-050 md:grid-cols-[150px_1fr_auto_auto]"
+                  href="/"
+                  aria-current={!timelineType ? "page" : undefined}
+                  className={chip(!timelineType)}
                 >
-                  <span className="flex items-center gap-3 text-caption text-text-600 tabular-nums">
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary-600"
-                      aria-hidden
-                    />
-                    {formatPeriod(e.startDate, e.endDate)}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-card-title">{e.title}</span>
-                    <span className="block truncate text-caption text-text-600">
-                      {e.organization ?? " "}
-                      {e.projectCount > 0 ? ` · 프로젝트 ${e.projectCount}` : ""}
-                    </span>
-                  </span>
-                  <span className="hidden md:inline-flex">
-                    <Chip>{careerEntryTypeLabel(e.type)}</Chip>
-                  </span>
-                  <span className="flex items-center gap-1 text-body text-primary-600 tabular-nums">
-                    Evidence {e.evidenceCount}개
-                    <Icon name="chevron-right" size={16} />
-                  </span>
+                  전체
                 </Link>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+                {CAREER_ENTRY_TYPES.map((t) => (
+                  <Link
+                    key={t}
+                    href={`/?timeline=${t}`}
+                    aria-current={timelineType === t ? "page" : undefined}
+                    className={chip(timelineType === t)}
+                  >
+                    {careerEntryTypeLabel(t)}
+                  </Link>
+                ))}
+              </nav>
+              <Link
+                href="/career"
+                className="text-body font-semibold text-primary-600 hover:underline"
+              >
+                전체보기 →
+              </Link>
+            </div>
+          </div>
+          {data.timeline.length === 0 ? (
+            <EmptyState
+              title={timelineType ? "해당 유형의 경력이 없습니다" : "아직 경력이 없습니다"}
+              description="샘플 데이터는 만들지 않습니다. 실제 경력을 입력하면 여기에 시간순으로 표시됩니다."
+            />
+          ) : (
+            <ol className="flex flex-col">
+              {data.timeline.map((e, i) => {
+                const last = i === data.timeline.length - 1;
+                return (
+                  <li
+                    key={e.id}
+                    className="grid grid-cols-[16px_minmax(0,1fr)] gap-x-3 md:grid-cols-[132px_16px_minmax(0,1fr)]"
+                  >
+                    <span className="hidden pt-0.5 text-caption text-text-600 tabular-nums md:block">
+                      {formatPeriod(e.startDate, e.endDate)}
+                    </span>
+                    <span className="flex flex-col items-center" aria-hidden>
+                      <span
+                        className={[
+                          "mt-1 h-3 w-3 shrink-0 rounded-full",
+                          e.type === "EMPLOYMENT"
+                            ? "bg-primary-600"
+                            : "border-2 border-primary-600 bg-surface-000",
+                        ].join(" ")}
+                      />
+                      {last ? null : <span className="w-0.5 flex-1 bg-border-300" />}
+                    </span>
+                    <div className={`flex min-w-0 flex-col gap-1.5 ${last ? "" : "pb-5"}`}>
+                      <Link
+                        href={`/career/${e.id}`}
+                        className="text-card-title hover:text-primary-600 hover:underline"
+                      >
+                        {e.organization ? `${e.organization} · ` : ""}
+                        {e.title}
+                      </Link>
+                      <span className="text-caption text-text-600 tabular-nums md:hidden">
+                        {formatPeriod(e.startDate, e.endDate)}
+                      </span>
+                      <span className="flex flex-wrap gap-1.5">
+                        <Chip>{careerEntryTypeLabel(e.type)}</Chip>
+                        {e.projectCount > 0 ? <Chip>프로젝트 {e.projectCount}</Chip> : null}
+                        {e.claimCount > 0 ? <Chip>주장 {e.claimCount}</Chip> : null}
+                        <Chip tone={e.evidenceCount > 0 ? "verified" : "review"}>
+                          Evidence {e.evidenceCount}
+                        </Chip>
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
-          <div className="mb-3 flex items-center justify-between">
+        <section className="min-w-0 rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
+          <div className="mb-1 flex items-center justify-between">
             <h2 className="text-section-title">주요 기술</h2>
             {data.topSkills.total > 0 ? (
               <Link
                 href="/career/skills"
                 className="text-body font-semibold text-primary-600 hover:underline"
               >
-                전체보기 →
+                기술 관리 →
               </Link>
             ) : null}
           </div>
@@ -217,40 +241,48 @@ export default async function DashboardPage({
               }
             />
           ) : (
-            <ul className="flex flex-col divide-y divide-border-300">
-              {data.topSkills.items.map((skill) => (
-                <li key={skill.id} className="flex flex-wrap items-center gap-2 py-2">
-                  <span className="min-w-0 flex-1">
-                    <span className="text-body font-semibold">{skill.canonicalName}</span>
-                    <span className="block text-caption text-text-600">
-                      {skillCategoryLabel(skill.category)}
+            <>
+              <p className="mb-2 text-caption text-text-600">
+                연결된 프로젝트 수 → 마지막 사용 순. 수준은 자기평가입니다.
+              </p>
+              <ul className="flex flex-col divide-y divide-border-300">
+                {data.topSkills.items.map((skill) => (
+                  <li
+                    key={skill.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 py-2.5"
+                  >
+                    <span className="truncate text-body font-semibold">{skill.canonicalName}</span>
+                    <Chip>
                       {skill.proficiency
-                        ? ` · 자기평가 ${proficiencyLabel(skill.proficiency)}`
-                        : ""}
+                        ? `자기평가 · ${proficiencyLabel(skill.proficiency)}`
+                        : skillCategoryLabel(skill.category)}
+                    </Chip>
+                    <span className="col-span-2 text-caption text-text-600 tabular-nums">
+                      {skill.projectCount > 0
+                        ? `프로젝트 ${skill.projectCount}`
+                        : "연결된 프로젝트 없음"}
                       {skill.lastUsedAt ? ` · 마지막 사용 ${formatDate(skill.lastUsedAt)}` : ""}
                     </span>
-                  </span>
-                  <Chip tone={skill.projectCount > 0 ? "verified" : "neutral"}>
-                    {skill.projectCount > 0
-                      ? `프로젝트 ${skill.projectCount}`
-                      : "연결된 프로젝트 없음"}
-                  </Chip>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </section>
-        <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-section-title">최근 추가된 Evidence</h2>
-            <Link
-              href="/evidence"
-              className="text-body font-semibold text-primary-600 hover:underline"
-            >
-              전체보기 →
-            </Link>
-          </div>
-          {recentEvidence.length === 0 ? (
+      </div>
+
+      <section className="rounded-md border border-border-300 bg-surface-000">
+        <div className="flex items-center justify-between px-4 py-4 md:px-6">
+          <h2 className="text-section-title">최근 추가된 Evidence</h2>
+          <Link
+            href="/evidence"
+            className="text-body font-semibold text-primary-600 hover:underline"
+          >
+            전체보기 →
+          </Link>
+        </div>
+        {recentEvidence.length === 0 ? (
+          <div className="px-4 pb-4 md:px-6 md:pb-6">
             <EmptyState
               title="아직 Evidence가 없습니다"
               description="링크, 저장소, 지표 캡처, 메모를 등록해 주장을 뒷받침하세요."
@@ -260,28 +292,53 @@ export default async function DashboardPage({
                 </ButtonLink>
               }
             />
-          ) : (
-            <ul className="divide-y divide-border-300">
-              {recentEvidence.map((e) => (
-                <li key={e.id}>
-                  <Link
-                    href={`/evidence/${e.id}`}
-                    className="flex items-center gap-3 py-3 hover:bg-surface-050"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-body font-semibold">{e.title}</span>
-                      <span className="block text-caption text-text-600 tabular-nums">
-                        {evidenceTypeLabel(e.type)} · {formatDate(e.capturedAt)}
-                      </span>
-                    </span>
-                    <VerificationChip value={e.verification} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] border-collapse text-left text-body">
+              <thead className="bg-surface-050 text-caption text-text-600">
+                <tr className="border-y border-border-300">
+                  <th scope="col" className="px-4 py-2.5 font-semibold md:px-6">
+                    제목
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 font-semibold">
+                    유형
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 font-semibold">
+                    검증 상태
+                  </th>
+                  <th scope="col" className="px-4 py-2.5 font-semibold md:px-6">
+                    수집일
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-300">
+                {recentEvidence.map((e) => (
+                  <tr key={e.id} className="hover:bg-surface-050">
+                    <td className="px-4 py-3 md:px-6">
+                      <Link
+                        href={`/evidence/${e.id}`}
+                        className="font-semibold hover:text-primary-600 hover:underline"
+                      >
+                        {e.title}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-caption text-text-600">
+                      {evidenceTypeLabel(e.type)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <VerificationChip value={e.verification} />
+                    </td>
+                    <td className="px-4 py-3 text-caption text-text-600 tabular-nums md:px-6">
+                      {formatDate(e.capturedAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </>
   );
 }
