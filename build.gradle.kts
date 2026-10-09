@@ -19,6 +19,21 @@ allprojects {
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
+    // ktlint parses with the Kotlin compiler it was built against. Spring's dependency
+    // management would align that compiler to the project's Kotlin version on modules that
+    // apply it (api, worker), and a newer compiler fails to parse ("Extensions storage is not
+    // registered"). Keep ktlint's own classpath at the versions it asks for.
+    // Registered after evaluation so this rule runs after the dependency-management plugin's.
+    afterEvaluate {
+        configurations.matching { it.name.startsWith("ktlint") }.configureEach {
+            resolutionStrategy.eachDependency {
+                if (requested.group == "org.jetbrains.kotlin" && requested.version != null) {
+                    useVersion(requested.version!!)
+                }
+            }
+        }
+    }
+
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
         testLogging {
