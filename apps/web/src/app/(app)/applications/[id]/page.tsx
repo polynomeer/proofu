@@ -96,6 +96,18 @@ export default async function ApplicationPage({ params }: { params: Params }) {
         }
       />
 
+      {/* Once a result is in, the review is the job on this page: full width, above the rest. */}
+      {canReview ? (
+        <div className="mb-6">
+          <ReviewSection
+            applicationId={a.id}
+            initialReviews={reviews?.items ?? []}
+            canReview
+            context={reviewContext}
+          />
+        </div>
+      ) : null}
+
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
           <section className="rounded-md border border-border-300 bg-surface-000 p-6">
@@ -148,12 +160,13 @@ export default async function ApplicationPage({ params }: { params: Params }) {
             isSubmitted={a.status === "SUBMITTED"}
           />
 
-          <ReviewSection
-            applicationId={a.id}
-            initialReviews={reviews?.items ?? []}
-            canReview={canReview}
-            context={reviewContext}
-          />
+          {canReview ? null : (
+            <ReviewSection
+              applicationId={a.id}
+              initialReviews={reviews?.items ?? []}
+              canReview={false}
+            />
+          )}
         </div>
 
         <aside className="flex h-fit flex-col gap-4">
