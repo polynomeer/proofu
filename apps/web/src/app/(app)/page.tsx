@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { filterChipClass } from "@/components/ui/filterChip";
 import { api } from "@/lib/api";
 import { formatDate, formatPeriod } from "@/lib/format";
 import {
@@ -21,15 +22,6 @@ import {
 } from "@/lib/labels";
 
 export const metadata: Metadata = { title: "커리어 대시보드" };
-
-function chip(active: boolean) {
-  return [
-    "inline-flex h-8 items-center rounded-sm border px-3 text-caption",
-    active
-      ? "border-primary-600 bg-primary-050 font-semibold text-primary-700"
-      : "border-border-300 bg-surface-000 text-text-900 hover:bg-surface-050",
-  ].join(" ");
-}
 
 function delta(n: number) {
   return n > 0 ? `최근 30일 +${n}` : undefined;
@@ -140,7 +132,7 @@ export default async function DashboardPage({
                 <Link
                   href="/"
                   aria-current={!timelineType ? "page" : undefined}
-                  className={chip(!timelineType)}
+                  className={filterChipClass(!timelineType, "sm")}
                 >
                   전체
                 </Link>
@@ -149,7 +141,7 @@ export default async function DashboardPage({
                     key={t}
                     href={`/?timeline=${t}`}
                     aria-current={timelineType === t ? "page" : undefined}
-                    className={chip(timelineType === t)}
+                    className={filterChipClass(timelineType === t, "sm")}
                   >
                     {careerEntryTypeLabel(t)}
                   </Link>

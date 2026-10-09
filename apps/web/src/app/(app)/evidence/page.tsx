@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { filterChipClass } from "@/components/ui/filterChip";
 import { api } from "@/lib/api";
 import { EVIDENCE_TYPES, evidenceTypeLabel } from "@/lib/labels";
 
@@ -20,15 +21,6 @@ const VERIFICATION_FILTERS = [
   { value: "UNVERIFIED", label: "검토 필요" },
   { value: "EXPIRED", label: "만료" },
 ] as const;
-
-function chip(active: boolean) {
-  return [
-    "inline-flex h-9 items-center rounded-md border px-3 text-body",
-    active
-      ? "border-primary-600 bg-primary-600 font-semibold text-white"
-      : "border-border-300 bg-surface-000 text-text-900 hover:bg-surface-050",
-  ].join(" ");
-}
 
 function href(params: Record<string, string | undefined>) {
   const q = new URLSearchParams(
@@ -75,14 +67,19 @@ export default async function EvidencePage({ searchParams }: { searchParams: Sea
       />
       <div className="mb-4 flex flex-col gap-2">
         <nav aria-label="유형 필터" className="flex flex-wrap gap-2">
-          <Link href={href({ verification: verificationFilter, q })} className={chip(!typeFilter)}>
+          <Link
+            href={href({ verification: verificationFilter, q })}
+            aria-current={!typeFilter ? "true" : undefined}
+            className={filterChipClass(!typeFilter)}
+          >
             전체
           </Link>
           {EVIDENCE_TYPES.map((t) => (
             <Link
               key={t}
               href={href({ type: t, verification: verificationFilter, q })}
-              className={chip(typeFilter === t)}
+              aria-current={typeFilter === t ? "true" : undefined}
+              className={filterChipClass(typeFilter === t)}
             >
               {evidenceTypeLabel(t)}
             </Link>
@@ -93,7 +90,8 @@ export default async function EvidencePage({ searchParams }: { searchParams: Sea
             <Link
               key={v.label}
               href={href({ type: typeFilter, verification: v.value, q })}
-              className={chip(verificationFilter === v.value)}
+              aria-current={verificationFilter === v.value ? "true" : undefined}
+              className={filterChipClass(verificationFilter === v.value)}
             >
               {v.label}
             </Link>
