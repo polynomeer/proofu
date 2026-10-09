@@ -26,7 +26,7 @@ const GROUPS: { key: keyof Omit<Results, "query">; label: string; all: string }[
 function GroupSection({ label, group, all }: { label: string; group: Group; all: string }) {
   if (group.total === 0) return null;
   return (
-    <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+    <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
       <h2 className="flex items-baseline gap-2 text-card-title">
         {label}
         <span className="text-caption font-normal text-text-600 tabular-nums">{group.total}건</span>

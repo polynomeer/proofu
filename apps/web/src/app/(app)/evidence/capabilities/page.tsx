@@ -25,6 +25,7 @@ export default async function CapabilitiesPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/evidence", label: "Evidence" }}
         title="역량"
         description="'무엇을 할 수 있는가'를 정의하고 Evidence를 연결합니다. 수준은 자기평가이며, 연결된 Evidence는 근거 상태로만 표시합니다."
         action={

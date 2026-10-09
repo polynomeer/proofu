@@ -103,7 +103,7 @@ export function DataExport({ initialItems }: { initialItems: AccountExport[] }) 
   const pending = initialItems.some((i) => i.status === "REQUESTED");
 
   return (
-    <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+    <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
       <h2 className="text-section-title">데이터 내보내기</h2>
       <p className="mt-1 mb-4 text-caption text-text-600">
         경력·Evidence·공고·지원·문서·제출 스냅샷·설정·감사 기록을 <code>data.json</code>으로, 만든

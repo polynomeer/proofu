@@ -46,6 +46,7 @@ export default async function EvidencePage({ params }: { params: Params }) {
   return (
     <>
       <PageHeader
+        back={{ href: "/evidence", label: "Evidence" }}
         title={evidence.title}
         description={evidenceTypeLabel(evidence.type)}
         action={
@@ -70,7 +71,7 @@ export default async function EvidencePage({ params }: { params: Params }) {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
-          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-section-title">{evidence.type === "NOTE" ? "본문" : "미리보기"}</h2>
             {evidence.uri ? (
               <a
@@ -125,7 +126,7 @@ export default async function EvidencePage({ params }: { params: Params }) {
           </section>
         </div>
 
-        <aside className="flex h-fit flex-col gap-4 rounded-md border border-border-300 bg-surface-000 p-6">
+        <aside className="flex h-fit flex-col gap-4 rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
           <h2 className="text-card-title">정보</h2>
           <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-2 text-body">
             <dt className="text-text-600">검증 상태</dt>

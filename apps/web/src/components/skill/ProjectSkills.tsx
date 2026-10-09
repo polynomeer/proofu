@@ -49,7 +49,7 @@ export function ProjectSkills({
   }
 
   return (
-    <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+    <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-section-title">사용 기술</h2>
         {!editing ? (

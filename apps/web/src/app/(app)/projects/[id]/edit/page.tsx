@@ -22,7 +22,11 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
 
   return (
     <>
-      <PageHeader title="프로젝트 편집" description={project.name} />
+      <PageHeader
+        back={{ href: `/projects/${project.id}`, label: project.name }}
+        title="프로젝트 편집"
+        description={project.name}
+      />
       <ProjectForm project={project} careerEntries={options} />
     </>
   );

@@ -14,7 +14,11 @@ export default async function EditCareerEntryPage({ params }: { params: Promise<
 
   return (
     <>
-      <PageHeader title="경력 편집" description={entry.title} />
+      <PageHeader
+        back={{ href: `/career/${entry.id}`, label: entry.title }}
+        title="경력 편집"
+        description={entry.title}
+      />
       <CareerEntryForm entry={entry} />
     </>
   );

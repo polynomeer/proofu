@@ -46,6 +46,11 @@ export default async function ProjectPage({ params }: { params: Params }) {
   return (
     <>
       <PageHeader
+        back={
+          entry.data
+            ? { href: `/career/${entry.data.id}`, label: entry.data.title }
+            : { href: "/career", label: "커리어" }
+        }
         title={project.name}
         description={project.role}
         action={
@@ -66,7 +71,7 @@ export default async function ProjectPage({ params }: { params: Params }) {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
-          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-section-title">요약</h2>
             <p className="mt-3 text-body whitespace-pre-line">{project.summary}</p>
           </section>
@@ -92,7 +97,7 @@ export default async function ProjectPage({ params }: { params: Params }) {
           </section>
         </div>
 
-        <aside className="flex h-fit flex-col gap-4 rounded-md border border-border-300 bg-surface-000 p-6">
+        <aside className="flex h-fit flex-col gap-4 rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
           <h2 className="text-card-title">정보</h2>
           <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-2 text-body">
             <dt className="text-text-600">연결 경력</dt>

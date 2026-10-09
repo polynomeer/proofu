@@ -84,6 +84,7 @@ export default async function MatchesPage({
   return (
     <>
       <PageHeader
+        back={{ href: `/applications/${application.id}`, label: "지원 상세" }}
         title="공고 매칭"
         description={`${application.company} · ${application.roleTitle}`}
         action={<RunMatchingButton applicationId={application.id} hasRun={report.hasRun} />}
@@ -94,12 +95,6 @@ export default async function MatchesPage({
         className="mb-6 flex flex-col gap-3 rounded-md border border-border-300 bg-surface-000 p-4 md:px-5"
       >
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-600">
-          <Link
-            href={`/applications/${application.id}`}
-            className="text-primary-600 hover:underline"
-          >
-            ← 지원 상세
-          </Link>
           <Chip tone="snapshot">공고 스냅샷 {formatDateTime(application.snapshot.capturedAt)}</Chip>
           <span>
             요구사항 {groups.length}개 (필수 {required.length}) · 채택 {acceptedTotal}건

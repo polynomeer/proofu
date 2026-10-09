@@ -46,6 +46,7 @@ export default async function DocumentPage({ params }: { params: Params }) {
   return (
     <>
       <PageHeader
+        back={{ href: `/applications/${doc.applicationId}`, label: "지원 상세" }}
         title={doc.title}
         description={application ? `${application.company} · ${application.roleTitle}` : undefined}
         action={
@@ -57,12 +58,6 @@ export default async function DocumentPage({ params }: { params: Params }) {
         }
       />
       <p className="mb-4 flex flex-wrap items-center gap-3 text-caption text-text-600">
-        <Link
-          href={`/applications/${doc.applicationId}`}
-          className="text-primary-600 hover:underline"
-        >
-          ← 지원 상세
-        </Link>
         <Chip tone="neutral">{documentTypeLabel(doc.type)}</Chip>
         {latest ? (
           <span>

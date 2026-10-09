@@ -260,7 +260,7 @@ export function SkillSection({
   return (
     <section className="flex flex-col gap-4">
       {adding ? (
-        <div className="rounded-md border border-border-300 bg-surface-000 p-6">
+        <div className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
           <h2 className="text-card-title mb-4">새 기술</h2>
           <SkillForm
             onSaved={(s) => {
@@ -286,7 +286,7 @@ export function SkillSection({
         byCategory.map((group) => (
           <div
             key={group.category}
-            className="rounded-md border border-border-300 bg-surface-000 p-6"
+            className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6"
           >
             <h2 className="text-card-title">{skillCategoryLabel(group.category)}</h2>
             <ul className="mt-1 flex flex-col divide-y divide-border-300">

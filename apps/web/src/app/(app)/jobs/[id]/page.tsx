@@ -52,6 +52,7 @@ export default async function JobPostingPage({
   return (
     <>
       <PageHeader
+        back={{ href: "/jobs", label: "채용공고" }}
         title={posting.roleTitle}
         description={posting.company}
         action={
@@ -102,7 +103,7 @@ export default async function JobPostingPage({
         </div>
 
         <aside className="flex h-fit flex-col gap-4">
-          <div className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <div className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-card-title">정보</h2>
             <dl className="mt-3 grid grid-cols-[88px_1fr] gap-x-3 gap-y-2 text-body">
               <dt className="text-text-600">URL</dt>
@@ -127,7 +128,7 @@ export default async function JobPostingPage({
             </dl>
           </div>
 
-          <div className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <div className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-card-title">버전 기록</h2>
             <p className="mt-1 text-caption text-text-600">
               내용이 바뀔 때만 새 버전이 생깁니다. 각 버전은 수정할 수 없습니다.

@@ -25,6 +25,11 @@ export default async function NewProjectPage({
   return (
     <>
       <PageHeader
+        back={
+          careerEntryId
+            ? { href: `/career/${careerEntryId}`, label: "경력" }
+            : { href: "/career", label: "커리어" }
+        }
         title="새 프로젝트"
         description="목표, 역할, 활동, 결과를 가진 작업 단위입니다. 성과는 저장 후 추가합니다."
       />
