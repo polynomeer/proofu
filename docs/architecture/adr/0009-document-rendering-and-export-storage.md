@@ -36,7 +36,7 @@ F07–F09(내보내기)는 렌더링 라이브러리와 산출물 저장소가 �
 
 ## 결과
 
-- `renderer_version`은 렌더러 모듈 상수(`docx-poi-2`, `pdf-openpdf-2` 등)로 기록해 재현성을 남긴다. 머리글(프로필)은 `RenderableContact`로 제목 앞에 렌더링하고 `exports.profile_version`으로 고정한다.
+- `renderer_version`은 렌더러 모듈 상수(`docx-poi-2`, `pdf-openpdf-3` 등)로 기록해 재현성을 남긴다. 머리글(프로필)은 `RenderableContact`로 제목 앞에 렌더링하고 `exports.profile_version`으로 고정한다.
 - 폰트 12MB가 저장소와 worker 이미지에 들어간다. 폰트를 바꾸면 `renderer_version`을 올린다.
 - 다운로드는 `GET /exports/{id}/file`(workspace 검증)로만, 공개 URL 없음.
 

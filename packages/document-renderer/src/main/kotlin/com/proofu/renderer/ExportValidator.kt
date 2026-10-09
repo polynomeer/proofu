@@ -1,10 +1,10 @@
 package com.proofu.renderer
 
-import com.lowagie.text.pdf.PdfReader
-import com.lowagie.text.pdf.parser.PdfTextExtractor
 import com.proofu.domain.documents.ExportFormat
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor
 import org.apache.poi.xwpf.usermodel.XWPFDocument
+import org.openpdf.text.pdf.PdfReader
+import org.openpdf.text.pdf.parser.PdfTextExtractor
 import java.io.ByteArrayInputStream
 
 /**

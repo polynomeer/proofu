@@ -1,13 +1,13 @@
 package com.proofu.renderer
 
-import com.lowagie.text.Document
-import com.lowagie.text.Element
-import com.lowagie.text.Font
-import com.lowagie.text.PageSize
-import com.lowagie.text.Paragraph
-import com.lowagie.text.pdf.BaseFont
-import com.lowagie.text.pdf.PdfWriter
 import com.proofu.domain.documents.ExportFormat
+import org.openpdf.text.Document
+import org.openpdf.text.Element
+import org.openpdf.text.Font
+import org.openpdf.text.PageSize
+import org.openpdf.text.Paragraph
+import org.openpdf.text.pdf.BaseFont
+import org.openpdf.text.pdf.PdfWriter
 import java.awt.Color
 import java.io.ByteArrayOutputStream
 
@@ -102,7 +102,7 @@ class PdfRenderer : Renderer {
     }
 
     companion object {
-        const val VERSION = "pdf-openpdf-2"
+        const val VERSION = "pdf-openpdf-3"
         const val TITLE_PT = 18
         const val HEADING_PT = 13
         const val META_PT = 10
