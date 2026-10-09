@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
-    "@redocly/cli": "^2.53.3",
+    "@redocly/cli": "^2.58.2",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3"
   }
