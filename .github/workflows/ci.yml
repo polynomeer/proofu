@@ -35,7 +35,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - run: ./gradlew check --no-daemon
 
   contract-compatibility:
@@ -54,7 +54,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build API
         run: ./gradlew :api:bootJar --no-daemon
       - name: Start API and export runtime OpenAPI
@@ -85,7 +85,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter e2e exec playwright install --with-deps chromium
       - name: Run the journeys against a real stack
