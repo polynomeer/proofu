@@ -14,7 +14,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       className={[
         "flex h-10 items-center gap-3 rounded-md px-3 text-body text-white/80 transition-colors",
         "hover:bg-white/10 hover:text-white",
-        active ? "bg-primary-600 font-semibold text-white" : "",
+        active ? "bg-primary-600 font-bold text-white" : "",
       ].join(" ")}
     >
       <Icon name={item.icon} />

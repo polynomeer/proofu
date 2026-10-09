@@ -22,13 +22,16 @@ export function TopBar({ userName, canSignOut }: { userName: string; canSignOut:
           name="q"
           type="search"
           placeholder="경력, 스킬, 회사, 키워드 등을 검색하세요"
-          className="h-10 w-full rounded-md border border-border-300 bg-surface-000 pr-3 pl-9 text-body placeholder:text-text-600"
+          className="h-10 w-full rounded-md border border-border-300 bg-surface-050 pr-3 pl-9 text-body placeholder:text-text-600"
         />
       </form>
       <div className="ml-auto flex items-center gap-2">
         <span className="flex h-10 items-center gap-2 rounded-md px-2 text-body">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 text-text-600">
-            <Icon name="user" size={16} />
+          <span
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-050 text-body font-bold text-primary-700"
+            aria-hidden
+          >
+            {userName.trim().charAt(0) || <Icon name="user" size={16} />}
           </span>
           <span className="hidden sm:inline">{userName}</span>
         </span>

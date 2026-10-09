@@ -59,19 +59,32 @@ export function AttentionList({ items }: { items: Attention[] }) {
   const actions = items.map((i) => ACTIONS[i.code]?.(i.count)).filter(Boolean);
   if (actions.length === 0) return null;
   return (
-    <section aria-label="다음 행동" className="mb-6 flex flex-col gap-2">
-      {actions.map((a) => (
-        <div
-          key={a!.href + a!.text}
-          className="flex flex-wrap items-center gap-3 rounded-md border border-warning-600/40 bg-warning-050 px-4 py-3 text-body"
-        >
-          <Icon name="alert" size={16} className="shrink-0 text-warning-700" />
-          <span className="min-w-0 flex-1">{a!.text}</span>
-          <Link href={a!.href} className="font-semibold text-primary-600 hover:underline">
-            {a!.cta} →
-          </Link>
-        </div>
-      ))}
+    <section
+      aria-labelledby="attention-title"
+      className="mb-6 flex flex-col gap-3 rounded-md border border-border-300 bg-surface-000 p-4 md:px-5"
+    >
+      <h2 id="attention-title" className="text-card-title">
+        지금 확인할 일{" "}
+        <span className="text-caption font-normal text-text-600">{actions.length}건</span>
+      </h2>
+      <ul className="grid gap-3 md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
+        {actions.map((a) => (
+          <li key={a!.href + a!.text}>
+            <Link
+              href={a!.href}
+              className="flex h-full flex-col gap-2 rounded-md border border-border-300 p-3 hover:bg-surface-050"
+            >
+              <span className="flex items-start gap-2 text-body">
+                <Icon name="alert" size={16} className="mt-0.5 shrink-0 text-warning-700" />
+                <span className="min-w-0">{a!.text}</span>
+              </span>
+              <span className="mt-auto pl-6 text-body font-semibold text-primary-600">
+                {a!.cta} →
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
