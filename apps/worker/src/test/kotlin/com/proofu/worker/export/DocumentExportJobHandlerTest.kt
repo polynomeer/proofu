@@ -100,7 +100,7 @@ class DocumentExportJobHandlerTest {
         assertThat(pdfRow["status"]).isEqualTo("READY")
         assertThat(pdfRow["page_count"]).isEqualTo(1)
         assertThat(pdfRow["mime_type"]).isEqualTo("application/pdf")
-        assertThat(pdfRow["renderer_version"]).isEqualTo("pdf-openpdf-2")
+        assertThat(pdfRow["renderer_version"]).isEqualTo("pdf-openpdf-3")
 
         // An unapproved version fails at the gate and the export records why.
         val pending = version(s.documentId, approved = false)
