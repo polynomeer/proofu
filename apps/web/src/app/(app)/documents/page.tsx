@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Field, inputClass } from "@/components/ui/Field";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { filterChipClass } from "@/components/ui/filterChip";
 import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { DOCUMENT_TYPES, documentTypeLabel, versionAuthorLabel } from "@/lib/labels";
@@ -96,12 +97,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Se
                 key={label}
                 href={href({ type: value, q })}
                 aria-current={active ? "true" : undefined}
-                className={[
-                  "inline-flex h-9 items-center rounded-md border px-3 text-body",
-                  active
-                    ? "border-primary-600 bg-primary-600 font-semibold text-white"
-                    : "border-border-300 bg-surface-000 text-text-900 hover:bg-surface-050",
-                ].join(" ")}
+                className={filterChipClass(active)}
               >
                 {label}
               </Link>

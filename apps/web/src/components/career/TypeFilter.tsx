@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { filterChipClass } from "@/components/ui/filterChip";
+
 import { CAREER_ENTRY_TYPES, careerEntryTypeLabel } from "@/lib/labels";
 
 /** Filter chips reflected in the URL so the view can be shared and restored. */
@@ -21,12 +23,7 @@ export function TypeFilter({ current, q }: { current?: string; q?: string }) {
             key={label}
             href={query ? `/career?${query}` : "/career"}
             aria-current={active ? "true" : undefined}
-            className={[
-              "inline-flex h-9 items-center rounded-md border px-3 text-body",
-              active
-                ? "border-primary-600 bg-primary-600 font-semibold text-white"
-                : "border-border-300 bg-surface-000 text-text-900 hover:bg-surface-050",
-            ].join(" ")}
+            className={filterChipClass(active)}
           >
             {label}
           </Link>
