@@ -20,6 +20,7 @@ export default async function SkillsPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/career", label: "커리어" }}
         title="기술"
         description="언어·프레임워크·도구를 워크스페이스에서 한 번만 등록하고 프로젝트에 연결합니다. 숙련도는 자기평가이며 매칭 점수에는 쓰이지 않습니다."
         action={

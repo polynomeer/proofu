@@ -22,6 +22,11 @@ export default async function NewJobPostingPage({
   return (
     <>
       <PageHeader
+        back={
+          posting
+            ? { href: `/jobs/${posting.id}`, label: posting.roleTitle }
+            : { href: "/jobs", label: "채용공고" }
+        }
         title={posting ? "새 버전 붙여넣기" : "공고 저장"}
         description={
           posting

@@ -325,7 +325,7 @@ export function SnapshotRequirementsPanel({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+      <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-section-title">공고 원문</h2>
           <span className="text-caption text-text-600">
@@ -362,7 +362,7 @@ export function SnapshotRequirementsPanel({
         </div>
       </section>
 
-      <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+      <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-section-title">
             요구사항{" "}

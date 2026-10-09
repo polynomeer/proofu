@@ -80,6 +80,7 @@ export default async function ApplicationPage({ params }: { params: Params }) {
   return (
     <>
       <PageHeader
+        back={{ href: "/applications", label: "지원 관리" }}
         title={a.roleTitle}
         description={a.company}
         action={
@@ -110,7 +111,7 @@ export default async function ApplicationPage({ params }: { params: Params }) {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
-          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <h2 className="text-section-title">현재 상태</h2>
               <ApplicationStatusChip value={a.status} />
@@ -125,7 +126,7 @@ export default async function ApplicationPage({ params }: { params: Params }) {
             />
           </section>
 
-          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-section-title">상태 이력</h2>
             <ol className="mt-3 flex flex-col">
               {[...a.events].reverse().map((e, i) => (
@@ -170,7 +171,7 @@ export default async function ApplicationPage({ params }: { params: Params }) {
         </div>
 
         <aside className="flex h-fit flex-col gap-4">
-          <div className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <div className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-card-title">공고</h2>
             <p className="mt-2 text-body">
               <Link
@@ -185,7 +186,7 @@ export default async function ApplicationPage({ params }: { params: Params }) {
             </p>
             <p className="mt-2 line-clamp-4 text-caption text-text-600">{a.snapshot.textPreview}</p>
           </div>
-          <div className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <div className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-card-title">마감</h2>
             {a.deadlineAt ? (
               <p className="mt-2 text-body tabular-nums">

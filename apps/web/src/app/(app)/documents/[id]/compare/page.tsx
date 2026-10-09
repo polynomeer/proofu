@@ -103,19 +103,20 @@ export default async function ComparePage({
 
   return (
     <>
-      <PageHeader title="버전 비교" description={doc.title} />
+      <PageHeader
+        back={{ href: `/documents/${doc.id}`, label: "문서 편집" }}
+        title="버전 비교"
+        description={doc.title}
+      />
       <p className="mb-4 text-caption text-text-600">
-        <Link href={`/documents/${doc.id}`} className="text-primary-600 hover:underline">
-          ← 문서 편집
-        </Link>
-        <span className="ml-3">
+        <span>
           블록 id 기준으로 추가·삭제·변경을 표시합니다. 문장 안의 단어 단위 표시는 삭제(취소선)와
           추가(강조)입니다.
         </span>
       </p>
 
       {items.length < 2 ? (
-        <p className="rounded-md border border-border-300 bg-surface-000 p-6 text-body text-text-600">
+        <p className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6 text-body text-text-600">
           비교하려면 버전이 두 개 이상 필요합니다.
         </p>
       ) : (

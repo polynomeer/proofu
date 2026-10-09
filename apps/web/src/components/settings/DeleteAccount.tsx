@@ -42,7 +42,7 @@ export function DeleteAccount({ canSignOut }: { canSignOut: boolean }) {
   }
 
   return (
-    <section className="rounded-md border border-warning-600/40 bg-surface-000 p-6">
+    <section className="rounded-md border border-warning-600/40 bg-surface-000 p-4 md:p-6">
       <h2 className="text-card-title">계정 삭제</h2>
       <p className="mt-1 text-caption text-text-600">
         경력·Evidence·공고·지원·문서·제출 스냅샷·내보내기 파일을 모두 삭제합니다. 되돌릴 수 없고,

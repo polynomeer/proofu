@@ -13,7 +13,11 @@ export default async function EditEvidencePage({ params }: { params: Promise<{ i
   if (!evidence) notFound();
   return (
     <>
-      <PageHeader title="Evidence 편집" description={evidence.title} />
+      <PageHeader
+        back={{ href: `/evidence/${evidence.id}`, label: evidence.title }}
+        title="Evidence 편집"
+        description={evidence.title}
+      />
       <EvidenceForm evidence={evidence} />
     </>
   );

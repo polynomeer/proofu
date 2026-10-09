@@ -9,6 +9,7 @@ export default function NewEvidencePage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/evidence", label: "Evidence" }}
         title="Evidence 추가"
         description="원본 또는 원본의 위치를 보존합니다. 등록 후 경력의 주장에 연결하세요."
       />

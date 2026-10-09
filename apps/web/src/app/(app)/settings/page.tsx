@@ -24,7 +24,7 @@ export default async function SettingsPage() {
     <>
       <PageHeader title="설정" description="계정과 개인정보" />
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+        <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
           <h2 className="text-section-title">프로필</h2>
           <p className="mt-1 mb-4 text-caption text-text-600">
             내보내는 문서의 머리글에 들어갑니다. 이 정보는 AI에 전송되지 않고 문서 버전에도 저장되지
@@ -32,7 +32,7 @@ export default async function SettingsPage() {
           </p>
           <ProfileForm initial={profile ?? null} />
         </section>
-        <section className="rounded-md border border-border-300 bg-surface-000 p-6 lg:col-start-1">
+        <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6 lg:col-start-1">
           <h2 className="text-section-title">개인정보·AI·보존</h2>
           <p className="mt-1 mb-4 text-caption text-text-600">
             무엇을 AI가 보게 할지, 새 기록을 기본으로 얼마나 공개할지, 휴지통과 내보내기 파일을
@@ -51,7 +51,7 @@ export default async function SettingsPage() {
           <DeleteAccount canSignOut={caller?.mode === "oidc"} />
         </div>
         <aside className="flex h-fit flex-col gap-4">
-          <div className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <div className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-card-title">머리글 미리보기</h2>
             {profile ? (
               <div className="mt-2 flex flex-col gap-1 text-body">

@@ -441,7 +441,7 @@ export function CapabilitySection({
   return (
     <section className="flex flex-col gap-4">
       {adding ? (
-        <div className="rounded-md border border-border-300 bg-surface-000 p-6">
+        <div className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
           <h2 className="text-card-title mb-4">새 역량</h2>
           <CapabilityForm
             parents={items}
@@ -471,7 +471,7 @@ export function CapabilitySection({
         ].map((group) => (
           <div
             key={group.category}
-            className="rounded-md border border-border-300 bg-surface-000 p-6"
+            className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6"
           >
             <h2 className="text-card-title">
               {group.category === "OTHER_PARENT"

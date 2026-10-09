@@ -113,7 +113,7 @@ export default function HelpPage() {
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-6">
-          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-section-title">흐름</h2>
             <ol className="mt-4 flex flex-col gap-4">
               {STEPS.map((s, i) => (
@@ -138,7 +138,7 @@ export default function HelpPage() {
             </ol>
           </section>
 
-          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-section-title">용어</h2>
             <dl className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-[200px_1fr]">
               {TERMS.map((t) => (
@@ -152,7 +152,7 @@ export default function HelpPage() {
         </div>
 
         <aside className="flex h-fit flex-col gap-4">
-          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-card-title">AI가 하지 않는 것</h2>
             <ul className="mt-3 flex flex-col gap-2 text-caption text-text-600">
               {PRINCIPLES.map((p) => (
@@ -166,7 +166,7 @@ export default function HelpPage() {
               ))}
             </ul>
           </section>
-          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-card-title">상태 표시</h2>
             <ul className="mt-3 flex flex-col gap-2 text-caption">
               <li className="flex items-center gap-2">
@@ -187,7 +187,7 @@ export default function HelpPage() {
               </li>
             </ul>
           </section>
-          <section className="rounded-md border border-border-300 bg-surface-000 p-6">
+          <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
             <h2 className="text-card-title">아직 준비 중</h2>
             <ul className="mt-3 flex flex-col gap-1 text-caption text-text-600">
               {PENDING.map((p) => (
