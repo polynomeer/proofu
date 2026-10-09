@@ -254,7 +254,7 @@ export default async function DashboardPage({
                     <span className="truncate text-body font-semibold">{skill.canonicalName}</span>
                     <Chip>
                       {skill.proficiency
-                        ? `자기평가 · ${proficiencyLabel(skill.proficiency)}`
+                        ? `자기평가 ${proficiencyLabel(skill.proficiency)}`
                         : skillCategoryLabel(skill.category)}
                     </Chip>
                     <span className="col-span-2 text-caption text-text-600 tabular-nums">
