@@ -1,12 +1,12 @@
 [versions]
-kotlin = "2.3.21"
+kotlin = "2.4.20"
 spring-boot = "4.1.1"
 spring-dependency-management = "1.1.7"
 springdoc = "3.1.1"
 ktlint-gradle = "14.2.0"
 uuid-generator = "5.2.0"
-anthropic = "2.63.0"
-json-schema-validator = "3.0.7"
+anthropic = "2.68.0"
+json-schema-validator = "3.0.8"
 poi = "5.5.1"
 openpdf = "3.0.5"
 
