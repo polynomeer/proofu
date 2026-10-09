@@ -37,8 +37,10 @@ for port in 8080 8091 8181 3111; do
 done
 
 ./gradlew :api:bootJar :worker:bootJar -q
-# turbo builds the web app's dependencies first: the contract types are generated, not committed.
-if ! pnpm turbo run build --filter=web >"$log/web-build.log" 2>&1; then
+# The contract types are generated, not committed. The web build runs outside turbo on
+# purpose: turbo's strict env mode would drop AUTH_MODE and the OIDC settings exported above,
+# and the web app reads them at build time.
+if ! { pnpm --filter @proofu/contracts build && pnpm --filter web build; } >"$log/web-build.log" 2>&1; then
   tail -40 "$log/web-build.log" >&2
   exit 1
 fi
