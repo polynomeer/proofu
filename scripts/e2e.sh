@@ -37,7 +37,11 @@ for port in 8080 8091 8181 3111; do
 done
 
 ./gradlew :api:bootJar :worker:bootJar -q
-pnpm --filter web build >"$log/web-build.log" 2>&1
+# turbo builds the web app's dependencies first: the contract types are generated, not committed.
+if ! pnpm turbo run build --filter=web >"$log/web-build.log" 2>&1; then
+  tail -40 "$log/web-build.log" >&2
+  exit 1
+fi
 
 node apps/web/scripts/mock-idp.mjs >"$log/mock-idp.log" 2>&1 & pids+=($!)
 java -jar apps/api/build/libs/api-*[!plain].jar >"$log/api.log" 2>&1 & pids+=($!)
