@@ -9,6 +9,7 @@ import type { Schema } from "@proofu/contracts";
 import { ClaimStatusChip, VerificationChip } from "@/components/evidence/chips";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { Icon } from "@/components/ui/Icon";
 import { api } from "@/lib/api";
 import { relationLabel, scoreBandLabel } from "@/lib/labels";
 
@@ -52,37 +53,47 @@ export function MatchCandidateCard({ match }: { match: Match }) {
   return (
     <li
       className={[
-        "flex flex-col gap-2 rounded-md border p-3",
+        "flex flex-col gap-3 rounded-md border bg-surface-000 px-4 py-4 md:px-5",
         decision === "ACCEPTED"
-          ? "border-success-600 bg-success-050/40"
+          ? "border-success-600"
           : decision === "REJECTED"
             ? "border-border-300 bg-surface-050 opacity-60"
-            : "border-border-300 bg-surface-000",
+            : "border-border-300",
       ].join(" ")}
     >
-      <div className="flex items-start gap-3">
-        <span className="flex w-14 shrink-0 flex-col items-center rounded-md bg-primary-050 py-1 tabular-nums">
-          <span className="text-section-title text-primary-700">{match.score}</span>
-          <span className="text-caption text-text-600">{scoreBandLabel(match.band)}</span>
+      <div className="flex flex-wrap items-start gap-4">
+        <span className="flex w-[72px] shrink-0 flex-col items-center rounded-md border border-border-300 py-2 tabular-nums">
+          <span className="text-stat">{match.score}</span>
+          <span
+            className={[
+              "text-caption font-semibold",
+              match.band === "HIGH" ? "text-success-700" : "text-text-600",
+            ].join(" ")}
+          >
+            {scoreBandLabel(match.band)}
+          </span>
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-body font-semibold">{match.claimText}</p>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-caption text-text-600">
+        <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-1.5">
+          <p className="flex flex-wrap items-center gap-1.5">
             <ClaimStatusChip value={match.claimStatus} />
-            {source ? (
-              <Link href={sourceHref(source)} className="text-primary-600 hover:underline">
-                {source.title ?? "원천 보기"}
-              </Link>
-            ) : null}
             {decision === "ACCEPTED" ? <Chip tone="verified">채택</Chip> : null}
             {decision === "REJECTED" ? <Chip tone="private">제외</Chip> : null}
           </p>
+          <p className="text-card-title">{match.claimText}</p>
+          {source ? (
+            <Link
+              href={sourceHref(source)}
+              className="self-start text-caption text-primary-600 hover:underline"
+            >
+              {source.title ?? "원천 보기"}
+            </Link>
+          ) : null}
         </div>
         <div className="flex shrink-0 gap-1">
           {decision !== "ACCEPTED" ? (
             <Button
               type="button"
-              variant="tertiary"
+              variant="secondary"
               onClick={() => decide("ACCEPTED")}
               loading={busy}
             >
@@ -107,27 +118,41 @@ export function MatchCandidateCard({ match }: { match: Match }) {
         </div>
       </div>
 
+      {match.matchedRequirementPhrase || match.matchedEvidencePhrase ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          {match.matchedRequirementPhrase ? (
+            <p className="rounded-md bg-surface-050 px-3 py-2 text-body">
+              <span className="mb-1 block text-caption font-semibold text-text-600">
+                요구사항에서 일치한 구절
+              </span>
+              “{match.matchedRequirementPhrase}”
+            </p>
+          ) : null}
+          {match.matchedEvidencePhrase ? (
+            <p className="rounded-md bg-surface-050 px-3 py-2 text-body">
+              <span className="mb-1 block text-caption font-semibold text-text-600">
+                근거에서 일치한 구절
+              </span>
+              “{match.matchedEvidencePhrase}”
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {match.reason ? (
-        <p className="rounded-md bg-surface-050 px-3 py-2 text-body">
-          <span className="mr-1 text-caption text-text-600">AI 설명</span>
+        <p className="text-body">
+          <span className="mr-1 text-caption font-semibold text-text-600">AI 설명</span>
           {match.reason}
         </p>
       ) : (
         <p className="text-caption text-text-600">설명 없음 — 점수만으로 정렬된 후보입니다.</p>
       )}
-      {match.matchedRequirementPhrase || match.matchedEvidencePhrase ? (
-        <p className="text-caption text-text-600">
-          {match.matchedRequirementPhrase ? <>요구: “{match.matchedRequirementPhrase}” </> : null}
-          {match.matchedEvidencePhrase ? <>↔ 근거: “{match.matchedEvidencePhrase}”</> : null}
-        </p>
-      ) : null}
       {match.evidence.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {match.evidence.map((e) => (
             <Link
               key={e.id}
               href={`/evidence/${e.id}`}
-              className="inline-flex h-6 items-center gap-1 rounded-sm border border-border-300 bg-surface-050 px-2 text-caption hover:bg-surface-100"
+              className="inline-flex min-h-8 items-center gap-1.5 rounded-sm border border-border-300 bg-surface-000 px-2 text-caption hover:bg-surface-050"
             >
               {e.title}
               <span className="text-text-600">· {relationLabel(e.relation)}</span>
@@ -136,8 +161,9 @@ export function MatchCandidateCard({ match }: { match: Match }) {
           ))}
         </div>
       ) : (
-        <p className="text-caption text-warning-700">
-          연결된 Evidence가 없어 근거 없음 상태입니다.
+        <p className="flex items-center gap-1.5 text-caption text-warning-700">
+          <Icon name="alert" size={16} />
+          연결된 Evidence가 없어 근거 없음 상태입니다. 자동으로 채택되지 않습니다.
         </p>
       )}
       <details className="text-caption text-text-600">
