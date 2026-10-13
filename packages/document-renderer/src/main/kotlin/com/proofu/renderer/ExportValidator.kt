@@ -16,16 +16,20 @@ object ExportValidator {
         rendered: Rendered,
         document: RenderableDocument,
     ): List<String> {
-        val text = extractText(rendered)
+        // Compared without whitespace: a PDF line can break inside a Korean word or after a
+        // hyphen, and the extractor returns that break as a space the source never had
+        // ("처리로" → "처리 로", "per-event" → "per- event"). Every other character must still be
+        // there, in order.
+        val text = compact(extractText(rendered))
         val problems = mutableListOf<String>()
         var cursor = 0
         document.expectedText.forEach { expected ->
-            val needle = normalize(expected)
+            val needle = compact(expected)
             if (needle.isEmpty()) return@forEach
             val at = text.indexOf(needle, cursor)
             if (at < 0) {
-                problems +=
-                    if (text.contains(needle)) "out of order: ${needle.take(40)}" else "missing: ${needle.take(40)}"
+                val preview = normalize(expected).take(40)
+                problems += if (text.contains(needle)) "out of order: $preview" else "missing: $preview"
             } else {
                 cursor = at + needle.length
             }
@@ -50,6 +54,8 @@ object ExportValidator {
                 }
             }
         }
+
+    private fun compact(s: String): String = normalize(s).replace(" ", "")
 
     /** Whitespace-insensitive comparison; JSON escapes are undone so quoted text still matches. */
     private fun normalize(s: String): String =

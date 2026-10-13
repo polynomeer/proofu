@@ -73,6 +73,33 @@ class RendererTest {
     }
 
     @Test
+    fun `pdf paragraphs that wrap inside a word or after a hyphen still validate`() {
+        // Long enough to wrap several times; Korean wraps inside words, English after hyphens.
+        val sentence = "정산 배치를 이벤트 처리로 전환하고 per-event reconciliation을 자동화해 확정 시점을 앞당겼습니다."
+        val output =
+            GeneratedOutput(
+                listOf(
+                    GeneratedBlock(
+                        "experience-1",
+                        List(6) { sentence }.joinToString(" "),
+                        certainty = Certainty.SUPPORTED,
+                    ),
+                ),
+            )
+        val doc =
+            RenderableDocument.of(
+                title = "자기소개서",
+                type = DocumentType.COVER_LETTER,
+                language = "ko",
+                company = "예시 주식회사",
+                roleTitle = "프로덕트 매니저",
+                template = DocumentTemplate.latest(DocumentType.COVER_LETTER),
+                output = output,
+            )
+        assertThat(ExportValidator.validate(PdfRenderer().render(doc), doc)).isEmpty()
+    }
+
+    @Test
     fun `validation reports missing or reordered paragraphs`() {
         val rendered = MarkdownRenderer().render(document)
         val tampered = document.copy(sections = document.sections.reversed())
