@@ -100,6 +100,33 @@ class RendererTest {
     }
 
     @Test
+    fun `korean pdf lines break between words, never inside one`() {
+        val sentence = "정산 플랫폼 팀을 이끌며 일 마감 정산 배치를 이벤트 처리로 전환해 확정 시점을 앞당겼습니다."
+        val paragraph = List(8) { sentence }.joinToString(" ")
+        val doc = coverLetter(paragraph)
+        // Every line break lands on a space, so the extracted text equals the source exactly.
+        assertThat(ExportValidator.extractText(PdfRenderer().render(doc))).contains(paragraph)
+    }
+
+    @Test
+    fun `a korean word longer than a line is cut rather than dropped`() {
+        val doc = coverLetter("가".repeat(200))
+        val rendered = PdfRenderer().render(doc)
+        assertThat(ExportValidator.validate(rendered, doc)).isEmpty()
+    }
+
+    private fun coverLetter(text: String) =
+        RenderableDocument.of(
+            title = "자기소개서",
+            type = DocumentType.COVER_LETTER,
+            language = "ko",
+            company = "예시 주식회사",
+            roleTitle = "프로덕트 매니저",
+            template = DocumentTemplate.latest(DocumentType.COVER_LETTER),
+            output = GeneratedOutput(listOf(GeneratedBlock("experience-1", text, certainty = Certainty.SUPPORTED))),
+        )
+
+    @Test
     fun `validation reports missing or reordered paragraphs`() {
         val rendered = MarkdownRenderer().render(document)
         val tampered = document.copy(sections = document.sections.reversed())
