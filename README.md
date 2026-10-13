@@ -15,8 +15,8 @@ packages/
 ├─ domain/     순수 Kotlin 도메인 모델과 불변식 (api, worker 공유)
 ├─ ai-gateway/ 모델 제공자로 가는 유일한 경로 (정책·예산·검증·기록)
 ├─ contracts/  OpenAPI 계약과 생성된 TypeScript 타입
-├─ document-renderer/  DOCX / PDF 렌더러 (예정)
-└─ ai-evaluation/      AI 사실성·근거 충실도 평가 세트 (예정)
+├─ document-renderer/  DOCX · PDF · Markdown · JSON 렌더러와 재추출 검증
+└─ ai-evaluation/      AI 평가 실행기 자리 (지금은 ai-gateway의 *EvalTest)
 docs/          제품 · 도메인 · 아키텍처 · API · AI · 보안 · 테스트 · 운영 문서, ADR
 infra/         로컬 개발용 docker compose
 migrations/    Flyway SQL 마이그레이션 (단일 원천)
