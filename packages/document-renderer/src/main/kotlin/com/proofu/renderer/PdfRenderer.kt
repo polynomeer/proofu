@@ -1,12 +1,15 @@
 package com.proofu.renderer
 
 import com.proofu.domain.documents.ExportFormat
+import org.openpdf.text.Chunk
 import org.openpdf.text.Document
 import org.openpdf.text.Element
 import org.openpdf.text.Font
 import org.openpdf.text.PageSize
 import org.openpdf.text.Paragraph
 import org.openpdf.text.pdf.BaseFont
+import org.openpdf.text.pdf.DefaultSplitCharacter
+import org.openpdf.text.pdf.PdfChunk
 import org.openpdf.text.pdf.PdfWriter
 import java.awt.Color
 import java.io.ByteArrayOutputStream
@@ -74,12 +77,40 @@ class PdfRenderer : Renderer {
         before: Float = 0f,
         after: Float = 0f,
     ): Paragraph =
-        Paragraph(text, font).apply {
+        Paragraph(Chunk(text, font).setSplitCharacter(KoreanWordSplit)).apply {
             alignment = Element.ALIGN_LEFT
             leading = font.size * LINE_HEIGHT
             spacingBefore = before
             spacingAfter = after
         }
+
+    /**
+     * Korean is set with breaks between words (어절), not between any two syllables. OpenPDF's
+     * default treats Hangul like Chinese and Japanese and may break inside a word ("처리 / 로").
+     * Other characters keep the default rule. A word longer than a line is still cut by
+     * OpenPDF, so no text is ever dropped.
+     */
+    internal object KoreanWordSplit : DefaultSplitCharacter() {
+        override fun isSplitCharacter(
+            start: Int,
+            current: Int,
+            end: Int,
+            cc: CharArray,
+            ck: Array<PdfChunk>?,
+        ): Boolean =
+            !isHangul(getCurrentCharacter(current, cc, ck)) && super.isSplitCharacter(start, current, end, cc, ck)
+
+        private fun isHangul(c: Char): Boolean =
+            c in '\u1100'..'\u11FF' ||
+                // Jamo
+                c in '\u3130'..'\u318F' ||
+                // compatibility Jamo
+                c in '\uA960'..'\uA97F' ||
+                // Jamo extended-A
+                c in '\uAC00'..'\uD7AF' ||
+                // syllables
+                c in '\uD7B0'..'\uD7FF' // Jamo extended-B
+    }
 
     /** Base fonts are parsed once; OpenPDF embeds only the glyphs a document uses. */
     private object Fonts {
@@ -102,7 +133,7 @@ class PdfRenderer : Renderer {
     }
 
     companion object {
-        const val VERSION = "pdf-openpdf-3"
+        const val VERSION = "pdf-openpdf-4"
         const val TITLE_PT = 18
         const val HEADING_PT = 13
         const val META_PT = 10
