@@ -124,6 +124,12 @@ export default async function ApplicationPage({ params }: { params: Params }) {
               version={a.version}
               allowed={a.allowedTransitions}
             />
+            {a.status === "DOCUMENT_PASSED" || a.status === "HANDOFF_READY" ? (
+              <p className="mt-3 rounded-md bg-surface-050 px-3 py-2 text-caption text-text-600">
+                iterview로 면접 단계를 인계하는 기능은 아직 준비 중입니다. 연동이 준비되면 이
+                화면에서 인계할 수 있습니다. 지원을 이어 가지 않으면 철회로 정리하세요.
+              </p>
+            ) : null}
           </section>
 
           <section className="rounded-md border border-border-300 bg-surface-000 p-4 md:p-6">
