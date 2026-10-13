@@ -22,6 +22,10 @@ class AccountPurgeJobHandlerTest {
     @Test
     fun `purges every row of the workspace including immutable snapshots and leaves tombstones`() {
         val s = AccountSeed.seed(jdbc)
+        jdbc.update(
+            "insert into workspace_settings (workspace_id, ai_consent, ai_consent_at) values (?, 'CONFIDENTIAL', now())",
+            s.workspaceId,
+        )
         // Immutable rows resist an ordinary delete...
         assertThat(
             runCatching {
@@ -52,6 +56,24 @@ class AccountPurgeJobHandlerTest {
             "members" to "select count(*) from workspace_members where workspace_id = ?",
         )
         ) {
+            assertThat(jdbc.queryForObject(sql, Long::class.java, w)).describedAs(table).isZero()
+        }
+        // Every table keyed by workspace is empty afterwards, so a table added later cannot be
+        // forgotten. Audit rows (no personal data, kept a year) and the purge job itself stay.
+        val kept = setOf("audit_events")
+        val tables =
+            jdbc.queryForList(
+                "select table_name from information_schema.columns where table_schema = 'public' and column_name = 'workspace_id'",
+                String::class.java,
+            )
+        assertThat(tables).contains("workspace_settings")
+        for (table in tables - kept) {
+            val sql =
+                if (table == "jobs") {
+                    "select count(*) from jobs where workspace_id = ? and type <> 'account.purge'"
+                } else {
+                    "select count(*) from $table where workspace_id = ?"
+                }
             assertThat(jdbc.queryForObject(sql, Long::class.java, w)).describedAs(table).isZero()
         }
         assertThat(

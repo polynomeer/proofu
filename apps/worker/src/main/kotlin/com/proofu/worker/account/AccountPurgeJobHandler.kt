@@ -148,6 +148,8 @@ class AccountPurgeJobHandler(
             run("jobs", "delete from jobs where workspace_id = ? and id <> ?", w, job.id)
             run("user_profiles", "delete from user_profiles where user_id = ?", userId)
             run("workspace_members", "delete from workspace_members where workspace_id = ?", w)
+            // Holds when AI consent was given; the tombstone keeps no preferences.
+            run("workspace_settings", "delete from workspace_settings where workspace_id = ?", w)
             // Tombstones: keep the ids for audit rows, drop every personal detail and the login identity.
             run(
                 "users",

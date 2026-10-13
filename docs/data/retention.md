@@ -33,7 +33,7 @@ review: 법률 검토 후 확정
 ## 계정 삭제 (`account.purge`)
 
 1. `DELETE /me`는 최근 재인증(`REAUTHENTICATION_REQUIRED`)을 요구하고, 즉시 `users.deleted_at`·`workspaces.deleted_at`을 기록해 로그인을 막은 뒤 `account.purge` 잡을 접수합니다(202). 웹은 곧바로 로그아웃합니다.
-2. 잡은 한 트랜잭션에서 `SET LOCAL proofu.purge = 'on'`으로 불변 트리거의 DELETE만 허용받아 workspace의 모든 행을 지웁니다: 내보내기 파일·exports, provenance, 제출 스냅샷, 문서 버전·문서, 회고, 인계, 매칭, 상태 이벤트, 지원, 요구사항, 공고 스냅샷·공고, Claim/Evidence 연결, Claim, Evidence, 성과·프로젝트·스킬·역량·경력, AI 실행 기록, 다른 잡, 전체 내보내기(ZIP 포함), 프로필, 멤버십.
+2. 잡은 한 트랜잭션에서 `SET LOCAL proofu.purge = 'on'`으로 불변 트리거의 DELETE만 허용받아 workspace의 모든 행을 지웁니다: 내보내기 파일·exports, provenance, 제출 스냅샷, 문서 버전·문서, 회고, 인계, 매칭, 상태 이벤트, 지원, 요구사항, 공고 스냅샷·공고, Claim/Evidence 연결, Claim, Evidence, 성과·프로젝트·스킬·역량·경력, AI 실행 기록, 다른 잡, 전체 내보내기(ZIP 포함), 프로필, 멤버십, 워크스페이스 설정(AI 동의 시각 포함). `workspace_id` 열이 있는 표는 `audit_events`를 빼고 모두 비워지는지 `AccountPurgeJobHandlerTest`가 스키마 전체로 확인합니다.
 3. `users`와 `workspaces` 행은 **묘비**로 남습니다: 이메일·이름·OIDC subject를 `deleted:<id>` 형태로 덮어써 개인정보를 제거하고, 같은 subject가 다시 가입하면 새 사용자로 만들어집니다. `audit_events`는 개인정보 없이(id·해시만) 보존 정책(1년)을 따릅니다.
 4. 제공자 측 사용자 삭제는 제공자 확정 후 어댑터로 붙입니다(ADR-0010 결정 2 기준). 그때까지 잡 결과에 `providerUserDeleted=false`를 남깁니다.
 5. 백업에는 삭제가 35일 뒤에 반영됩니다(위 표).
