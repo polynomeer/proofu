@@ -26,8 +26,10 @@ enum class ApplicationStatus {
                 INTERESTED -> setOf(PREPARING, WITHDRAWN)
                 PREPARING -> setOf(SUBMITTED, WITHDRAWN)
                 SUBMITTED -> setOf(DOCUMENT_PASSED, DOCUMENT_REJECTED, NO_RESPONSE, WITHDRAWN)
-                DOCUMENT_PASSED -> setOf(HANDOFF_READY)
-                HANDOFF_READY -> setOf(HANDED_OFF_TO_ITERVIEW)
+                // Withdrawing after a pass is real (the candidate declines), and keeps HANDOFF_READY
+                // from being a dead end while the iterview handoff is not available.
+                DOCUMENT_PASSED -> setOf(HANDOFF_READY, WITHDRAWN)
+                HANDOFF_READY -> setOf(HANDED_OFF_TO_ITERVIEW, WITHDRAWN)
                 DOCUMENT_REJECTED, NO_RESPONSE -> setOf(REVIEW_PENDING)
                 REVIEW_PENDING -> setOf(REVIEWED)
                 HANDED_OFF_TO_ITERVIEW, REVIEWED, WITHDRAWN -> emptySet()

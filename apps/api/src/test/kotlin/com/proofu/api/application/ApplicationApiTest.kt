@@ -122,12 +122,13 @@ class ApplicationApiTest {
             .isEqualTo(listOf("SUBMITTED", "WITHDRAWN"))
         transition(id, "SUBMITTED", 2).expectStatus().isOk
         transition(id, "DOCUMENT_PASSED", 3).expectStatus().isOk
+        // The handoff itself is not offered (it has its own endpoint); withdrawing still is.
         transition(id, "HANDOFF_READY", 4)
             .expectStatus()
             .isOk
             .expectBody()
             .jsonPath("$.allowedTransitions")
-            .isEqualTo(emptyList<String>())
+            .isEqualTo(listOf("WITHDRAWN"))
         transition(id, "HANDED_OFF_TO_ITERVIEW", 5).expectStatus().isEqualTo(422)
 
         val events = support.getJson(workspaceId, "/api/v1/applications/$id")["events"] as List<*>

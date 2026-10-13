@@ -10,13 +10,14 @@ review: 도메인 변경 시
 INTERESTED -> PREPARING -> SUBMITTED
 SUBMITTED -> DOCUMENT_PASSED | DOCUMENT_REJECTED | NO_RESPONSE | WITHDRAWN
 DOCUMENT_PASSED -> HANDOFF_READY -> HANDED_OFF_TO_ITERVIEW
+DOCUMENT_PASSED | HANDOFF_READY -> WITHDRAWN
 DOCUMENT_REJECTED | NO_RESPONSE -> REVIEW_PENDING -> REVIEWED
 ```
 
 - 상태 변경은 **이벤트로 기록**하며 과거 상태를 덮어쓰지 않습니다 (`application_status_events`).
 - 상태 전이는 허용 목록만 사용합니다. 도메인 모듈 `ApplicationStatus.canTransitionTo`가 단일 원천입니다.
 - 서류 합격 이후 면접 진행 상태는 ProofU에서 관리하지 않고 iterview의 `handoffId`만 보관합니다.
-- `WITHDRAWN`은 `INTERESTED`, `PREPARING`, `SUBMITTED`에서 가능합니다.
+- `WITHDRAWN`은 `INTERESTED`, `PREPARING`, `SUBMITTED`, `DOCUMENT_PASSED`, `HANDOFF_READY`에서 가능합니다. 서류 합격 뒤 지원을 이어 가지 않는 경우가 있고, iterview 인계가 준비되지 않은 동안 인계 준비 상태가 막다른 길이 되지 않게 합니다.
 
 ## 지원 보드 표시
 

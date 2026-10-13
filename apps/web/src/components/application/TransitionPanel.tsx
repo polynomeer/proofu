@@ -57,11 +57,7 @@ export function TransitionPanel({
   }
 
   if (allowed.length === 0) {
-    return (
-      <p className="text-body text-text-600">
-        더 이상 바꿀 수 있는 상태가 없습니다. 면접 단계는 iterview에서 관리됩니다.
-      </p>
-    );
+    return <p className="text-body text-text-600">더 이상 바꿀 수 있는 상태가 없습니다.</p>;
   }
 
   return (

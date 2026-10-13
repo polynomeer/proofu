@@ -29,6 +29,8 @@ class ApplicationStatusTest {
         "SUBMITTED, WITHDRAWN",
         "DOCUMENT_PASSED, HANDOFF_READY",
         "HANDOFF_READY, HANDED_OFF_TO_ITERVIEW",
+        "DOCUMENT_PASSED, WITHDRAWN",
+        "HANDOFF_READY, WITHDRAWN",
         "DOCUMENT_REJECTED, REVIEW_PENDING",
         "NO_RESPONSE, REVIEW_PENDING",
         "REVIEW_PENDING, REVIEWED",
@@ -49,6 +51,8 @@ class ApplicationStatusTest {
         "REVIEWED, REVIEW_PENDING",
         "WITHDRAWN, PREPARING",
         "HANDED_OFF_TO_ITERVIEW, HANDOFF_READY",
+        "HANDED_OFF_TO_ITERVIEW, WITHDRAWN",
+        "DOCUMENT_REJECTED, WITHDRAWN",
     )
     fun `undocumented transitions are rejected`(
         from: ApplicationStatus,
