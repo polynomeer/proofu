@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { apiAs, created, switchUser, unique } from "./helpers";
+import { API, apiAs, created, switchUser, unique } from "./helpers";
 
 /**
  * docs/testing/e2e-scenarios.md 1–8 with the fake AI provider: the career chain is seeded
@@ -97,6 +97,14 @@ test("2. 공고를 저장하고 요구사항 초안을 추출·승인한다", as
     await expect(approve).toHaveCount(drafts - i - 1);
   }
   await expect(page.getByText(new RegExp(`승인 ${drafts} / 전체 ${drafts}`))).toBeVisible();
+
+  // US03: an extracted requirement can be corrected after approval and stays approved.
+  const corrected = "B2B SaaS 프로덕트 매니저 경력 5년 이상";
+  await page.getByRole("button", { name: "편집", exact: true }).first().click();
+  await page.getByRole("textbox", { name: /^요구사항/ }).fill(corrected);
+  await page.getByRole("button", { name: "변경 사항 저장" }).click();
+  await expect(page.getByText(corrected, { exact: true })).toBeVisible();
+  await expect(page.getByText(new RegExp(`승인 ${drafts} / 전체 ${drafts}`))).toBeVisible();
 });
 
 test("3. 지원을 만들고 매칭을 실행해 후보를 채택한다", async ({ page }) => {
@@ -114,6 +122,13 @@ test("3. 지원을 만들고 매칭을 실행해 후보를 채택한다", async 
   await expect(accept.first()).toBeVisible();
   await accept.first().click();
   await expect(page.getByRole("button", { name: "되돌리기" }).first()).toBeVisible();
+
+  // US04: a candidate shows its score as a number with a band label (never a probability)
+  // and the model's reason.
+  const candidate = page.getByRole("listitem").filter({ hasText: "AI 설명" }).first();
+  await expect(candidate.getByText(/^(낮음|보통|높음)$/)).toBeVisible();
+  await expect(candidate.getByText(/점 후보입니다/)).toBeVisible();
+  await expect(page.getByText(/합격 (가능성|확률) \d/)).toHaveCount(0);
 });
 
 test("4–5. AI 초안을 만들고 근거 없는 문장을 승인해 버전을 저장하고 비교한다", async ({ page }) => {
@@ -127,6 +142,26 @@ test("4–5. AI 초안을 만들고 근거 없는 문장을 승인해 버전을 
   await page.getByRole("button", { name: "AI 초안 생성" }).click();
   await waitForJobSummary(page, /블록 \d+개 생성/);
   await expect(page.getByText(/승인 필요 \d+개/).first()).toBeVisible();
+
+  // US05: while unapproved blocks remain, no file can be made — the button is disabled and
+  // the API refuses both an export and a submission of that version.
+  await expect(page.getByRole("button", { name: "파일 만들기" })).toBeDisabled();
+  await expect(page.getByText(/승인 필요 블록 \d+개를 먼저 승인/)).toBeVisible();
+  const api = await apiAs(sub);
+  const documentId = documentUrl.split("/").pop()!;
+  const doc = await (await api.get(`${API}/documents/${documentId}`)).json();
+  const draftVersion = doc.latestVersion.id as string;
+  const exported = await api.post(`${API}/document-versions/${draftVersion}/exports`, {
+    data: { format: "PDF" },
+  });
+  expect(exported.status()).toBe(422);
+  expect((await exported.json()).code).toBe("UNSUPPORTED_CLAIM_IN_EXPORT");
+  const submitted = await api.post(`${API}/applications/${doc.applicationId}/submissions`, {
+    data: { documentVersionId: draftVersion },
+  });
+  expect(submitted.status()).toBe(422);
+  expect((await submitted.json()).code).toBe("UNSUPPORTED_CLAIM_IN_EXPORT");
+  await api.dispose();
 
   const approvals = page.getByLabel("내보내기 승인");
   const pending = await approvals.count();
@@ -193,6 +228,12 @@ test("8. 서류 탈락을 기록하고 비교 대상을 인용해 회고를 남�
   await expect(page.getByRole("textbox", { name: /^근거/ })).not.toHaveValue("");
   await page.getByRole("textbox", { name: /^관찰 사실/ }).fill("제출 8일 후 불합격 안내 메일 수신");
   await page.getByRole("textbox", { name: /^가설/ }).fill("필수 요구 경력 근거가 약했을 수 있음");
+  // US07: confidence and the next action are part of the record, not just fact and hypothesis.
+  await page.getByRole("radio", { name: /^보통/ }).check();
+  const action = "유사 공고에는 운영 지표 Evidence를 먼저 연결한다";
+  await page.getByRole("textbox", { name: /^개선 행동/ }).fill(action);
   await page.getByRole("button", { name: "회고 저장" }).click();
   await expect(page.getByText("회고 완료", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("신뢰도 보통")).toBeVisible();
+  await expect(page.getByText(action, { exact: true })).toBeVisible();
 });
