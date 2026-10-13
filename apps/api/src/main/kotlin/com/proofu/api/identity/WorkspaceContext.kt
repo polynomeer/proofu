@@ -10,7 +10,10 @@ import java.time.Instant
 data class WorkspaceContext(
     val workspaceId: WorkspaceId,
     val userId: UserId,
-    /** When the user last proved who they are (`auth_time`); null when the auth mode cannot say. */
+    /**
+     * When the user last proved who they are (`auth_time`). Null only in the header auth mode
+     * (local and test), which has no login to prove; OIDC always sets it.
+     */
     val authenticatedAt: Instant? = null,
 ) {
     /**

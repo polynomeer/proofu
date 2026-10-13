@@ -41,7 +41,7 @@ class FakeIdp : AutoCloseable {
         emailVerified: Boolean = true,
         audience: String = "proofu-api",
         issuer: String = this.issuer,
-        authTime: Instant = Instant.now(),
+        authTime: Instant? = Instant.now(),
         expiresAt: Instant = Instant.now().plusSeconds(300),
         name: String = "Test User",
     ): String {
@@ -56,7 +56,7 @@ class FakeIdp : AutoCloseable {
                 .claim("email", email)
                 .claim("email_verified", emailVerified)
                 .claim("name", name)
-                .claim("auth_time", authTime.epochSecond)
+                .apply { if (authTime != null) claim("auth_time", authTime.epochSecond) }
                 .build()
         val jwt = SignedJWT(JWSHeader.Builder(JWSAlgorithm.RS256).keyID(key.keyID).build(), claims)
         jwt.sign(RSASSASigner(key))

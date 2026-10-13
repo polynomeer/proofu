@@ -156,6 +156,32 @@ class OidcAuthTest {
     }
 
     @Test
+    fun `a token without auth_time is not taken as a recent login`() {
+        // A refreshed access token is newly issued but says nothing about the login itself.
+        val subject = UUID.randomUUID().toString()
+
+        fun save(
+            json: String,
+            authTime: Instant?,
+        ) = client
+            .put()
+            .uri("/api/v1/me/profile")
+            .header("Authorization", "Bearer ${idp.token(subject, authTime = authTime)}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(json)
+            .exchange()
+
+        save("""{"fullName":"홍길동","email":"a@example.com"}""", null).expectStatus().isOk
+        save("""{"fullName":"홍길동","email":"b@example.com","version":1}""", null)
+            .expectStatus()
+            .isUnauthorized
+            .expectBody()
+            .jsonPath("$.code")
+            .isEqualTo("REAUTHENTICATION_REQUIRED")
+        save("""{"fullName":"홍길동","email":"b@example.com","version":1}""", Instant.now()).expectStatus().isOk
+    }
+
+    @Test
     fun `account deletion needs a recent login, then refuses the user until the purge scrubs them`() {
         val subject = UUID.randomUUID().toString()
         get("/api/v1/career-entries", idp.token(subject)).expectStatus().isOk

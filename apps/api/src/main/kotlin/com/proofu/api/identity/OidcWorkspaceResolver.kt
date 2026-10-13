@@ -121,8 +121,14 @@ class OidcWorkspaceResolver(
         )
     }
 
-    private fun authTime(jwt: Jwt): Instant? =
+    /**
+     * When the user last logged in. Only `auth_time` says that: `iat` is renewed on every refresh
+     * token grant, so falling back to it would let a long-lived session pass the step-up check.
+     * A token without `auth_time` is treated as an old login (ADR-0010 결정 1 §4 requires the
+     * provider to send it), which asks for a fresh login instead of letting the action through.
+     */
+    private fun authTime(jwt: Jwt): Instant =
         (jwt.getClaim<Any>("auth_time") as? Instant)
             ?: (jwt.getClaim<Any>("auth_time") as? Number)?.let { Instant.ofEpochSecond(it.toLong()) }
-            ?: jwt.issuedAt
+            ?: Instant.EPOCH
 }
