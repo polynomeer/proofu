@@ -13,9 +13,12 @@ export async function switchUser(sub: string, name = sub) {
   expect(r.ok).toBeTruthy();
 }
 
-/** An API client authenticated as `sub` (token minted by the mock IdP, verified by the API's JWKS). */
-export async function apiAs(sub: string, ageSeconds = 0): Promise<APIRequestContext> {
-  const r = await fetch(`${IDP}/dev/token?sub=${encodeURIComponent(sub)}&age=${ageSeconds}`);
+/**
+ * An API client authenticated as `sub` (token minted by the mock IdP, verified by the API's JWKS).
+ * Its access token proves no fresh login — only a browser login records one (ADR-0010 결정 3).
+ */
+export async function apiAs(sub: string): Promise<APIRequestContext> {
+  const r = await fetch(`${IDP}/dev/token?sub=${encodeURIComponent(sub)}`);
   const { access_token } = (await r.json()) as { access_token: string };
   return request.newContext({
     extraHTTPHeaders: {
