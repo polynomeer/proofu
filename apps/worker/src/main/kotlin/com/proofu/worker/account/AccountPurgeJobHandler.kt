@@ -154,7 +154,7 @@ class AccountPurgeJobHandler(
             run(
                 "users",
                 """
-                update users set email = ?, display_name = '삭제된 사용자', oidc_subject = ?, deleted_at = coalesce(deleted_at, now())
+                update users set email = ?, display_name = '삭제된 사용자', oidc_subject = ?, reauthenticated_at = null, deleted_at = coalesce(deleted_at, now())
                 where id = ?
                 """.trimIndent(),
                 "deleted:$userId@invalid",

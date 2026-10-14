@@ -17,7 +17,8 @@ import java.util.UUID
 
 /**
  * ADR-0010 결정 1 §2: the verified JWT names the user; `(iss, sub)` finds or provisions the
- * user and their single workspace. Unverified emails are not let in (§7). Claim values are
+ * user and their single workspace. Identity is `(iss, sub)` only — an email never finds or
+ * merges an account and `email_verified` is not a login condition (결정 4). Claim values are
  * never logged.
  */
 @Component
@@ -33,21 +34,32 @@ class OidcWorkspaceResolver(
         val jwt = (SecurityContextHolder.getContext().authentication as? JwtAuthenticationToken)?.token ?: return null
         val issuer = jwt.issuer?.toString() ?: return null
         val subject = jwt.subject ?: return null
-        if (jwt.getClaimAsBoolean("email_verified") == false) return null
-        val (userId, workspaceId) = provision(issuer, subject, jwt) ?: return null
-        return WorkspaceContext(WorkspaceId(workspaceId), UserId(userId), authenticatedAt = authTime(jwt))
+        val known = provision(issuer, subject, jwt) ?: return null
+        return WorkspaceContext(
+            WorkspaceId(known.workspaceId),
+            UserId(known.userId),
+            authenticatedAt = jwt.authTime(),
+            reauthenticatedAt = known.reauthenticatedAt,
+            provesLogin = true,
+        )
     }
+
+    private data class Known(
+        val userId: UUID,
+        val workspaceId: UUID,
+        val reauthenticatedAt: Instant? = null,
+    )
 
     private fun provision(
         issuer: String,
         subject: String,
         jwt: Jwt,
-    ): Pair<UUID, UUID>? {
+    ): Known? {
         val existing =
             jdbc
                 .query(
                     """
-                    select u.id, u.deleted_at, w.id as workspace_id from users u
+                    select u.id, u.deleted_at, u.reauthenticated_at, w.id as workspace_id from users u
                     left join workspaces w on w.owner_user_id = u.id and w.deleted_at is null
                     where u.oidc_issuer = ? and u.oidc_subject = ?
                     order by w.created_at limit 1
@@ -57,16 +69,17 @@ class OidcWorkspaceResolver(
                             rs.getObject("id", UUID::class.java),
                             rs.getObject("deleted_at") != null,
                             rs.getObject("workspace_id", UUID::class.java),
-                        )
+                        ) to rs.getTimestamp("reauthenticated_at")?.toInstant()
                     },
                     issuer,
                     subject,
                 ).firstOrNull()
         if (existing != null) {
-            val (userId, deleted, workspaceId) = existing
+            val (row, reauthenticatedAt) = existing
+            val (userId, deleted, workspaceId) = row
             // Deleted or purging: refuse until the purge has scrubbed the subject (then it is a new user).
             if (deleted || workspaceId == null) return null
-            return userId to workspaceId
+            return Known(userId, workspaceId, reauthenticatedAt)
         }
         return checkNotNull(
             tx.execute {
@@ -107,7 +120,7 @@ class OidcWorkspaceResolver(
                         userId,
                     )
                     log.info("Provisioned a new user and workspace from {}", issuer)
-                    userId to workspaceId
+                    Known(userId, workspaceId)
                 } else {
                     val ws =
                         jdbc.queryForObject(
@@ -115,20 +128,9 @@ class OidcWorkspaceResolver(
                             UUID::class.java,
                             actualUser,
                         )!!
-                    actualUser to ws
+                    Known(actualUser, ws)
                 }
             },
         )
     }
-
-    /**
-     * When the user last logged in. Only `auth_time` says that: `iat` is renewed on every refresh
-     * token grant, so falling back to it would let a long-lived session pass the step-up check.
-     * A token without `auth_time` is treated as an old login (ADR-0010 결정 1 §4 requires the
-     * provider to send it), which asks for a fresh login instead of letting the action through.
-     */
-    private fun authTime(jwt: Jwt): Instant =
-        (jwt.getClaim<Any>("auth_time") as? Instant)
-            ?: (jwt.getClaim<Any>("auth_time") as? Number)?.let { Instant.ofEpochSecond(it.toLong()) }
-            ?: Instant.EPOCH
 }

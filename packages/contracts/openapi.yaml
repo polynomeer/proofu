@@ -170,6 +170,33 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /me/reauthentications:
+    post:
+      tags: [account]
+      operationId: recordReauthentication
+      summary: Record a fresh login proven by an ID token (ADR-0010 결정 3)
+      description: |
+        The web sends the ID token it received at login. The API verifies it itself — signature
+        against the issuer's JWKS, `aud` = the web client, `sub` = the caller, `auth_time` within
+        the step-up window — and records that time, so sensitive actions pass even when the
+        provider puts no `auth_time` in access tokens. A token that fails any check answers
+        401 REAUTHENTICATION_REQUIRED. In `header` auth mode there is no login to prove: 422.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties:
+                idToken:
+                  type: string
+                  maxLength: 8192
+      responses:
+        "204":
+          description: Recorded
+        default:
+          $ref: "#/components/responses/Problem"
   /me:
     delete:
       tags: [account]

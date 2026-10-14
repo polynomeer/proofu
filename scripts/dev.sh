@@ -212,6 +212,7 @@ start api env \
   AUTH_MODE="$AUTH_MODE_ARG" \
   OIDC_ISSUER="$ISSUER" \
   OIDC_JWKS_URI="$ISSUER/protocol/openid-connect/certs" \
+  OIDC_CLIENT_ID=proofu-web \
   AI_PROVIDER="$AI_PROVIDER" \
   ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" \
   java -jar "$API_JAR" --server.port="$API_PORT"
