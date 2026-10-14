@@ -35,7 +35,9 @@ const now = () => Math.floor(Date.now() / 1000);
 const codes = new Map(); // code -> { clientId, redirectUri, nonce, challenge, authTime }
 const refreshTokens = new Map(); // token -> { clientId, authTime }
 
-function accessToken({ clientId, authTime, who = user }) {
+// Like the hosted IdPs (Logto, Auth0, Zitadel), access tokens carry no auth_time: the API learns
+// about a fresh login only from the ID token the web sends it (ADR-0010 결정 3).
+function accessToken({ clientId, who = user }) {
   const iat = now();
   return jwt({
     iss: issuer,
@@ -44,7 +46,6 @@ function accessToken({ clientId, authTime, who = user }) {
     azp: clientId,
     iat,
     exp: iat + accessTtl,
-    auth_time: authTime,
     email: who.email,
     email_verified: true,
     name: who.name,
@@ -173,9 +174,8 @@ createServer(async (req, res) => {
   if (path === "/dev/token") {
     const sub = url.searchParams.get("sub") ?? user.sub;
     const who = sub === user.sub ? user : { sub, email: `${sub}@example.test`, name: sub };
-    const authTime = now() - Number(url.searchParams.get("age") ?? 0);
     return json(res, 200, {
-      access_token: accessToken({ clientId: "proofu-web", authTime, who }),
+      access_token: accessToken({ clientId: "proofu-web", who }),
       expires_in: accessTtl,
     });
   }

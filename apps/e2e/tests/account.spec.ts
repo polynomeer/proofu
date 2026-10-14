@@ -13,6 +13,11 @@ test("10. 전체 데이터를 ZIP으로 받은 뒤 계정을 삭제하면 즉시
     title: "지울 경력",
     startDate: "2020-01-01",
   });
+  // An access token alone proves no fresh login (hosted IdPs put no auth_time in it), so a
+  // sensitive action is refused until a login hands the API a recent ID token.
+  const del = await api.delete(`${API}/me`);
+  expect(del.status()).toBe(401);
+  expect(((await del.json()) as { code: string }).code).toBe("REAUTHENTICATION_REQUIRED");
 
   await page.goto("/settings");
   await page.getByRole("button", { name: "ZIP 만들기" }).click();
@@ -22,16 +27,13 @@ test("10. 전체 데이터를 ZIP으로 받은 뒤 계정을 삭제하면 즉시
     page.getByRole("button", { name: "ZIP 내려받기" }).click(),
   ]);
   expect(download.suggestedFilename()).toMatch(/^proofu-data-\d{4}-\d{2}-\d{2}\.zip$/);
-  // A stale login cannot download the archive; the listing itself is fine.
-  const stale = await apiAs(sub, 3600);
-  const list = (await (await stale.get(`${API}/me/exports`)).json()) as {
+  // The browser login recorded a fresh login, which is what let the download through.
+  const list = (await (await api.get(`${API}/me/exports`)).json()) as {
     items: { id: string; status: string; tables: Record<string, number> }[];
   };
   const archive = list.items[0]!;
   expect(archive.status).toBe("READY");
   expect(archive.tables.career_entries).toBe(1);
-  expect((await stale.get(`${API}/me/exports/${archive.id}/file`)).status()).toBe(401);
-  await stale.dispose();
 
   await page.getByRole("button", { name: "계정 삭제…" }).click();
   await page.getByLabel(/확인을 위해/).fill("삭제");
