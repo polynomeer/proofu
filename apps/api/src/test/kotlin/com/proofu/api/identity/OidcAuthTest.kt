@@ -233,6 +233,19 @@ class OidcAuthTest {
     }
 
     @Test
+    fun `downloading a document export needs a recent login, checked before the lookup`() {
+        val subject = UUID.randomUUID().toString()
+        val missing = "/api/v1/exports/${UUID.randomUUID()}/file"
+        get(missing, idp.token(subject, authTime = Instant.now().minus(Duration.ofHours(1))))
+            .expectStatus()
+            .isUnauthorized
+            .expectBody()
+            .jsonPath("$.code")
+            .isEqualTo("REAUTHENTICATION_REQUIRED")
+        get(missing, idp.token(subject)).expectStatus().isNotFound
+    }
+
+    @Test
     fun `account deletion needs a recent login, then refuses the user until the purge scrubs them`() {
         val subject = UUID.randomUUID().toString()
         get("/api/v1/career-entries", idp.token(subject)).expectStatus().isOk
