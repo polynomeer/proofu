@@ -1,7 +1,7 @@
 # 0010 인증: OIDC 연동 형태와 제공자
 
 - 상태: **제안** (제공자 선택은 결정 대기, 연동 형태는 결정 제안)
-- 일자: 2026-09-21
+- 일자: 2026-09-21 (개정 2026-10-14: 제공자 조사 결과, 결정 3·4 제안)
 
 ## 맥락
 
@@ -59,26 +59,76 @@
 | D. 클라우드 IdP (AWS Cognito, Azure AD B2C, Firebase Auth)             | 해당 클라우드를 쓸 때 저렴·통합                                   | 클라우드가 미정이라 지금 고르면 클라우드 결정을 선점, 카카오·네이버 미지원 또는 우회 필요, 일부는 표준 기능(logout, `auth_time`) 제약 |
 | E. 소셜 로그인만 직접 (카카오/네이버/Google OAuth를 앱이 직접 처리)    | 제공자 비용 0                                                     | 우리가 세션·MFA·복구·계정 연결을 직접 만들어야 함 — threat-model "비밀번호 미저장·MFA 위임"과 어긋남                                  |
 
-### 추천
+### 조사 결과 (2026-10-14, 공식 문서·가격표·공개 discovery 기준)
 
-**B(관리형 오픈소스 IdP, 1순위 Logto Cloud)를 검증하고, 검증 실패 시 A.** 근거: 카카오·네이버가 내장돼 한국 중심 요구를 바로 충족하고, 클라우드 중립이며, 자체 호스팅 탈출구가 있다. 검증 항목은 아래 "결정을 위한 확인"이며, 하나라도 미달이면 A로 간다. D는 클라우드 결정 이후에만 재검토한다. E는 채택하지 않는다.
+각 칸은 공식 출처로 확인한 것만 적었다. "코드 기준"은 문서에 없고 공개 소스에서만 확인한 동작이라 테스트 테넌트로 다시 확인해야 한다.
 
-### 결정을 위한 확인 (제공자 후보마다, 무료 티어로 1일)
+| 기준                                     | Logto Cloud                                                                             | Auth0 (Okta CIC)                                                                          | Zitadel Cloud                                     | Keycloak 자체 호스팅                 |
+| ---------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------ |
+| PKCE S256·`end_session_endpoint`         | 예                                                                                      | 예 (2023-11-14 이전 테넌트는 켜야 함)                                                     | 예                                                | 예                                   |
+| **access token의 `auth_time`**           | **아니오** — 코드는 있으나 개발 기능 플래그 뒤(미출시)                                  | **아니오** — 예약 클레임이라 직접 넣을 수 없고, 로그인 시각을 읽는 수단은 Enterprise 전용 | **아니오** — 클레임 표에 ID token만               | **예** (v25부터 `basic` 스코프 기본) |
+| `prompt=login`/`max_age=0` 재인증        | 예 (`max_age=0` → `prompt=login`, 코드 기준)                                            | 예, ID token에 `auth_time` 포함. 소셜 IdP에서는 재인증을 강제 못 함                       | `prompt=login` 예, `max_age` 동작은 문서 없음     | 예                                   |
+| 사용자 삭제 API                          | 예 (`DELETE /api/users/{id}`, M2M)                                                      | 예 (`DELETE /api/v2/users/{id}`, M2M)                                                     | 예, 단 "deleted" 상태 전환 — 완전 삭제인지 미확인 | 예 (Admin REST)                      |
+| 카카오·네이버                            | **둘 다 내장 커넥터**                                                                   | 카카오: 파트너 마켓플레이스(스코프 오류 보고), 네이버: 없음 → 커스텀                      | 내장 없음 → 일반 OIDC(카카오)·OAuth(네이버)       | 내장 일반 OIDC·OAuth로 구성 가능     |
+| MFA(TOTP·패스키) 셀프 등록               | 예 — **유료 애드온 $48/월**                                                             | 예 — Essentials 이상                                                                      | 예                                                | 예                                   |
+| 리전                                     | EU·US West·AU·**JP East** (생성 시 고정, 한국 없음)                                     | AU·CA·EU·**JP**·UK·US (한국 없음)                                                         | US·EU·CH·AU (아시아 없음)                         | 우리가 정함 (국내 가능)              |
+| DPA·인증                                 | DPA, SOC 2 Type II                                                                      | DPA, ISO 27001·SOC 2                                                                      | DPA, ISO 27001·SOC 2                              | 해당 없음(우리 책임)                 |
+| 월 비용 (커스텀 도메인 + MFA + 관리 API) | 약 **$72** (Pro $24 + MFA $48), MAU 과금 없음, 액세스 토큰 5만 개 초과 시 100개당 $0.08 | 1천 MAU 약 **$70**, 1만 MAU 약 **$700** (Essentials)                                      | **$100** (Pro, DAU 기준, 초과 단가 미공개)        | 인프라·운영 인건비                   |
+| SLA                                      | Enterprise만                                                                            | Enterprise만 (99.99%)                                                                     | Pro 99.5% 기본                                    | 우리 책임                            |
+| 탈출구                                   | MPL-2.0 자체 호스팅                                                                     | 비밀번호 해시 내보내기는 지원 요청·서명 필요                                              | AGPL-3.0 자체 호스팅                              | —                                    |
 
-- [ ] Discovery 문서에 PKCE(S256), `end_session_endpoint`, `auth_time` 클레임이 있는가
-- [ ] `max_age=0`/`prompt=login`으로 재인증을 강제하고 `auth_time`이 갱신되는가
-- [ ] 관리 API로 사용자를 삭제할 수 있는가(계정 삭제 잡에서 호출)
-- [ ] 카카오·네이버 로그인 후 `email`·`email_verified`가 오는가 (카카오는 이메일 동의 항목 설정 필요)
-- [ ] MFA(TOTP 또는 패스키)를 사용자가 스스로 켤 수 있는가
-- [ ] 데이터 저장 리전을 명시하고 DPA를 제공하는가
-- [ ] MAU 1천/1만에서의 월 비용
+주요 출처: 각 제공자의 공개 discovery 문서(`auth.logto.io`, `samples.auth0.com`, `zitadel.cloud`), docs.logto.io(MFA·tenant-settings·Kakao·Naver·Management API), logto-io/logto 소스(`authentication-context-claims.ts`, `grants/refresh-token.ts`), auth0.com/docs(access-token-profiles, create-custom-claims, max-age-reauthentication, create-tenants), zitadel.com/docs(apis/openidoauth/claims), keycloak.org 26.x 업그레이드 노트, 각 가격 페이지, developers.kakao.com·developers.naver.com 프로필 API.
+
+**알게 된 것 두 가지가 결정 1을 바꾼다.**
+
+1. 관리형 후보 셋 모두 access token에 `auth_time`이 없다. 지금 구현(결정 1 §4, API가 access token의 `auth_time`을 확인)을 그대로 두면 관리형 제공자에서는 민감 작업마다 재로그인 요청이 끝없이 반복된다(2026-10-14 수정 이후 `auth_time`이 없으면 오래된 로그인으로 본다). → **결정 3**
+2. 카카오 ID token에는 `email_verified`가 없고(이메일 검증 여부는 REST 사용자 정보의 `is_email_verified`), 네이버는 검증 플래그 자체가 없으며, Logto는 이메일이 있으면 `email_verified`를 참으로 준다. "`email_verified=false`면 로그인 거부"(결정 1 §7)는 제공자에 따라 소셜 로그인을 다 막거나 아무것도 막지 못한다. → **결정 4**
+
+### 추천 (개정)
+
+**Logto Cloud(JP East 리전) + 결정 3·4.** 결정 3으로 재인증이 제공자와 무관해지면 남는 차이는 한국 소셜 로그인·비용·탈출구인데, 카카오·네이버를 모두 내장하고, MAU와 무관한 고정 비용(약 $72/월)이며, MPL 자체 호스팅으로 옮길 수 있는 후보는 Logto뿐이다. Auth0는 1만 MAU에서 약 10배 비싸고 네이버가 없으며, Zitadel은 아시아 리전과 카카오·네이버 템플릿이 없다.
+
+**대안: Keycloak 자체 호스팅.** access token에 `auth_time`이 있고 국내에 둘 수 있는 유일한 후보다. 클라우드가 정해지고 개인정보 보호법상 국외 이전을 피해야 한다고 판단되면 이쪽으로 간다(운영 부담을 감수).
+
+리전: 어느 관리형 후보도 한국 리전이 없다. Logto JP East를 쓰면 회원 식별 정보가 일본에 저장되므로 privacy-requirements의 국외 이전 고지(이전 국가·항목·업체)에 넣어야 하고, 법률 검토에서 동의 방식을 정한다.
+
+### 결정을 위한 확인 (Logto 테스트 테넌트, 1일)
+
+문서에 없거나 코드로만 확인한 것들이다. 하나라도 어긋나면 Keycloak 대안으로 간다.
+
+- [ ] `max_age=0`으로 인가하면 실제로 다시 로그인하고, 새 ID token의 `auth_time`이 그 시각인가 (결정 3의 전제)
+- [ ] 카카오·네이버로 가입한 사용자의 ID token에 `email`이 오는가, 카카오 이메일 동의를 "필수"로 둘 수 있는가 (비즈 앱 전환 필요 여부)
+- [ ] Management API의 사용자 삭제가 소셜 연결·MFA 등록까지 지우는가 (`account.purge`에서 호출)
+- [ ] 우리 BFF의 토큰 갱신 주기(access token ≤ 15분)로 1만 MAU일 때 월 액세스 토큰 발급 수와 초과 비용
+- [ ] DPA·SOC 2 보고서 확인, 하위 처리자(Azure·Cloudflare)를 고지 문구에 반영
+
+## 결정 3 (제안): 재인증 시각은 API가 ID token으로 직접 확인해 보관한다
+
+결정 1 §4를 대체한다. 제공자가 access token에 `auth_time`을 넣는지에 기대지 않는다.
+
+1. 민감 엔드포인트가 `REAUTHENTICATION_REQUIRED`를 돌려주면 웹은 지금처럼 `max_age=0`(+ `prompt=login`)으로 다시 인가한다.
+2. 콜백에서 BFF는 받은 **ID token을 그대로** API의 `POST /me/reauthentications`에 보낸다(본문, access token으로 인증).
+3. API가 ID token을 검증한다: 같은 `OIDC_ISSUER`의 JWKS 서명, `aud` = 웹 클라이언트 ID, `sub`가 호출자와 같음, `auth_time`이 N분(초기 10분) 이내, 만료 전. 통과하면 사용자의 `reauthenticated_at`을 기록하고 감사 로그를 남긴다(토큰은 저장하지 않음).
+4. `requireRecentAuthentication`은 `reauthenticated_at`(그리고 있다면 access token의 `auth_time` 중 더 최근 것)이 N분 이내인지 본다.
+
+BFF는 아무것도 보증하지 않는다 — API가 IdP 서명을 직접 검증하므로 "API는 JWT만 믿는다"는 원칙이 유지된다. 새 테이블 대신 `users.reauthenticated_at` 열 하나면 되며(마이그레이션 추가), 로컬 mock IdP·Keycloak·Logto 모두 같은 경로를 탄다.
+
+## 결정 4 (제안): 신원은 `(iss, sub)`만, 이메일은 로그인 조건이 아니다
+
+결정 1 §7의 "`email_verified=false`면 로그인 거부"를 대체한다.
+
+- 사용자 식별·첫 로그인 프로비저닝은 지금처럼 `(iss, sub)`로만 한다. **이메일로 계정을 찾거나 합치지 않는다**(이메일 기반 계정 연결은 탈취 경로).
+- IdP가 준 이메일은 연락처 기본값일 뿐이다. 내보내기 머리글에 쓰는 이메일은 이미 사용자가 프로필(`user_profiles`)에 직접 넣는다.
+- `email_verified`는 거부 조건으로 쓰지 않는다. 대신 IdP 쪽에서 이메일·비밀번호 가입을 끄거나(소셜·패스키만) 이메일 인증을 필수로 둔다 — 이것은 제공자 설정으로 강제하고 확인 항목에 넣는다.
 
 ## 결과
 
 - 결정 1은 지금 착수 가능: `apps/api`에 resource server + `OidcWorkspaceResolver`, `apps/web`에 로그인 라우트·세션·헤더 주입, `infra/docker-compose.yml`에 로컬 Keycloak(realm import), `HeaderWorkspaceResolver`는 `local`·`test`에서만 유지.
 - 결정 2가 나면 바뀌는 것은 env(`OIDC_ISSUER`, `OIDC_CLIENT_ID`, client secret)와 소셜 커넥션 설정뿐이다.
+- 결정 3을 승인하면: `POST /me/reauthentications`(계약·구현), `users.reauthenticated_at` 마이그레이션, `requireRecentAuthentication` 변경, 웹 콜백에서 재인증 흐름일 때 ID token 전달. 승인 전까지 관리형 제공자로는 production을 띄울 수 없다(재인증 반복).
+- 결정 4를 승인하면: `OidcWorkspaceResolver`의 `email_verified` 거부 제거, threat-model·privacy-requirements의 해당 문구 갱신.
 - `docs/security/privacy-requirements.md`의 고지 문구에 제공자·리전을 채운다.
 
 ## 재검토 조건
 
-팀·조직(멀티 workspace) 도입, 클라우드 확정, 제공자 가격·리전 정책 변경, 이상 탐지 요구가 제공자 기능을 넘어설 때.
+팀·조직(멀티 workspace) 도입, 클라우드 확정, 제공자 가격·리전 정책 변경, 이상 탐지 요구가 제공자 기능을 넘어설 때. Logto가 access token의 `auth_time`·`acr`(현재 개발 플래그 뒤)을 정식 출시하면 결정 3을 단순화할 수 있다.
