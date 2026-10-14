@@ -2302,6 +2302,9 @@ paths:
       tags: [documents]
       operationId: downloadExport
       summary: Download a READY export (attachment)
+      description: |
+        Needs a recent login (401 REAUTHENTICATION_REQUIRED otherwise, checked before the export
+        is looked up), like the full data export download. The web saves the file from a blob.
       responses:
         "200":
           description: The rendered file

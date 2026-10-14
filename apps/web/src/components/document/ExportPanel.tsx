@@ -53,12 +53,24 @@ function DownloadButton({ item }: { item: Export }) {
   async function download() {
     setBusy(true);
     setError(null);
-    const { data, error: problem } = await api.GET("/exports/{id}/file", {
+    const {
+      data,
+      error: problem,
+      response,
+    } = await api.GET("/exports/{id}/file", {
       params: { path: { id: item.id } },
       parseAs: "blob",
     });
     setBusy(false);
     if (!data) {
+      // Taking a file needs a recent login: log in again and come back to this document.
+      if (problem?.code === "REAUTHENTICATION_REQUIRED" || response.status === 401) {
+        const back = encodeURIComponent(window.location.pathname);
+        // A full navigation: /auth/login is a route handler that redirects to the IdP.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        window.location.assign(`/auth/login?prompt=login&return=${back}`);
+        return;
+      }
       setError(problem?.detail ?? "내려받지 못했습니다.");
       return;
     }

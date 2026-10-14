@@ -4,6 +4,7 @@ import com.proofu.api.audit.AuditLog
 import com.proofu.api.document.DocumentBlockDto
 import com.proofu.api.document.DocumentRepository
 import com.proofu.api.document.DocumentVersionStore
+import com.proofu.api.identity.AuthProperties
 import com.proofu.api.identity.WorkspaceContext
 import com.proofu.api.job.JobService
 import com.proofu.api.job.JobTypes
@@ -19,6 +20,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.sql.ResultSet
+import java.time.Clock
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -31,6 +33,8 @@ class ExportService(
     private val jdbc: JdbcTemplate,
     private val ids: IdGenerator,
     private val audit: AuditLog,
+    private val auth: AuthProperties,
+    private val clock: Clock,
 ) {
     @Transactional
     fun start(
@@ -121,6 +125,10 @@ class ExportService(
         workspace: WorkspaceContext,
         id: UUID,
     ): ExportFile {
+        // A file carries the document and the contact header, so taking it off the API needs a
+        // recent login like the full data export (threat-model §링크 탈취). Checked before the
+        // lookup, so a stale session learns nothing about which exports exist.
+        workspace.requireRecentAuthentication(clock, auth.reauthMaxAge)
         val export = find(workspace, id)
         if (export.status != ExportStatus.READY) throw ExportNotReadyException(id, export.status.name)
         val objectKey =
