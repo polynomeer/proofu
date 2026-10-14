@@ -1,6 +1,6 @@
 # 0010 인증: OIDC 연동 형태와 제공자
 
-- 상태: **제안** (제공자 선택은 결정 대기, 연동 형태는 결정 제안)
+- 상태: **부분 승인** — 결정 3·4 승인(2026-10-14), 제공자(결정 2)는 결정 대기, 연동 형태(결정 1)는 제안
 - 일자: 2026-09-21 (개정 2026-10-14: 제공자 조사 결과, 결정 3·4 제안)
 
 ## 맥락
@@ -102,18 +102,20 @@
 - [ ] 우리 BFF의 토큰 갱신 주기(access token ≤ 15분)로 1만 MAU일 때 월 액세스 토큰 발급 수와 초과 비용
 - [ ] DPA·SOC 2 보고서 확인, 하위 처리자(Azure·Cloudflare)를 고지 문구에 반영
 
-## 결정 3 (제안): 재인증 시각은 API가 ID token으로 직접 확인해 보관한다
+## 결정 3 (승인 2026-10-14): 재인증 시각은 API가 ID token으로 직접 확인해 보관한다
 
 결정 1 §4를 대체한다. 제공자가 access token에 `auth_time`을 넣는지에 기대지 않는다.
 
 1. 민감 엔드포인트가 `REAUTHENTICATION_REQUIRED`를 돌려주면 웹은 지금처럼 `max_age=0`(+ `prompt=login`)으로 다시 인가한다.
-2. 콜백에서 BFF는 받은 **ID token을 그대로** API의 `POST /me/reauthentications`에 보낸다(본문, access token으로 인증).
+2. 콜백에서 BFF는 받은 **ID token을 그대로** API의 `POST /me/reauthentications`에 보낸다(본문, access token으로 인증). 재인증 흐름인지 구분하지 않고 로그인할 때마다 보낸다 — 모든 로그인이 새 인증이고, API가 거절해도(조용한 SSO처럼 `auth_time`이 오래된 경우) 로그인 자체는 막지 않는다.
 3. API가 ID token을 검증한다: 같은 `OIDC_ISSUER`의 JWKS 서명, `aud` = 웹 클라이언트 ID, `sub`가 호출자와 같음, `auth_time`이 N분(초기 10분) 이내, 만료 전. 통과하면 사용자의 `reauthenticated_at`을 기록하고 감사 로그를 남긴다(토큰은 저장하지 않음).
 4. `requireRecentAuthentication`은 `reauthenticated_at`(그리고 있다면 access token의 `auth_time` 중 더 최근 것)이 N분 이내인지 본다.
 
+재인증 기록은 **사용자 단위**다: 새로 로그인한 뒤 허용 시간(10분) 동안은 같은 사용자의 다른 유효한 access token도 민감 작업을 통과한다. access token이 짧고(≤ 15분) 브라우저가 아닌 BFF 세션에만 있어 받아들이며, 세션 단위로 묶어야 하면 `sid` 클레임을 쓰는 제공자로 좁힌다.
+
 BFF는 아무것도 보증하지 않는다 — API가 IdP 서명을 직접 검증하므로 "API는 JWT만 믿는다"는 원칙이 유지된다. 새 테이블 대신 `users.reauthenticated_at` 열 하나면 되며(마이그레이션 추가), 로컬 mock IdP·Keycloak·Logto 모두 같은 경로를 탄다.
 
-## 결정 4 (제안): 신원은 `(iss, sub)`만, 이메일은 로그인 조건이 아니다
+## 결정 4 (승인 2026-10-14): 신원은 `(iss, sub)`만, 이메일은 로그인 조건이 아니다
 
 결정 1 §7의 "`email_verified=false`면 로그인 거부"를 대체한다.
 
