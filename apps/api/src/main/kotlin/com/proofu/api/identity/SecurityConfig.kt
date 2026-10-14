@@ -11,14 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.AuthenticationException
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator
-import org.springframework.security.oauth2.core.OAuth2Error
-import org.springframework.security.oauth2.core.OAuth2TokenValidator
-import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult
-import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.JwtValidators
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import tools.jackson.databind.ObjectMapper
@@ -56,24 +49,8 @@ class SecurityConfig(
         return http.build()
     }
 
-    /** JWKS is fetched lazily on the first token, so the API starts even if the IdP is momentarily down. */
-    private fun jwtDecoder(): JwtDecoder {
-        val decoder = NimbusJwtDecoder.withJwkSetUri(checkNotNull(auth.jwksUri)).build()
-        val audience =
-            OAuth2TokenValidator<Jwt> { jwt ->
-                if (jwt.audience?.contains(auth.audience) == true) {
-                    OAuth2TokenValidatorResult.success()
-                } else {
-                    OAuth2TokenValidatorResult.failure(
-                        OAuth2Error("invalid_token", "aud must contain ${auth.audience}", null),
-                    )
-                }
-            }
-        decoder.setJwtValidator(
-            DelegatingOAuth2TokenValidator(JwtValidators.createDefaultWithIssuer(checkNotNull(auth.issuer)), audience),
-        )
-        return decoder
-    }
+    private fun jwtDecoder(): JwtDecoder =
+        oidcJwtDecoder(checkNotNull(auth.issuer), checkNotNull(auth.jwksUri), auth.audience)
 
     /** 401 as Problem Details with `code`, like every other API error. */
     private fun problemEntryPoint() =

@@ -14,7 +14,12 @@ data class AuthProperties(
     val jwksUri: String? = null,
     /** The token's `aud` must contain this; the IdP client is configured to add it. */
     val audience: String = "proofu-api",
-    /** Sensitive actions require an `auth_time` newer than this. */
+    /**
+     * The web BFF's client id. An ID token sent to `POST /me/reauthentications` must be issued to
+     * it (`aud`), ADR-0010 결정 3.
+     */
+    val clientId: String? = null,
+    /** Sensitive actions require a login newer than this. */
     val reauthMaxAge: Duration = Duration.ofMinutes(10),
 ) {
     val oidc: Boolean get() = mode == "oidc"
@@ -22,5 +27,6 @@ data class AuthProperties(
     fun requireOidcConfigured() {
         check(!issuer.isNullOrBlank()) { "proofu.auth.mode=oidc needs OIDC_ISSUER" }
         check(!jwksUri.isNullOrBlank()) { "proofu.auth.mode=oidc needs OIDC_JWKS_URI" }
+        check(!clientId.isNullOrBlank()) { "proofu.auth.mode=oidc needs OIDC_CLIENT_ID" }
     }
 }

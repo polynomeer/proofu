@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.client.RestTestClient
         "ANTHROPIC_API_KEY=test-key-never-used",
         "OIDC_ISSUER=https://idp.example/realms/proofu",
         "OIDC_JWKS_URI=https://idp.example/realms/proofu/protocol/openid-connect/certs",
+        "OIDC_CLIENT_ID=proofu-web",
     ],
 )
 @Import(TestcontainersConfiguration::class)

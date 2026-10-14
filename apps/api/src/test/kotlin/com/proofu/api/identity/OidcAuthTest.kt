@@ -28,12 +28,14 @@ import java.util.UUID
 class OidcAuthTest {
     companion object {
         private val idp = FakeIdp()
+        private const val WEB_CLIENT = "proofu-web"
 
         @JvmStatic
         @DynamicPropertySource
         fun idp(registry: DynamicPropertyRegistry) {
             registry.add("proofu.auth.issuer") { idp.issuer }
             registry.add("proofu.auth.jwks-uri") { idp.jwksUri }
+            registry.add("proofu.auth.client-id") { WEB_CLIENT }
         }
 
         @JvmStatic
@@ -115,10 +117,11 @@ class OidcAuthTest {
     }
 
     @Test
-    fun `tokens with the wrong audience or issuer, or an unverified email, are refused`() {
+    fun `tokens with the wrong audience or issuer are refused, an unverified email is not`() {
         get("/api/v1/career-entries", idp.token(audience = "someone-else")).expectStatus().isUnauthorized
         get("/api/v1/career-entries", idp.token(issuer = "https://evil.example")).expectStatus().isUnauthorized
-        get("/api/v1/career-entries", idp.token(emailVerified = false)).expectStatus().isUnauthorized
+        // ADR-0010 결정 4: identity is (iss, sub); Kakao and Naver send no usable email_verified.
+        get("/api/v1/career-entries", idp.token(emailVerified = false)).expectStatus().isOk
         get(
             "/api/v1/career-entries",
             idp.token(expiresAt = Instant.now().minusSeconds(60)),
@@ -179,6 +182,54 @@ class OidcAuthTest {
             .jsonPath("$.code")
             .isEqualTo("REAUTHENTICATION_REQUIRED")
         save("""{"fullName":"홍길동","email":"b@example.com","version":1}""", Instant.now()).expectStatus().isOk
+    }
+
+    @Test
+    fun `an ID token the API verifies itself records a fresh login for access tokens without auth_time`() {
+        // ADR-0010 결정 3: hosted IdPs put no auth_time in access tokens.
+        val subject = UUID.randomUUID().toString()
+        val access = idp.token(subject, authTime = null)
+
+        fun deleteAccount() =
+            client
+                .delete()
+                .uri("/api/v1/me")
+                .header("Authorization", "Bearer $access")
+                .exchange()
+
+        fun reauthenticate(idToken: String) =
+            client
+                .post()
+                .uri("/api/v1/me/reauthentications")
+                .header("Authorization", "Bearer $access")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"idToken":"$idToken"}""")
+                .exchange()
+
+        get("/api/v1/career-entries", access).expectStatus().isOk
+        deleteAccount().expectStatus().isUnauthorized
+
+        // Each of these proves nothing: issued to the API rather than the web client, someone
+        // else's login, a login too old, no auth_time at all, or not a token.
+        val stale = Instant.now().minus(Duration.ofHours(1))
+        for (bad in listOf(
+            idp.token(subject),
+            idp.token(UUID.randomUUID().toString(), audience = WEB_CLIENT),
+            idp.token(subject, audience = WEB_CLIENT, authTime = stale),
+            idp.token(subject, audience = WEB_CLIENT, authTime = null),
+            "not-a-jwt",
+        )) {
+            reauthenticate(bad)
+                .expectStatus()
+                .isUnauthorized
+                .expectBody()
+                .jsonPath("$.code")
+                .isEqualTo("REAUTHENTICATION_REQUIRED")
+        }
+        deleteAccount().expectStatus().isUnauthorized
+
+        reauthenticate(idp.token(subject, audience = WEB_CLIENT)).expectStatus().isNoContent
+        deleteAccount().expectStatus().isAccepted
     }
 
     @Test
