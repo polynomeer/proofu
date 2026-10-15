@@ -26,6 +26,15 @@ jobs:
       - name: Enum values agree across domain, database and contract
         run: python3 scripts/check-enums.py
 
+  observability:
+    name: Alert rules match the SLIs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # promtool checks the rules and runs their unit tests; a threshold that drifts from
+      # docs/operations/monitoring.md fails here (scripts/alerts.sh).
+      - run: scripts/alerts.sh
+
   jvm:
     name: Domain, API and worker
     runs-on: ubuntu-latest

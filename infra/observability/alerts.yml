@@ -1,0 +1,122 @@
+# The SLIs of docs/operations/monitoring.md as Prometheus rules. Every threshold here is the
+# one written down there; change one and change both (scripts/alerts.sh tests these rules).
+#
+# Assumptions about the scrape config:
+#   - api and worker are scraped with job="proofu-api" and job="proofu-worker"
+#   - the management port is internal (docs/operations/deployment.md)
+groups:
+  - name: proofu-api
+    rules:
+      # SLI: API 성공률 30일 99.5% 이상 → 5분 오류율 5% 초과
+      # `outcome` is Micrometer's own classification; actuator and the metrics scrape are
+      # excluded so a monitoring hiccup cannot page for the application.
+      - alert: ProofuApiErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="proofu-api",outcome="SERVER_ERROR",uri!~"/actuator.*"}[5m]))
+            /
+          clamp_min(sum(rate(http_server_requests_seconds_count{job="proofu-api",uri!~"/actuator.*"}[5m])), 0.001)
+            > 0.05
+        for: 5m
+        labels: { severity: page, sli: api-success-rate }
+        annotations:
+          summary: API 5xx 비율이 5분 동안 5%를 넘었습니다
+          description: 30일 99.5% 목표를 지키려면 즉시 봐야 합니다 (docs/operations/monitoring.md).
+
+      # SLI: 일반 API 지연 p95 500ms 이하 → 15분 p95 1초 초과
+      # "1초보다 느린 요청이 5%를 넘는다" = p95가 1초를 넘는다. 그래서 히스토그램 전체가 아니라
+      # le=1.0 버킷 하나로 충분하다(api `application.yml`의 distribution.slo). 앞의 조건은
+      # 트래픽이 있을 때만 보겠다는 뜻 — 아무도 쓰지 않는 배포는 느린 것이 아니다.
+      - alert: ProofuApiLatency
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="proofu-api",uri!~"/actuator.*"}[15m])) > 0.01
+          )
+          and
+          (
+            sum(rate(http_server_requests_seconds_bucket{job="proofu-api",le="1.0",uri!~"/actuator.*"}[15m]))
+              /
+            sum(rate(http_server_requests_seconds_count{job="proofu-api",uri!~"/actuator.*"}[15m]))
+              < 0.95
+          )
+        for: 15m
+        labels: { severity: ticket, sli: api-latency }
+        annotations:
+          summary: 1초보다 느린 API 요청이 5%를 넘었습니다 (p95 > 1초)
+          description: 목표는 p95 500ms입니다. 어느 엔드포인트인지는 uri별 le 버킷 비율로 확인합니다.
+
+  - name: proofu-jobs
+    rules:
+      # SLI: 생성 완료율 24시간 98% 이상 → 1시간 실패율 10% 초과
+      # "retrying" is not a failure yet (ADR-0004): only the last attempt counts.
+      - alert: ProofuJobFailureRate
+        expr: |
+          sum(rate(proofu_jobs_completed_total{outcome="failed"}[1h]))
+            /
+          clamp_min(sum(rate(proofu_jobs_completed_total[1h])), 0.0001)
+            > 0.1
+        for: 10m
+        labels: { severity: page, sli: job-success-rate }
+        annotations:
+          summary: 잡 실패율이 1시간 동안 10%를 넘었습니다
+          description: 어떤 type이 실패하는지는 proofu_jobs_completed_total{outcome="failed"}로 봅니다.
+
+      # SLI: 내보내기 완료율 24시간 99% 이상 → 한글 검증 또는 변환 실패 급증
+      - alert: ProofuExportFailures
+        expr: |
+          sum(rate(proofu_jobs_completed_total{type="document.export",outcome="failed"}[1h])) * 3600 > 3
+        for: 10m
+        labels: { severity: page, sli: export-success-rate }
+        annotations:
+          summary: 문서 내보내기 실패가 한 시간에 3건을 넘었습니다
+          description: 렌더 후 텍스트 재추출 검증(ExportValidator) 실패가 흔한 원인입니다 (ADR-0009).
+
+      # SLI: 큐 지연 p95 2분 이하 → 가장 오래된 작업 10분 초과
+      - alert: ProofuQueueBacklog
+        expr: max(proofu_jobs_oldest_age_seconds) > 600
+        for: 5m
+        labels: { severity: page, sli: queue-latency }
+        annotations:
+          summary: 큐에서 10분 넘게 기다리는 작업이 있습니다
+          description: 워커가 떠 있는지, 핸들러가 리스(기본 15분)를 넘기고 있는지 확인합니다.
+
+      # Not an SLI but the thing that breaks them: a worker that dies mid-job. 0이 정상입니다.
+      - alert: ProofuJobsRecovered
+        expr: sum(increase(proofu_jobs_recovered_total[1h])) > 0
+        for: 5m
+        labels: { severity: ticket, sli: queue-latency }
+        annotations:
+          summary: 리스가 만료되어 회수된 잡이 있습니다
+          description: 워커가 재시작 중이거나 핸들러가 리스보다 오래 걸립니다 (StuckJobReaper).
+
+  - name: proofu-ai
+    rules:
+      # SLI: AI 제공자 계정 운영자 조치 0건 → OPERATOR_ACTION 1건 즉시
+      # The marker is also logged; this is the same event as a metric so Prometheus alone pages.
+      - alert: ProofuAiOperatorAction
+        expr: increase(proofu_ai_operator_actions_total[10m]) > 0
+        labels: { severity: page, sli: ai-provider-account }
+        annotations:
+          summary: "AI 제공자 문제로 사람이 조치해야 합니다: {{ $labels.code }}"
+          description: AI_BILLING_BLOCKED는 크레딧, AI_CONFIGURATION_ERROR는 키·권한·요청 형식입니다. 재시도하지 않습니다.
+
+      # SLI: 비용 워크스페이스 예산 내 → 일간 예상치 120% 초과
+      # The budget is scraped too (proofu_ai_daily_budget_usd), so this rule stays right when
+      # AI_DAILY_BUDGET_USD changes.
+      - alert: ProofuAiDailyBudget
+        expr: |
+          sum(increase(proofu_ai_cost_usd_total[1d])) > 1.2 * max(proofu_ai_daily_budget_usd)
+        for: 10m
+        labels: { severity: ticket, sli: ai-cost }
+        annotations:
+          summary: 하루 AI 비용이 배포 예산의 120%를 넘었습니다
+          description: 워크스페이스별 내역은 ai_executions로 질의합니다 (메트릭에는 workspace 라벨이 없습니다).
+
+  - name: proofu-platform
+    rules:
+      - alert: ProofuInstanceDown
+        expr: up{job=~"proofu-.*"} == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "{{ $labels.job }} 인스턴스를 긁지 못합니다"
+          description: 스크랩 실패가 2분 이상 이어집니다. 배포 중이 아니라면 인스턴스를 확인합니다.

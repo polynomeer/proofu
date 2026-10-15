@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Every gate a change has to pass, in one command, each step logged separately.
 #
-#   scripts/verify.sh            # format:check, pnpm check, gradlew check, enum agreement
+#   scripts/verify.sh            # format, enums, alert rules, pnpm check, gradlew check
 #   scripts/verify.sh --fix      # run the formatters first (prettier, ktlintFormat)
 #   scripts/verify.sh --e2e      # also the Playwright journeys (slow, builds the whole stack)
 #   scripts/verify.sh --fail-fast
@@ -76,6 +76,8 @@ fi
 step "gates"
 run format-check pnpm format:check
 run enums python3 scripts/check-enums.py
+# The SLIs in docs/operations/monitoring.md are only as real as the rules that enforce them.
+run alerts scripts/alerts.sh
 run pnpm-check pnpm check
 # Testcontainers needs a docker daemon; ./gradlew check does not start one itself.
 ensure_docker >/dev/null 2>&1 || warn "no docker daemon: the JVM tests that use Testcontainers will fail"
