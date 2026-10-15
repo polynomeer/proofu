@@ -36,6 +36,8 @@ hs_err_pid*
 
 # Script output (scripts/dev.sh, scripts/verify.sh, scripts/db.sh)
 logs/
+# Database dumps hold every workspace's rows: never in git (scripts/backup.sh)
+backups/
 
 # Generated
 packages/contracts/generated/
