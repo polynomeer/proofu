@@ -38,6 +38,8 @@ data class AiCall(
         fun defaultEffort(purpose: AiPurpose): Effort =
             when (purpose) {
                 AiPurpose.REQUIREMENT_EXTRACTION, AiPurpose.REVIEW_HYPOTHESIS -> Effort.LOW
+                // A resume is read once and the user checks every row against the quote.
+                AiPurpose.CAREER_IMPORT -> Effort.LOW
                 AiPurpose.MATCH_EXPLANATION, AiPurpose.SENTENCE_REVISION -> Effort.MEDIUM
                 AiPurpose.DOCUMENT_GENERATION -> Effort.HIGH
             }
