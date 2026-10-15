@@ -120,6 +120,7 @@ const SCREENS = [
   ["설정", "/settings"],
   ["도움말", "/help"],
   ["검색 결과", "/search?q=엔지니어"],
+  ["iOS 로그인 이어받기", "/auth/ios/callback"],
   // The not-found state is a screen too, and it is the one users hit by accident.
   ["없는 리소스", "/projects/01a0c000-0000-7000-8000-000000000000"],
 ] as const;
