@@ -50,7 +50,7 @@ class SecurityConfig(
     }
 
     private fun jwtDecoder(): JwtDecoder =
-        oidcJwtDecoder(checkNotNull(auth.issuer), checkNotNull(auth.jwksUri), auth.audience)
+        oidcJwtDecoder(checkNotNull(auth.issuer), checkNotNull(auth.jwksUri), setOf(auth.audience))
 
     /** 401 as Problem Details with `code`, like every other API error. */
     private fun problemEntryPoint() =

@@ -29,13 +29,14 @@ class OidcAuthTest {
     companion object {
         private val idp = FakeIdp()
         private const val WEB_CLIENT = "proofu-web"
+        private const val IOS_CLIENT = "proofu-ios"
 
         @JvmStatic
         @DynamicPropertySource
         fun idp(registry: DynamicPropertyRegistry) {
             registry.add("proofu.auth.issuer") { idp.issuer }
             registry.add("proofu.auth.jwks-uri") { idp.jwksUri }
-            registry.add("proofu.auth.client-id") { WEB_CLIENT }
+            registry.add("proofu.auth.client-ids") { "$WEB_CLIENT, $IOS_CLIENT" }
         }
 
         @JvmStatic
@@ -209,11 +210,12 @@ class OidcAuthTest {
         get("/api/v1/career-entries", access).expectStatus().isOk
         deleteAccount().expectStatus().isUnauthorized
 
-        // Each of these proves nothing: issued to the API rather than the web client, someone
-        // else's login, a login too old, no auth_time at all, or not a token.
+        // Each of these proves nothing: issued to the API or to a client that is not ours rather
+        // than to us, someone else's login, a login too old, no auth_time at all, or not a token.
         val stale = Instant.now().minus(Duration.ofHours(1))
         for (bad in listOf(
             idp.token(subject),
+            idp.token(subject, audience = "someone-elses-app"),
             idp.token(UUID.randomUUID().toString(), audience = WEB_CLIENT),
             idp.token(subject, audience = WEB_CLIENT, authTime = stale),
             idp.token(subject, audience = WEB_CLIENT, authTime = null),
@@ -230,6 +232,30 @@ class OidcAuthTest {
 
         reauthenticate(idp.token(subject, audience = WEB_CLIENT)).expectStatus().isNoContent
         deleteAccount().expectStatus().isAccepted
+    }
+
+    @Test
+    fun `the iOS app proves a login with its own ID token the same way`() {
+        // ADR-0011 §4: the app is a separate public client, so its ID tokens carry its own aud.
+        val subject = UUID.randomUUID().toString()
+        val access = idp.token(subject, authTime = null)
+        get("/api/v1/career-entries", access).expectStatus().isOk
+        client
+            .post()
+            .uri("/api/v1/me/reauthentications")
+            .header("Authorization", "Bearer $access")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"idToken":"${idp.token(subject, audience = IOS_CLIENT)}"}""")
+            .exchange()
+            .expectStatus()
+            .isNoContent
+        client
+            .delete()
+            .uri("/api/v1/me")
+            .header("Authorization", "Bearer $access")
+            .exchange()
+            .expectStatus()
+            .isAccepted
     }
 
     @Test

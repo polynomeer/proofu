@@ -11,8 +11,9 @@ proofu:
     mode: oidc
     issuer: ${OIDC_ISSUER}
     jwks-uri: ${OIDC_JWKS_URI}
-    # The web BFF client: ID tokens for step-up must be issued to it (ADR-0010 결정 3).
-    client-id: ${OIDC_CLIENT_ID}
+    # Our clients, comma separated (web BFF, then iOS per ADR-0011): ID tokens for step-up must be
+    # issued to one of them (ADR-0010 결정 3). The web image takes only its own id.
+    client-ids: ${OIDC_CLIENT_ID}
   ai:
     # The fake provider is refused under this profile (AiGatewayConfig); a key is mandatory.
     provider: ${AI_PROVIDER:anthropic}
