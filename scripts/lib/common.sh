@@ -200,6 +200,52 @@ wait_http() {
   return 1
 }
 
+# --- database -----------------------------------------------------------------------------------
+
+# Works out once how to reach Postgres: the compose container by default, or a libpq
+# environment (PGHOST/PGUSER/…) when one is set, so the same scripts can be pointed at a
+# deployment. Sets DB_MODE and DB_DESCRIPTION.
+db_describe() {
+  if [ -n "${PGHOST:-}" ]; then
+    DB_MODE=env
+    DB_DESCRIPTION="${PGUSER:-$USER}@$PGHOST:${PGPORT:-5432}/${PGDATABASE:-proofu} (from the PG* environment)"
+  else
+    docker_running || die "the docker daemon is down and no PGHOST is set"
+    compose ps --status running --services 2>/dev/null | grep -qx postgres ||
+      die "the postgres container is not running (scripts/dev.sh starts it), and no PGHOST is set"
+    DB_MODE=compose
+    DB_PORT="$(compose port postgres 5432 2>/dev/null | sed 's/.*://')"
+    DB_DESCRIPTION="the compose postgres on port ${DB_PORT:-?} (database ${PGDATABASE:-proofu})"
+  fi
+}
+
+# Runs a libpq client (psql, pg_dump, pg_restore, createdb, dropdb) against that database, with
+# stdin and stdout passed through. Connection details go through PG* so one wrapper fits every
+# tool's own argument order.
+db_exec() {
+  if [ "${DB_MODE:-}" = env ]; then
+    command -v "$1" >/dev/null 2>&1 || die "$1 is not installed; it is needed to reach PGHOST directly"
+    "$@"
+  else
+    compose exec -T \
+      -e PGUSER="${PGUSER:-proofu}" \
+      -e PGPASSWORD="${PGPASSWORD:-proofu}" \
+      -e PGDATABASE="${PGDATABASE:-proofu}" \
+      postgres "$@"
+  fi
+}
+
+db_query() { db_exec psql -At -q -c "$1"; }
+
+# "table|rows" for every table in the public schema, counted exactly (pg_stat_user_tables is an
+# estimate, and an estimate cannot verify a restore).
+db_table_counts() {
+  db_exec psql -At -q -F '|' <<'SQL'
+select format('select %L::text, count(*)::bigint from %I', tablename, tablename)
+from pg_tables where schemaname = 'public' order by tablename \gexec
+SQL
+}
+
 # --- failure reports ---------------------------------------------------------------------------
 
 # fail_report <log dir> <headline> [log files…] — one file per failure holding the headline, the
