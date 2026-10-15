@@ -56,6 +56,13 @@ management:
   info:
     build:
       enabled: true
+  metrics:
+    distribution:
+      # Two buckets, not a histogram: the latency SLI target (500ms) and the alert threshold
+      # (1s). That is all infra/observability/alerts.yml needs, and a full histogram would add
+      # ~70 series per URI template (docs/operations/monitoring.md).
+      slo:
+        http.server.requests: 500ms,1s
 
 springdoc:
   api-docs:
