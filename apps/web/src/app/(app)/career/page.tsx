@@ -33,6 +33,9 @@ export default async function CareerPage({ searchParams }: { searchParams: Searc
   );
   const headerActions = (
     <div className="flex gap-2">
+      <ButtonLink variant="secondary" href="/career/import">
+        이력서 가져오기
+      </ButtonLink>
       <ButtonLink variant="secondary" href="/career/skills">
         기술 관리
       </ButtonLink>

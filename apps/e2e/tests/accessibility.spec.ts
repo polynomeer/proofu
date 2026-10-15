@@ -112,6 +112,7 @@ const SCREENS = [
   ["대시보드", "/"],
   ["커리어 목록", "/career"],
   ["기술", "/career/skills"],
+  ["이력서 가져오기", "/career/import"],
   ["Evidence 목록", "/evidence"],
   ["역량", "/evidence/capabilities"],
   ["채용공고 목록", "/jobs"],
