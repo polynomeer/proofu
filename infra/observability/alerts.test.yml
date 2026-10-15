@@ -1,0 +1,189 @@
+# Unit tests for alerts.yml (promtool test rules, run by scripts/alerts.sh and CI).
+#
+# Each case states what the SLI in docs/operations/monitoring.md means in series: what must
+# page, and — just as important — what must not, because an alert that fires on an idle
+# deployment gets muted and then it protects nothing.
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  # --- API ---------------------------------------------------------------------------------
+  - interval: 1m
+    name: a tenth of API requests failing pages; a fiftieth does not
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="proofu-api",outcome="SERVER_ERROR",uri="/api/v1/career-entries"}'
+        values: "0+1x20"
+      - series: 'http_server_requests_seconds_count{job="proofu-api",outcome="SUCCESS",uri="/api/v1/career-entries"}'
+        values: "0+9x20"
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: ProofuApiErrorRate
+        exp_alerts:
+          - exp_labels: { severity: page, sli: api-success-rate }
+            exp_annotations:
+              summary: API 5xx 비율이 5분 동안 5%를 넘었습니다
+              description: 30일 99.5% 목표를 지키려면 즉시 봐야 합니다 (docs/operations/monitoring.md).
+
+  - interval: 1m
+    name: an idle api does not page, and actuator traffic is not application traffic
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="proofu-api",outcome="SERVER_ERROR",uri="/actuator/prometheus"}'
+        values: "0+1x20"
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: ProofuApiErrorRate
+        exp_alerts: []
+
+  - interval: 1m
+    name: one request in ten slower than a second pages after fifteen minutes
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="proofu-api",uri="/api/v1/search"}'
+        values: "0+10x60"
+      - series: 'http_server_requests_seconds_bucket{job="proofu-api",le="1.0",uri="/api/v1/search"}'
+        values: "0+9x60"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ProofuApiLatency
+        exp_alerts: []
+      - eval_time: 35m
+        alertname: ProofuApiLatency
+        exp_alerts:
+          - exp_labels: { severity: ticket, sli: api-latency }
+            exp_annotations:
+              summary: 1초보다 느린 API 요청이 5%를 넘었습니다 (p95 > 1초)
+              description: 목표는 p95 500ms입니다. 어느 엔드포인트인지는 uri별 le 버킷 비율로 확인합니다.
+
+  - interval: 1m
+    name: a deployment nobody is using is not a slow deployment
+    input_series:
+      # Counters that do not move: without the traffic guard this is 0/0 and pages forever.
+      - series: 'http_server_requests_seconds_count{job="proofu-api",uri="/api/v1/search"}'
+        values: "5x60"
+      - series: 'http_server_requests_seconds_bucket{job="proofu-api",le="1.0",uri="/api/v1/search"}'
+        values: "4x60"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: ProofuApiLatency
+        exp_alerts: []
+
+  # --- jobs --------------------------------------------------------------------------------
+  - interval: 1m
+    name: one job in five failing pages, and a queue nobody has used does not
+    input_series:
+      - series: 'proofu_jobs_completed_total{job="proofu-worker",type="document.generation",outcome="failed"}'
+        values: "0+1x30"
+      - series: 'proofu_jobs_completed_total{job="proofu-worker",type="document.generation",outcome="succeeded"}'
+        values: "0+4x30"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProofuJobFailureRate
+        exp_alerts:
+          - exp_labels: { severity: page, sli: job-success-rate }
+            exp_annotations:
+              summary: 잡 실패율이 1시간 동안 10%를 넘었습니다
+              description: 어떤 type이 실패하는지는 proofu_jobs_completed_total{outcome="failed"}로 봅니다.
+
+  - interval: 1m
+    name: a deployment where no job has run yet must not page on a division by nothing
+    input_series:
+      - series: 'proofu_jobs_queued{job="proofu-worker"}'
+        values: "0x30"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProofuJobFailureRate
+        exp_alerts: []
+
+  - interval: 1m
+    name: a job waiting more than ten minutes pages
+    input_series:
+      - series: 'proofu_jobs_oldest_age_seconds{job="proofu-worker"}'
+        values: "0+60x20"
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: ProofuQueueBacklog
+        exp_alerts: []
+      - eval_time: 18m
+        alertname: ProofuQueueBacklog
+        exp_alerts:
+          - exp_labels: { severity: page, sli: queue-latency }
+            exp_annotations:
+              summary: 큐에서 10분 넘게 기다리는 작업이 있습니다
+              description: 워커가 떠 있는지, 핸들러가 리스(기본 15분)를 넘기고 있는지 확인합니다.
+
+  - interval: 1m
+    name: exports failing more than three times an hour page
+    input_series:
+      - series: 'proofu_jobs_completed_total{job="proofu-worker",type="document.export",outcome="failed"}'
+        values: "0+1x30"
+      - series: 'proofu_jobs_completed_total{job="proofu-worker",type="document.export",outcome="succeeded"}'
+        values: "0+1x30"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProofuExportFailures
+        exp_alerts:
+          - exp_labels: { severity: page, sli: export-success-rate }
+            exp_annotations:
+              summary: 문서 내보내기 실패가 한 시간에 3건을 넘었습니다
+              description: 렌더 후 텍스트 재추출 검증(ExportValidator) 실패가 흔한 원인입니다 (ADR-0009).
+
+  # --- AI ----------------------------------------------------------------------------------
+  - interval: 1m
+    name: a single operator action pages, with the code in the message
+    input_series:
+      - series: 'proofu_ai_operator_actions_total{job="proofu-worker",code="AI_BILLING_BLOCKED"}'
+        values: "0 0 1 1 1 1 1 1 1 1 1 1"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ProofuAiOperatorAction
+        exp_alerts:
+          - exp_labels:
+              {
+                severity: page,
+                sli: ai-provider-account,
+                code: AI_BILLING_BLOCKED,
+                job: proofu-worker,
+              }
+            exp_annotations:
+              summary: "AI 제공자 문제로 사람이 조치해야 합니다: AI_BILLING_BLOCKED"
+              description: AI_BILLING_BLOCKED는 크레딧, AI_CONFIGURATION_ERROR는 키·권한·요청 형식입니다. 재시도하지 않습니다.
+
+  # One sample a minute: at 10m apart a gauge goes stale between evaluations (5m lookback) and
+  # the `for` never completes, which looks like a working alert and is not one.
+  - interval: 1m
+    name: a day of spend past 120% of the budget warns, and spend inside it does not
+    input_series:
+      - series: 'proofu_ai_cost_usd_total{job="proofu-worker",purpose="DOCUMENT_GENERATION"}'
+        values: "0+0.05x1440"
+      - series: 'proofu_ai_daily_budget_usd{job="proofu-worker"}'
+        values: "50x1440"
+    alert_rule_test:
+      - eval_time: 10h
+        alertname: ProofuAiDailyBudget
+        exp_alerts: []
+      - eval_time: 24h
+        alertname: ProofuAiDailyBudget
+        exp_alerts:
+          - exp_labels: { severity: ticket, sli: ai-cost }
+            exp_annotations:
+              summary: 하루 AI 비용이 배포 예산의 120%를 넘었습니다
+              description: 워크스페이스별 내역은 ai_executions로 질의합니다 (메트릭에는 workspace 라벨이 없습니다).
+
+  # --- platform ----------------------------------------------------------------------------
+  - interval: 1m
+    name: an instance that cannot be scraped pages after two minutes
+    input_series:
+      - series: 'up{job="proofu-worker",instance="worker-1"}'
+        values: "1 1 0 0 0 0 0"
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ProofuInstanceDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: ProofuInstanceDown
+        exp_alerts:
+          - exp_labels: { severity: page, job: proofu-worker, instance: worker-1 }
+            exp_annotations:
+              summary: proofu-worker 인스턴스를 긁지 못합니다
+              description: 스크랩 실패가 2분 이상 이어집니다. 배포 중이 아니라면 인스턴스를 확인합니다.
