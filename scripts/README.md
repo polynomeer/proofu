@@ -10,6 +10,8 @@
 | `doctor.sh`        | 이 머신이 스택과 테스트를 돌릴 수 있는지 점검(읽기 전용)                                          |
 | `verify.sh`        | 커밋 전 관문 전부(format·enum·pnpm check·gradlew check, 선택적으로 e2e)를 단계별 로그와 함께      |
 | `db.sh`            | 로컬 Postgres 접속·덤프·초기화. 포트가 바뀌어도 컨테이너에서 실제 포트를 읽는다                   |
+| `backup.sh`        | 검증 가능한 데이터베이스 백업(덤프 + sha256 + 표별 행 수 매니페스트)                              |
+| `restore.sh`       | 백업을 **새 데이터베이스**로 되살리고 행 수·참조·api 기동까지 확인 (`--rehearse --boot`)          |
 | `e2e.sh`           | Playwright 여정 테스트(실제 스택 + mock IdP + 가짜 AI)                                            |
 | `check-enums.py`   | enum 값이 domain Kotlin ↔ `migrations/` CHECK ↔ `openapi.yaml` 세 곳에서 일치하는지 (CI)          |
 | `contract-diff.sh` | 선언한 계약과 실행 중인 api의 오퍼레이션 목록 비교 (CI)                                           |
