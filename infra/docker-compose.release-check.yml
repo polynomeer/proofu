@@ -1,0 +1,77 @@
+# The release images under the profile a deployment uses, so that `scripts/images.sh --check`
+# proves what a deploy would hit: production profile (header auth off, seeds off, springdoc off,
+# the fake AI provider refused), a schema migrated by the api image, and a worker that starts
+# only after it. Everything here is throwaway — no volume, `down -v` leaves nothing behind.
+#
+# Never a deployment template: the secrets below are placeholders and the IdP is a mock.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: proofu
+      POSTGRES_USER: proofu
+      POSTGRES_PASSWORD: proofu
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proofu -d proofu"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # The same mock IdP the browser tests use, reachable from the other containers by name. The
+  # api needs an issuer to start under the production profile; nothing here signs a user in.
+  idp:
+    image: node:22-alpine
+    command: ["node", "/srv/mock-idp.mjs"]
+    environment:
+      MOCK_IDP_PORT: "8181"
+      MOCK_IDP_ISSUER: http://idp:8181/realms/mock
+    volumes:
+      - ../apps/web/scripts/mock-idp.mjs:/srv/mock-idp.mjs:ro
+
+  api:
+    image: ${CHECK_PREFIX:-proofu}-api:${CHECK_TAG:-dev}
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      DATABASE_URL: jdbc:postgresql://postgres:5432/proofu
+      DATABASE_USERNAME: proofu
+      DATABASE_PASSWORD: proofu
+      OIDC_ISSUER: http://idp:8181/realms/mock
+      OIDC_JWKS_URI: http://idp:8181/realms/mock/protocol/openid-connect/certs
+      OIDC_CLIENT_ID: proofu-web
+      # The production profile refuses to start on the fake provider and refuses an empty key.
+      # No model is called in this check, so a placeholder is enough — never a real key.
+      AI_PROVIDER: anthropic
+      ANTHROPIC_API_KEY: release-check-placeholder-not-a-key
+    ports:
+      - "${CHECK_API_PORT:-58080}:8080"
+
+  worker:
+    image: ${CHECK_PREFIX:-proofu}-worker:${CHECK_TAG:-dev}
+    depends_on:
+      api: { condition: service_healthy }
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      DATABASE_URL: jdbc:postgresql://postgres:5432/proofu
+      DATABASE_USERNAME: proofu
+      DATABASE_PASSWORD: proofu
+      AI_PROVIDER: anthropic
+      ANTHROPIC_API_KEY: release-check-placeholder-not-a-key
+    ports:
+      - "${CHECK_WORKER_PORT:-58090}:8090"
+
+  web:
+    image: ${CHECK_PREFIX:-proofu}-web:${CHECK_TAG:-dev}
+    depends_on:
+      api: { condition: service_healthy }
+    environment:
+      AUTH_MODE: oidc
+      API_ORIGIN: http://api:8080
+      APP_ORIGIN: http://localhost:${CHECK_WEB_PORT:-53000}
+      OIDC_ISSUER: http://idp:8181/realms/mock
+      OIDC_CLIENT_ID: proofu-web
+      OIDC_CLIENT_SECRET: release-check-placeholder
+      SESSION_SECRET: release-check-session-secret-0123456789abcdef
+    ports:
+      - "${CHECK_WEB_PORT:-53000}:3000"

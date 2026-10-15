@@ -1,0 +1,24 @@
+# Everything the images build from is listed in infra/docker/*.Dockerfile. Keeping build output
+# and secrets out of the context makes `docker build` fast and stops a stale .next or a local
+# .env from being baked into an image.
+.git
+.github
+.gradle
+.idea
+.turbo
+**/node_modules
+**/build
+!apps/*/build/libs
+**/.next
+**/dist
+**/coverage
+**/*.tsbuildinfo
+logs
+docs
+fixtures
+apps/e2e
+infra/keycloak
+.env
+.env.*
+!.env.example
+**/.DS_Store
