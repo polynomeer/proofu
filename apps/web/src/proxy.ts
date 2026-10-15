@@ -30,6 +30,8 @@ export function proxy(request: NextRequest) {
   if (
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/") ||
+    // Apple fetches the app-site association without cookies (ADR-0011 Universal Links).
+    pathname.startsWith("/.well-known/") ||
     pathname.startsWith("/_next/")
   ) {
     return proceed();

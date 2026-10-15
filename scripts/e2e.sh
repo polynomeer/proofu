@@ -14,6 +14,8 @@ export OIDC_JWKS_URI=http://localhost:8181/realms/mock/protocol/openid-connect/c
 export OIDC_CLIENT_ID=proofu-web OIDC_CLIENT_SECRET=e2e-secret
 export SESSION_SECRET=e2e-session-secret-not-for-production-0123456789
 export APP_ORIGIN=http://localhost:3111 API_ORIGIN=http://localhost:8080
+# A made-up Team ID: the association file is served only when an app is configured (ADR-0011).
+export IOS_APP_IDS=ABCDE12345.dev.proofu.e2e
 
 pids=()
 cleanup() {
