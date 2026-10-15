@@ -38,6 +38,7 @@ COLUMN_ENUM = {
     ("capabilities", "category"): ("kotlin", "CapabilityCategory"),
     ("capabilities", "self_assessed_level"): ("kotlin", "ProficiencyLevel"),
     ("capabilities", "evidence_based_level"): ("kotlin", "ProficiencyLevel"),
+    ("career_logs", "sensitivity"): ("kotlin", "Sensitivity"),
     ("claims", "claim_type"): ("kotlin", "ClaimType"),
     ("claims", "sensitivity"): ("kotlin", "Sensitivity"),
     ("claim_sources", "source_type"): ("kotlin", "ClaimSourceType"),
