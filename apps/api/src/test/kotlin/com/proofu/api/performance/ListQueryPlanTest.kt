@@ -91,6 +91,30 @@ class ListQueryPlanTest {
     }
 
     @Test
+    fun `career log list walks an index`() {
+        assertIndexed(
+            "career_logs",
+            """
+            select * from career_logs where workspace_id = '$WORKSPACE' and deleted_at is null
+            order by occurred_at desc, id desc limit 20
+            """.trimIndent(),
+        )
+    }
+
+    /** The screen's one filter: the logs still waiting to become an achievement (V19). */
+    @Test
+    fun `the unpromoted log list walks its partial index`() {
+        assertIndexed(
+            "career_logs",
+            """
+            select * from career_logs where workspace_id = '$WORKSPACE' and deleted_at is null
+              and promoted_at is null
+            order by occurred_at desc, id desc limit 20
+            """.trimIndent(),
+        )
+    }
+
+    @Test
     fun `capability list walks an index`() {
         assertIndexed(
             "capabilities",
@@ -256,6 +280,13 @@ class ListQueryPlanTest {
             )
             jdbc.execute(
                 """
+                insert into career_logs (workspace_id, occurred_at, body)
+                select '$WORKSPACE', date '2000-01-01' + g, 'log ' || g
+                from generate_series(1, $ROWS) g
+                """.trimIndent(),
+            )
+            jdbc.execute(
+                """
                 insert into job_postings (workspace_id, company, role_title, updated_at)
                 select '$WORKSPACE', 'company ' || g, 'role ' || g, now() - (g || ' minutes')::interval
                 from generate_series(1, $ROWS) g
@@ -307,6 +338,7 @@ class ListQueryPlanTest {
                 "skills" to "canonical_name, category, created_at",
                 "evidence" to "type, title, source, uri, captured_at",
                 "capabilities" to "name, definition, category, created_at",
+                "career_logs" to "occurred_at, body",
             ).forEach { (table, columns) ->
                 jdbc.execute(
                     """
@@ -321,6 +353,7 @@ class ListQueryPlanTest {
                 "evidence",
                 "skills",
                 "capabilities",
+                "career_logs",
                 "job_postings",
                 "applications",
                 "documents",
