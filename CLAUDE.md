@@ -25,6 +25,7 @@
 scripts/dev.sh                                      # 스택 전체(도커·api·worker·mock IdP·웹). Ctrl-C면 정리
 scripts/doctor.sh                                   # 이 머신이 돌릴 수 있는지 점검
 scripts/verify.sh                                   # 커밋 전 관문 전부 (--e2e까지)
+scripts/images.sh --check                           # 릴리스 이미지 3개 빌드 + production 기동 검사
 docker compose -f infra/docker-compose.yml up -d   # PostgreSQL 16 (localhost:5432, proofu/proofu)
 pnpm install && pnpm check                          # web + contracts: lint, typecheck, test
 pnpm dev --filter web                               # http://localhost:3000 (/api/* → :8080 rewrite)
@@ -66,6 +67,7 @@ JDK 21 필요. `gradle` 직접 실행 시 JDK 25가 잡히면 실패하므로 �
 - **프로필**: `user_profiles`(사용자당 1개, `GET/PUT /me/profile`, 워크스페이스 소유자 기준). 내보내기 파일의 머리글(`RenderableContact`)에만 렌더링하고 문서 버전에는 저장하지 않으며 **AI 컨텍스트·로그에 절대 넣지 않는다**. 저장마다 `version`이 오르고 `exports.profile_version`과 비교해 이전 머리글로 만든 파일은 재사용하지 않는다.
 - **문장 개선**: `document.revision` 잡 → `SentenceReviser`(블록 텍스트 + 인용 Claim 문장만 컨텍스트). 제안은 `RevisionGuard`(원문·Claim에 없는 수치, 빈 문장, 3배 초과 길이 → 거부)를 통과해야 하고 **저장하지 않는다** — 잡 결과로만 돌려주고 사용자가 편집기에서 비교·적용 후 버전을 저장한다(참조·certainty는 편집 규칙 그대로).
 - **AI 오류 구분**: 제공자 오류는 `ModelProviderException.failure`(`ProviderFailure`)로 분류되고, worker는 `AiFailures.guard`로만 잡 오류 코드로 바꾼다(`AI_BILLING_BLOCKED`·`AI_CONFIGURATION_ERROR`는 재시도 없음 + `OPERATOR_ACTION` 로그, `AI_RATE_LIMITED`·`AI_PROVIDER_UNAVAILABLE`은 재시도). 새 AI 잡 핸들러는 직접 catch하지 말고 `AiFailures.guard`를 쓴다.
+- **배포 산출물 (ADR-0012)**: 배포 단위는 컨테이너 이미지 3개(`infra/docker/{api,worker,web}.Dockerfile`)뿐이고 비밀·설정은 전부 env다. JVM 이미지는 미리 만든 jar를 레이어로 포장하고(이미지 안에서 Gradle을 돌리지 않는다) 웹은 `output: "standalone"`으로 컨테이너 안에서 빌드한다. 퍼블리시(`release.yml`, 태그·수동)는 `scripts/images.sh --check`가 **production 프로필로 기동 + `scripts/smoke.sh`** 를 통과해야 진행되고 SBOM·provenance·cosign 서명을 붙인다. 배포 순서는 api(마이그레이션) → worker → web. 새 env를 요구하게 만들면 `application-production.yml`·compose 검사 파일·`docs/operations/deployment.md`를 같이 고친다.
 - **관측성**: api는 `RequestLogFilter`가 요청마다 한 줄(메서드·URI 템플릿·status·durationMs·requestId)을 남기고 `X-Request-Id`를 받아/만들어 응답 헤더·MDC·`audit_events.request_id`에 같은 값을 쓴다. 메트릭은 api·worker `/actuator/prometheus`(worker 기본 포트 8090)이고 잡 지표는 `JobMetrics`(`proofu.jobs.*`). **workspace id는 메트릭 라벨로 쓰지 않는다**(고카디널리티); 로그에 본문·프롬프트·토큰 금지. 스크랩 경로는 인증 없이 열려 있으므로 `MANAGEMENT_SERVER_PORT`로 내부망에만 노출한다(`docs/operations/monitoring.md`).
 - **비동기 AI 작업**: 핸들러는 `WORKER_JOB_LEASE`(기본 15분) 안에 끝나야 한다 — 넘기면 `StuckJobReaper`가 워커가 죽은 것으로 보고 `LEASE_EXPIRED`로 재큐/실패시킨다(모델 호출은 4분 타임아웃 × 재시도 1회로 묶여 있다). api는 `JobService.enqueue`로 `jobs`에 넣고 202 + jobId, 웹은 `GET /jobs/{id}`를 폴링, worker의 `JobHandler`(`type` 상수는 api `JobTypes`와 동일)가 실행. AI 결과는 항상 DRAFT/미승인 상태로 저장하고 사용자가 같은 UI에서 승인한다 (예: `posting.analysis` → `Requirement.extracted`).
 - **웹 보안 헤더**: 응답마다 nonce 기반 CSP(`proxy.ts`가 nonce를 만들고 `src/lib/security-headers.ts`가 정책을 만든다). 인라인 스크립트는 허용하지 않으므로 `<script>`를 직접 넣지 말고, 외부 출처를 추가하려면 정책 먼저 고친다(폰트 CDN·IdP 오리진이 현재 예외). 정적 헤더(`nosniff`, `DENY`, Referrer-Policy, Permissions-Policy, HSTS)는 `next.config.ts`에서 모든 경로에 붙인다.

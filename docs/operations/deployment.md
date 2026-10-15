@@ -7,10 +7,43 @@ review: 릴리스 및 장애 후
 # 배포
 
 - local, test, staging, production을 분리하고 production 데이터와 비밀을 공유하지 않습니다.
-- 빌드는 동일한 불변 artifact를 환경별 설정만 바꾸어 승격합니다.
+- 빌드는 동일한 불변 artifact를 환경별 설정만 바꾸어 승격합니다. 그 artifact는 **컨테이너 이미지 3개**(api·worker·web)입니다 ([ADR-0012](../architecture/adr/0012-release-artifacts.md)).
 - DB 마이그레이션은 애플리케이션 호환 버전이 배포된 뒤 실행하며 장시간 잠금을 사전 검사합니다.
 - 기능 플래그로 AI 모델, 템플릿, 새 매칭 알고리즘을 단계적으로 노출합니다.
-- 배포 후 로그인, 경력 조회, 공고 분석 접수, 문서 내보내기 smoke test를 실행합니다.
+- 배포 후 `scripts/smoke.sh`(자격 증명 없이 보이는 것)와 로그인·경력 조회·공고 분석 접수·문서 내보내기 수동 확인을 실행합니다.
+
+## 산출물
+
+| 이미지                          | 내용                               | 포트 | 헬스체크                     |
+| ------------------------------- | ---------------------------------- | ---- | ---------------------------- |
+| `ghcr.io/<owner>/<repo>/api`    | REST API, Flyway 마이그레이션 수행 | 8080 | `/actuator/health/readiness` |
+| `ghcr.io/<owner>/<repo>/worker` | 잡 폴러 (AI·렌더·보존 정리)        | 8090 | `/actuator/health/readiness` |
+| `ghcr.io/<owner>/<repo>/web`    | Next.js BFF                        | 3000 | `/auth/signed-out`           |
+
+세 이미지 모두 **비root**로 돌고 설정은 환경 변수로만 받습니다. 이미지 안에는 비밀이 없습니다.
+
+```bash
+scripts/images.sh                 # 로컬 빌드 (proofu-api|worker|web:dev)
+scripts/images.sh --check         # 빌드 + production 프로필로 기동시켜 smoke까지
+scripts/smoke.sh --web … --api …  # 배포 후 점검
+```
+
+`.github/workflows/release.yml`이 태그(`v*`)나 수동 실행에 반응해 **기동 검사를 통과한 뒤에만** GHCR에 올리고, SBOM·provenance를 붙이고 cosign(keyless)으로 서명합니다. 검증:
+
+```bash
+cosign verify --certificate-identity-regexp '.*/release\.yml@.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ghcr.io/<owner>/<repo>/api@sha256:<digest>
+```
+
+## 배포 순서
+
+1. **api 먼저.** 기동 시 Flyway가 마이그레이션을 적용합니다. readiness가 올라올 때까지 기다립니다.
+2. **worker는 그 다음.** 먼저 뜨면 아직 없는 스키마를 폴링합니다. 오케스트레이터의 선행 조건으로 묶습니다.
+3. **web은 api readiness 이후.** 첫 화면이 api를 호출합니다.
+4. 배포 후 `scripts/smoke.sh`를 돌립니다. 로그인·공고 분석·내보내기처럼 자격 증명이 필요한 흐름은 `scripts/e2e.sh`(staging 대상)로 확인합니다.
+
+되돌릴 때는 이전 태그의 이미지를 같은 순서로 다시 올립니다. 마이그레이션은 되돌리지 않습니다(아래 롤백 원칙).
 
 ## production 프로필 체크리스트
 

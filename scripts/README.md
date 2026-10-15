@@ -34,3 +34,15 @@ scripts/dev.sh --keep             # Ctrl-C 후에도 계속 띄워 둠 (정리�
   멈춥니다. 이미 떠 있던 Postgres는 건드리지 않습니다.
 - **로그**: 프로세스별 `logs/dev/<이름>.log`, 실패하면 설정·로그 꼬리·에러 줄을 모은
   `logs/dev/failure-<시각>.log`를 쓰고 경로를 출력합니다. `logs/`는 git에 올리지 않습니다.
+
+## images.sh / smoke.sh
+
+```bash
+scripts/images.sh --check                     # 빌드 → production 프로필 기동 → smoke
+scripts/images.sh --tag v0.2.0 --only web
+scripts/smoke.sh --web https://… --api https://…
+```
+
+`--check`는 일회용 Postgres와 mock IdP 컨테이너로 세 이미지를 `SPRING_PROFILES_ACTIVE=production`으로 띄웁니다 —
+그 프로필은 설정이 빠지면 기동에 실패하므로 **뜬다는 것 자체가 검사**입니다. 모델 키는 자리표시자이고 호출은 하지 않습니다.
+`scripts/smoke.sh`는 로그인이 필요한 흐름은 보지 않습니다(그건 `scripts/e2e.sh`의 몫).
