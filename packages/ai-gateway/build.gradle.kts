@@ -23,6 +23,9 @@ dependencies {
     implementation(libs.jackson.module.kotlin)
     // JdbcTemplate for the budget guard and execution recorder; no Spring Boot, no context scanning.
     implementation(libs.spring.jdbc)
+    // MeterRegistry appears in MeteredAiExecutionRecorder's constructor, so consumers need it.
+    // micrometer-core is a plain library: no Spring context, no auto-configuration.
+    api(libs.micrometer.core)
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj)
