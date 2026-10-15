@@ -26,6 +26,10 @@ review: 도메인 변경 시
 
 `EMPLOYMENT`, `EDUCATION`, `TRAINING`, `AWARD`, `CERTIFICATION`, `OTHER`
 
+## 이력서에서 가져오기
+
+기존 이력서를 붙여넣으면 `career.import` 잡이 **경력 기록 후보**를 돌려줍니다(F13, [ai/ai-feature-spec.md](../ai/ai-feature-spec.md)). 후보는 어디에도 저장되지 않고, 사용자가 원문 인용과 대조해 고른 것만 평소의 생성 경로(`POST /career-entries`)로 들어옵니다 — 그래서 가져온 기록과 손으로 넣은 기록은 저장된 뒤에 구분되지 않습니다. `visibility`는 다른 새 기록과 같이 워크스페이스 기본값을 따릅니다.
+
 ## 공개 범위 (Visibility)
 
 `PRIVATE` (비공개), `SELECTIVE` (선택 공개), `PUBLIC` (전체 공개). 새 기록의 기본값은 워크스페이스 설정 `defaultVisibility`(초기값 `PRIVATE`)를 따르며, 요청이 값을 주면 그것이 우선합니다.
