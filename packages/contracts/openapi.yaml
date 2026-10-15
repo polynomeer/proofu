@@ -313,6 +313,28 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /career-imports:
+    post:
+      tags: [career, async]
+      operationId: importCareer
+      summary: Propose career entries from a pasted resume (asynchronous)
+      description: |
+        Starts a `career.import` job. The proposals come back in the job's `result`
+        (`CareerImportResult`) and are **not stored**: the caller creates the ones the user
+        picked with `POST /career-entries`. Contact details (email, phone, long digit runs) are
+        removed from the text before it reaches the model.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerImportRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /career-entries:
     get:
       tags: [career]
@@ -2621,6 +2643,68 @@ components:
       description: Five-level scale; self-assessment and evidence-based judgement stay separate
       type: string
       enum: [NOVICE, PRACTITIONER, INDEPENDENT, ADVANCED, STRATEGIC]
+    CareerImportRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 10
+          maxLength: 50000
+          description: The resume as plain text, as pasted by the user.
+
+    CareerImportProposal:
+      type: object
+      required: [type, title, startDate, quote]
+      description: |
+        A career entry the model proposes. Nothing here exists yet — the client sends the ones
+        the user picked to `POST /career-entries`, where the usual validation applies.
+      properties:
+        type:
+          $ref: "#/components/schemas/CareerEntryType"
+        title:
+          type: string
+        organization:
+          type: [string, "null"]
+        location:
+          type: [string, "null"]
+        description:
+          type: [string, "null"]
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: [string, "null"]
+          format: date
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        quote:
+          type: string
+          description: Copied verbatim from the resume, so the user can compare.
+        warning:
+          type: [string, "null"]
+          description: Set when the quote could not be found in the text as given.
+
+    CareerImportResult:
+      type: object
+      required: [proposals, dropped, redacted]
+      description: The `result` of a succeeded `career.import` job.
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: "#/components/schemas/CareerImportProposal"
+        dropped:
+          type: array
+          description: Items the model returned that the server refused, with the reason.
+          items:
+            type: string
+        redacted:
+          type: integer
+          description: How many contact details were removed before the model saw the text.
+
     CareerEntryType:
       type: string
       enum: [EMPLOYMENT, EDUCATION, TRAINING, AWARD, CERTIFICATION, OTHER]
@@ -4193,7 +4277,14 @@ components:
         errorCode:
           type: string
         result:
-          description: Job-type specific result, present when SUCCEEDED
+          description: |
+            Job-type specific result, present when SUCCEEDED. Most types describe their result
+            in the description of the operation that starts them; the ones with a schema are
+            listed here so a client can narrow the union.
+          anyOf:
+            - $ref: "#/components/schemas/CareerImportResult"
+            - type: object
+              additionalProperties: true
         createdAt:
           type: string
           format: date-time

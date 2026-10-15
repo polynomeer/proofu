@@ -6,6 +6,7 @@ import com.proofu.ai.AiGatewayProperties
 import com.proofu.ai.AiUsageSource
 import com.proofu.ai.MeteredAiExecutionRecorder
 import com.proofu.ai.documents.DocumentDrafter
+import com.proofu.ai.extraction.CareerImportExtractor
 import com.proofu.ai.extraction.RequirementExtractor
 import com.proofu.ai.jdbc.JdbcAiExecutionRecorder
 import com.proofu.ai.jdbc.JdbcAiUsageSource
@@ -65,6 +66,9 @@ class AiGatewayConfig {
         val recorder = MeteredAiExecutionRecorder(JdbcAiExecutionRecorder(jdbc), registry)
         return AiGatewayFactory.create(settings, usage, recorder, clock, ids, client)
     }
+
+    @Bean
+    fun careerImportExtractor(gateway: AiGateway) = CareerImportExtractor(gateway)
 
     @Bean
     fun matchExplainer(gateway: AiGateway) = MatchExplainer(gateway)

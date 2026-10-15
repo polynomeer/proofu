@@ -56,4 +56,5 @@ object JobTypes {
     const val DOCUMENT_REVISION = "document.revision"
     const val ACCOUNT_PURGE = "account.purge"
     const val ACCOUNT_EXPORT = "account.export"
+    const val CAREER_IMPORT = "career.import"
 }
