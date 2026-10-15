@@ -4,6 +4,7 @@ import com.proofu.ai.AiGateway
 import com.proofu.ai.AiGatewayFactory
 import com.proofu.ai.AiGatewayProperties
 import com.proofu.ai.AiUsageSource
+import com.proofu.ai.MeteredAiExecutionRecorder
 import com.proofu.ai.documents.DocumentDrafter
 import com.proofu.ai.extraction.RequirementExtractor
 import com.proofu.ai.jdbc.JdbcAiExecutionRecorder
@@ -12,6 +13,8 @@ import com.proofu.ai.matching.MatchExplainer
 import com.proofu.ai.model.ModelClient
 import com.proofu.ai.revision.SentenceReviser
 import com.proofu.domain.common.IdGenerator
+import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -44,6 +47,7 @@ class AiGatewayConfig {
         /** Tests register a scripted ModelClient bean; production relies on the settings. */
         clientOverride: ObjectProvider<ModelClient>,
         environment: Environment,
+        registry: MeterRegistry,
     ): AiGateway {
         val settings =
             properties.toSettings().requireRealProviderWhen(environment.acceptsProfiles(Profiles.of("production")))
@@ -51,7 +55,15 @@ class AiGatewayConfig {
             log.warn("AI provider is 'fake': model calls return placeholder JSON and never leave this process")
         }
         val client = clientOverride.ifAvailable ?: AiGatewayFactory.clientFor(settings)
-        return AiGatewayFactory.create(settings, usage, JdbcAiExecutionRecorder(jdbc), clock, ids, client)
+        // The alert for the daily budget compares spend against this number, so the number has
+        // to be scrapable too (docs/operations/monitoring.md §비용).
+        Gauge
+            .builder("proofu.ai.daily.budget.usd") { settings.deploymentDailyBudgetUsd }
+            .description("Deployment-wide daily AI budget in USD")
+            .strongReference(true)
+            .register(registry)
+        val recorder = MeteredAiExecutionRecorder(JdbcAiExecutionRecorder(jdbc), registry)
+        return AiGatewayFactory.create(settings, usage, recorder, clock, ids, client)
     }
 
     @Bean

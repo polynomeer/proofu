@@ -17,6 +17,17 @@ object AiFailures {
     private val log = LoggerFactory.getLogger(AiFailures::class.java)
     val OPERATOR_ACTION = MarkerFactory.getMarker("OPERATOR_ACTION")
 
+    /**
+     * The job error codes that mean a person has to do something — the alert in
+     * docs/operations/monitoring.md fires on one occurrence. Derived from the provider failures
+     * themselves so a new failure kind cannot quietly miss the alert.
+     */
+    val OPERATOR_ACTION_CODES: Set<String> =
+        ProviderFailure.entries
+            .filter { it.operatorAction }
+            .map(::codeFor)
+            .toSet()
+
     /** Runs [block] and turns any AI failure into a [JobFailure]; other exceptions pass through. */
     inline fun <T> guard(block: () -> T): T =
         try {

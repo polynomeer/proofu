@@ -27,6 +27,15 @@ class AiFailuresTest {
     }
 
     @Test
+    fun `the codes that need a person are the ones the provider says need a person`() {
+        // Derived, not listed by hand: a new ProviderFailure that needs an operator joins the
+        // set on its own, and the alert in docs/operations/monitoring.md keeps covering it.
+        assertThat(AiFailures.OPERATOR_ACTION_CODES)
+            .containsExactlyInAnyOrder("AI_BILLING_BLOCKED", "AI_CONFIGURATION_ERROR")
+        assertThat(AiFailures.OPERATOR_ACTION_CODES).doesNotContain("AI_RATE_LIMITED", "AI_PROVIDER_UNAVAILABLE")
+    }
+
+    @Test
     fun `guard converts gateway failures and lets others through`() {
         assertThatThrownBy {
             AiFailures.guard { throw AiBudgetExceeded(BudgetBlock.WORKSPACE_MONTHLY_BUDGET, AiUsageSnapshot(0, 0, 0)) }

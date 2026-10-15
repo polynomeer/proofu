@@ -40,6 +40,15 @@ class JobMetrics(
         registry.counter("proofu.jobs.completed", "type", type, "outcome", outcome).increment()
     }
 
+    /**
+     * A failure nobody can retry their way out of: credit, credentials or a malformed request
+     * (`AiFailures.OPERATOR_ACTION_CODES`). One of these is worth waking someone, so it gets a
+     * series of its own instead of hiding inside the failure rate.
+     */
+    fun operatorAction(code: String) {
+        registry.counter("proofu.ai.operator.actions", "code", code).increment()
+    }
+
     /** A job whose worker vanished: back in the queue, or failed when its attempts ran out. */
     fun recovered(
         type: String,

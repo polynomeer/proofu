@@ -48,6 +48,7 @@ class JobPoller(
             log.warn("Job {} ({}) failed with {}: {}", job.id, job.type, e.errorCode, e.message)
             repository.fail(job, e.errorCode, e.retryable)
             metrics.completed(job.type, outcomeOf(job, e.retryable), System.nanoTime() - startedAt)
+            if (e.errorCode in AiFailures.OPERATOR_ACTION_CODES) metrics.operatorAction(e.errorCode)
         } catch (
             @Suppress("TooGenericExceptionCaught") e: Exception,
         ) {
