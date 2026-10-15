@@ -144,31 +144,38 @@ class DashboardService(
     ): List<TimelineItem> =
         jdbc.query(
             """
-            with entry_claims as (
-              select ce.id as entry_id, c.id as claim_id
+            -- The timeline shows a handful of entries, so the claim and evidence counts are
+            -- computed for those and not for the workspace. Scoping this to `shown` is what
+            -- keeps the dashboard off the whole table (it cost 17s at 2000 entries).
+            with shown as (
+              select ce.id, ce.type, ce.title, ce.organization, ce.start_date, ce.end_date
               from career_entries ce
+              where ce.workspace_id = ? and ce.deleted_at is null
+                and (cast(? as varchar) is null or ce.type = cast(? as varchar))
+              order by ce.start_date desc, ce.id desc
+              limit $TIMELINE_LIMIT
+            ),
+            entry_claims as (
+              select s.id as entry_id, c.id as claim_id
+              from shown s
               join claim_sources cs on
-                   (cs.source_type = 'CAREER_ENTRY' and cs.source_id = ce.id)
+                   (cs.source_type = 'CAREER_ENTRY' and cs.source_id = s.id)
                 or (cs.source_type = 'PROJECT' and cs.source_id in
-                      (select id from projects where career_entry_id = ce.id and deleted_at is null))
+                      (select id from projects where career_entry_id = s.id and deleted_at is null))
                 or (cs.source_type = 'ACHIEVEMENT' and cs.source_id in
                       (select a.id from achievements a join projects p on p.id = a.project_id
-                       where p.career_entry_id = ce.id and a.deleted_at is null and p.deleted_at is null))
+                       where p.career_entry_id = s.id and a.deleted_at is null and p.deleted_at is null))
               join claims c on c.id = cs.claim_id and c.deleted_at is null
-              where ce.workspace_id = ?
             )
-            select ce.id, ce.type, ce.title, ce.organization, ce.start_date, ce.end_date,
-                   (select count(*) from projects p where p.career_entry_id = ce.id and p.deleted_at is null) as project_count,
-                   (select count(distinct claim_id) from entry_claims ec where ec.entry_id = ce.id) as claim_count,
+            select s.id, s.type, s.title, s.organization, s.start_date, s.end_date,
+                   (select count(*) from projects p where p.career_entry_id = s.id and p.deleted_at is null) as project_count,
+                   (select count(distinct claim_id) from entry_claims ec where ec.entry_id = s.id) as claim_count,
                    (select count(distinct x.evidence_id) from entry_claims ec
                       join claim_evidence x on x.claim_id = ec.claim_id
                       join evidence e on e.id = x.evidence_id and e.deleted_at is null
-                    where ec.entry_id = ce.id) as evidence_count
-            from career_entries ce
-            where ce.workspace_id = ? and ce.deleted_at is null
-              and (cast(? as varchar) is null or ce.type = cast(? as varchar))
-            order by ce.start_date desc, ce.id desc
-            limit $TIMELINE_LIMIT
+                    where ec.entry_id = s.id) as evidence_count
+            from shown s
+            order by s.start_date desc, s.id desc
             """.trimIndent(),
             { rs, _ ->
                 TimelineItem(
@@ -183,7 +190,6 @@ class DashboardService(
                     evidenceCount = rs.getInt("evidence_count"),
                 )
             },
-            ws,
             ws,
             type?.name,
             type?.name,

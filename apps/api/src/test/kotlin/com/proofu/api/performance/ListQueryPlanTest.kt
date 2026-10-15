@@ -134,6 +134,50 @@ class ListQueryPlanTest {
         )
     }
 
+    /**
+     * The dashboard is the first screen of every session and the only one whose query counts
+     * things. Counting them for the whole workspace instead of the five rows it shows cost 17
+     * seconds at 2000 career entries — and an index on claim_sources did not help, because the
+     * work was proportional to the workspace either way (V18 is for the other readers).
+     */
+    @Test
+    fun `dashboard timeline counts only the entries it shows`() {
+        // Not assertIndexed: this one legitimately sorts its five rows. What has to hold is
+        // that the work does not grow with the workspace.
+        val plan =
+            plan(
+                """
+                with shown as (
+                  select ce.id, ce.start_date from career_entries ce
+                  where ce.workspace_id = '$WORKSPACE' and ce.deleted_at is null
+                  order by ce.start_date desc, ce.id desc limit 5
+                ),
+                entry_claims as (
+                  select s.id as entry_id, c.id as claim_id
+                  from shown s
+                  join claim_sources cs on
+                       (cs.source_type = 'CAREER_ENTRY' and cs.source_id = s.id)
+                    or (cs.source_type = 'PROJECT' and cs.source_id in
+                          (select id from projects where career_entry_id = s.id and deleted_at is null))
+                    or (cs.source_type = 'ACHIEVEMENT' and cs.source_id in
+                          (select a.id from achievements a join projects p on p.id = a.project_id
+                           where p.career_entry_id = s.id and a.deleted_at is null and p.deleted_at is null))
+                  join claims c on c.id = cs.claim_id and c.deleted_at is null
+                )
+                select s.id,
+                       (select count(*) from projects p where p.career_entry_id = s.id and p.deleted_at is null),
+                       (select count(distinct claim_id) from entry_claims ec where ec.entry_id = s.id)
+                from shown s order by s.start_date desc, s.id desc
+                """.trimIndent(),
+            )
+        assertThat(rowsScanned(plan)).describedAs("rows read for the dashboard timeline:\n%s", plan).isLessThan(500)
+        // Only the tables this workspace actually fills: a sequential scan of an empty table is
+        // free and the planner is right to choose it.
+        listOf("career_entries", "projects").forEach { table ->
+            assertThat(plan).describedAs("plan:\n%s", plan).doesNotContain("Seq Scan on $table")
+        }
+    }
+
     companion object {
         /** One workspace with more rows than any early user will have, so plans are realistic. */
         private const val ROWS = 20_000
@@ -179,10 +223,13 @@ class ListQueryPlanTest {
             )
             jdbc.execute(
                 """
+                -- One project per career entry. Hanging every project off the same entry would
+                -- make projects.career_entry_id useless to the planner and the plans below
+                -- would be measuring the seeding, not the schema.
                 insert into projects (workspace_id, career_entry_id, name, role, summary, start_date)
-                select '$WORKSPACE', (select id from career_entries where workspace_id = '$WORKSPACE' limit 1),
-                       'project ' || g, 'role', 'summary', date '2000-01-01' + g
-                from generate_series(1, $ROWS) g
+                select '$WORKSPACE', ce.id, 'project ' || ce.ord, 'role', 'summary', date '2000-01-01' + ce.ord::int
+                from (select id, row_number() over (order by id) as ord
+                      from career_entries where workspace_id = '$WORKSPACE') ce
                 """.trimIndent(),
             )
             jdbc.execute(
