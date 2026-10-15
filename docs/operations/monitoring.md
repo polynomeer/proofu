@@ -15,29 +15,38 @@ review: 릴리스 및 장애 후
 
 ## SLI와 알림
 
-| SLI             | 목표                 | 경고                            |
-| --------------- | -------------------- | ------------------------------- |
-| API 성공률      | 30일 99.5% 이상      | 5분 오류율 5% 초과              |
-| 일반 API 지연   | p95 500ms 이하       | 15분 p95 1초 초과               |
-| 생성 완료율     | 24시간 98% 이상      | 1시간 실패율 10% 초과           |
-| 큐 지연         | p95 2분 이하         | 가장 오래된 작업 10분 초과      |
-| 내보내기 완료율 | 24시간 99% 이상      | 한글 검증 또는 변환 실패 급증   |
-| 비용            | 워크스페이스 예산 내 | 일간 예상치 120% 초과           |
-| AI 제공자 계정  | 운영자 조치 0건      | `OPERATOR_ACTION` 로그 1건 즉시 |
+| SLI             | 목표                 | 경고                            | 규칙                     |
+| --------------- | -------------------- | ------------------------------- | ------------------------ |
+| API 성공률      | 30일 99.5% 이상      | 5분 오류율 5% 초과              | `ProofuApiErrorRate`     |
+| 일반 API 지연   | p95 500ms 이하       | 15분 p95 1초 초과               | `ProofuApiLatency`       |
+| 생성 완료율     | 24시간 98% 이상      | 1시간 실패율 10% 초과           | `ProofuJobFailureRate`   |
+| 큐 지연         | p95 2분 이하         | 가장 오래된 작업 10분 초과      | `ProofuQueueBacklog`     |
+| 내보내기 완료율 | 24시간 99% 이상      | 한글 검증 또는 변환 실패 급증   | `ProofuExportFailures`   |
+| 비용            | 워크스페이스 예산 내 | 일간 예상치 120% 초과           | `ProofuAiDailyBudget`    |
+| AI 제공자 계정  | 운영자 조치 0건      | `OPERATOR_ACTION` 로그 1건 즉시 | `ProofuAiOperatorAction` |
+
+규칙은 `infra/observability/alerts.yml`에 있고 `scripts/alerts.sh`가 `promtool`로 문법과 **단위 테스트**(`alerts.test.yml`)를 돌린 뒤, 규칙이 질의하는 메트릭을 **코드가 실제로 등록하는지**까지 확인합니다(`scripts/check-metrics.py`, CI 포함) — 이름이 어긋난 규칙은 문법은 멀쩡한 채 영원히 아무것도 평가하지 않기 때문입니다. 이 표의 숫자를 바꾸면 규칙과 그 테스트도 같이 바꿉니다 — 둘이 어긋나면 표는 지켜지지 않습니다. 그 밖에 SLI는 아니지만 SLI를 깨는 것 둘을 더 봅니다: 리스 만료로 회수된 잡(`ProofuJobsRecovered`, 정상값 0)과 긁히지 않는 인스턴스(`ProofuInstanceDown`).
+
+규칙은 api를 `job="proofu-api"`, worker를 `job="proofu-worker"`로 긁는다고 가정합니다.
 
 `OPERATOR_ACTION` 마커(api `ApiExceptionHandler`, worker `AiFailures`)는 사람이 고쳐야 하는 제공자 오류 — 크레딧 부족(`AI_BILLING_BLOCKED`), 키·권한·요청 형식(`AI_CONFIGURATION_ERROR`) — 에만 붙습니다. 속도 제한(`AI_RATE_LIMITED`)과 장애(`AI_PROVIDER_UNAVAILABLE`)는 잡이 재시도하므로 실패율 SLI로만 봅니다.
 
 ## 구현 (현재 코드)
 
-| 신호      | 어디서                                                                                                                                                                                                                              |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 요청 로그 | api `RequestLogFilter` — 요청마다 한 줄: `method`, URI 템플릿, `status`, `durationMs`, `requestId`. 본문·쿼리 문자열·토큰은 남기지 않는다                                                                                           |
-| requestId | 클라이언트가 `X-Request-Id`를 보내면 쓰고(64자·`[A-Za-z0-9._-]`만) 아니면 생성. 응답 헤더와 MDC, `audit_events.request_id`에 같은 값이 들어간다                                                                                     |
-| 메트릭    | api(기본 8080)·worker(기본 8090) `/actuator/prometheus` (Micrometer). api는 `http_server_requests`(URI 템플릿 태그), worker는 아래 잡 메트릭                                                                                        |
-| 잡 메트릭 | worker `JobMetrics` — `proofu_jobs_completed_total{type,outcome}`, `proofu_jobs_duration_seconds{type}`, `proofu_jobs_queued`, `proofu_jobs_oldest_age_seconds`, `proofu_jobs_running`, `proofu_jobs_recovered_total{type,outcome}` |
-| 감사      | `audit_events` (해시만, 보존 정책 별도)                                                                                                                                                                                             |
+| 신호        | 어디서                                                                                                                                                                                                                                                                                                         |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 요청 로그   | api `RequestLogFilter` — 요청마다 한 줄: `method`, URI 템플릿, `status`, `durationMs`, `requestId`. 본문·쿼리 문자열·토큰은 남기지 않는다                                                                                                                                                                      |
+| requestId   | 클라이언트가 `X-Request-Id`를 보내면 쓰고(64자·`[A-Za-z0-9._-]`만) 아니면 생성. 응답 헤더와 MDC, `audit_events.request_id`에 같은 값이 들어간다                                                                                                                                                                |
+| 메트릭      | api(기본 8080)·worker(기본 8090) `/actuator/prometheus` (Micrometer). api는 `http_server_requests`(URI 템플릿 태그), worker는 아래 잡 메트릭                                                                                                                                                                   |
+| 잡 메트릭   | worker `JobMetrics` — `proofu_jobs_completed_total{type,outcome}`, `proofu_jobs_duration_seconds{type}`, `proofu_jobs_queued`, `proofu_jobs_oldest_age_seconds`, `proofu_jobs_running`, `proofu_jobs_recovered_total{type,outcome}`                                                                            |
+| AI 메트릭   | `MeteredAiExecutionRecorder`(ai-gateway가 `ai_executions`에 쓸 때 같이 올린다) — `proofu_ai_executions_total{purpose,status}`, `proofu_ai_cost_usd_total{purpose}`, `proofu_ai_latency_seconds{purpose}`. 배포 일일 예산은 `proofu_ai_daily_budget_usd` 게이지로 함께 노출해 규칙이 예산 값을 모르지 않게 한다 |
+| 운영자 조치 | worker `JobMetrics.operatorAction` — `proofu_ai_operator_actions_total{code}`. `AiFailures.OPERATOR_ACTION_CODES`(제공자 실패에서 유도)에 해당하는 잡 실패에만 올린다. 같은 사건의 로그 마커가 `OPERATOR_ACTION`이다                                                                                           |
+| 지연 버킷   | api `application.yml`의 `management.metrics.distribution.slo.http.server.requests: 500ms,1s` — URI마다 `le` 3개(0.5·1.0·+Inf)만 만든다. 히스토그램 전체는 URI마다 70여 개가 된다                                                                                                                               |
+| 감사        | `audit_events` (해시만, 보존 정책 별도)                                                                                                                                                                                                                                                                        |
 
 **workspace id는 메트릭 라벨로 쓰지 않습니다**(고카디널리티). 워크스페이스 단위 수치가 필요하면 `audit_events`·`ai_executions`를 질의합니다. 로그에는 워크스페이스·잡 식별자까지만 남기고 본문·프롬프트·토큰은 어느 레벨에서도 남기지 않습니다.
+
+카운터는 **처음 올라갈 때 등록**됩니다 — 잡이 한 번도 실패하지 않은 배포에는 `proofu_jobs_completed_total{outcome="failed"}` 계열 자체가 없습니다. 규칙은 그 경우 0으로 나누지 않고 조용히 있어야 하며, `alerts.test.yml`이 "한 번도 돌지 않은 큐는 울리지 않는다"로 그걸 검사합니다.
 
 `proofu_jobs_oldest_age_seconds`가 큐 지연 SLI(가장 오래된 작업 10분)를, `proofu_jobs_completed_total{outcome="failed"}` 비율이 생성 완료율 SLI를 채웁니다. `proofu_jobs_recovered_total`은 워커가 죽어 리스가 만료된 잡 수입니다 — 0이 정상이고, 반복되면 워커가 재시작 중이거나 핸들러가 리스보다 오래 걸린다는 뜻입니다(ADR-0004). 추적(트레이싱)은 아직 붙이지 않았습니다.
 
