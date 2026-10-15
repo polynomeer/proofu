@@ -5,7 +5,8 @@
 #   E2E_KEEP=1 scripts/e2e.sh # leave the stack running afterwards
 #   DATABASE_URL=... scripts/e2e.sh  # use a Postgres that is already running (CI service, other port)
 set -euo pipefail
-cd "$(dirname "$0")/.."
+source "$(dirname "$0")/lib/common.sh"
+cd "$REPO_ROOT"
 log="${E2E_LOG_DIR:-/tmp/proofu-e2e}"; mkdir -p "$log"
 export AUTH_MODE=oidc AI_PROVIDER=fake
 export OIDC_ISSUER=http://localhost:8181/realms/mock
@@ -17,12 +18,20 @@ export APP_ORIGIN=http://localhost:3111 API_ORIGIN=http://localhost:8080
 pids=()
 cleanup() {
   if [ -z "${E2E_KEEP:-}" ]; then
-    for p in "${pids[@]}"; do kill "$p" 2>/dev/null || true; done
+    # ${pids[@]+…}: an empty array is "unbound" under set -u on bash 3.2, and a cleanup that
+    # dies there hides whatever actually failed.
+    for p in ${pids[@]+"${pids[@]}"}; do kill_tree_hard "$p" 5; done
   fi
 }
 trap cleanup EXIT
 
 if [ -z "${DATABASE_URL:-}" ]; then
+  # 5432 often belongs to another project; publish on the first free port above it and tell the
+  # api and worker where it landed.
+  reserve_port 5432
+  export POSTGRES_PORT="$REPLY"
+  export DATABASE_URL="jdbc:postgresql://localhost:$POSTGRES_PORT/proofu"
+  [ "$POSTGRES_PORT" = 5432 ] || echo "5432 is taken by $(port_holder 5432); using $POSTGRES_PORT"
   docker compose -f infra/docker-compose.yml up -d postgres >/dev/null
 else
   echo "using DATABASE_URL from the environment; not starting the docker postgres"
