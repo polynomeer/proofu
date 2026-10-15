@@ -1,0 +1,116 @@
+name: Release images
+
+# Publishes the three runtime images to GHCR, but only after they have been proved to boot
+# under the production profile (scripts/images.sh --check). Tags are the release event; the
+# manual run is for re-publishing the same commit under another tag.
+#
+# Nothing here deploys: the cloud is an open decision (docs/project/open-decisions.md). The
+# images are the handover point — ADR-0012.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag; defaults to the short commit sha"
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  check:
+    name: Images boot under the production profile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      # Builds all three, starts them against a throwaway Postgres and a mock IdP, and runs the
+      # same smoke test an operator runs after a deploy.
+      - run: scripts/images.sh --check
+      - name: Upload the build and boot logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-check-logs
+          path: logs/images
+          retention-days: 14
+
+  publish:
+    name: Publish ${{ matrix.image }}
+    needs: [check]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # keyless signing
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [api, worker, web]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the jar
+        if: matrix.image != 'web'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - if: matrix.image != 'web'
+        uses: gradle/actions/setup-gradle@v6
+      - if: matrix.image != 'web'
+        run: ./gradlew :${{ matrix.image }}:bootJar --no-daemon
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
+            type=sha,format=short
+          labels: |
+            org.opencontainers.image.title=proofu-${{ matrix.image }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/${{ matrix.image }}.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # linux/amd64 only until the cloud is chosen; arm64 under QEMU costs more than it is
+          # worth while nothing runs on it (ADR-0012).
+          platforms: linux/amd64
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+      - uses: sigstore/cosign-installer@v3
+      - name: Sign the image
+        # Keyless: the signature is bound to this workflow's OIDC identity, so there is no
+        # private key to leak or rotate. Verify with:
+        #   cosign verify --certificate-identity-regexp '…/release.yml@.*' \
+        #     --certificate-oidc-issuer https://token.actions.githubusercontent.com <image>@<digest>
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
