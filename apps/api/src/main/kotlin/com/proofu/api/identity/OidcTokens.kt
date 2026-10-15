@@ -12,21 +12,24 @@ import java.time.Instant
 
 /**
  * A decoder that checks signature (the issuer's JWKS, fetched lazily so the API starts even if
- * the IdP is momentarily down), issuer, expiry and that `aud` contains [audience]. Access tokens
- * use the API audience; ID tokens sent for step-up use the web client id.
+ * the IdP is momentarily down), issuer, expiry and that `aud` contains one of [audiences]. Access
+ * tokens use the API audience; ID tokens sent for step-up use our client ids (web, iOS).
  */
 internal fun oidcJwtDecoder(
     issuer: String,
     jwksUri: String,
-    audience: String,
+    audiences: Set<String>,
 ): JwtDecoder {
+    require(audiences.isNotEmpty()) { "an empty audience set would accept nothing or, worse, be read as anything" }
     val decoder = NimbusJwtDecoder.withJwkSetUri(jwksUri).build()
     val audienceCheck =
         OAuth2TokenValidator<Jwt> { jwt ->
-            if (jwt.audience?.contains(audience) == true) {
+            if (jwt.audience.orEmpty().any { it in audiences }) {
                 OAuth2TokenValidatorResult.success()
             } else {
-                OAuth2TokenValidatorResult.failure(OAuth2Error("invalid_token", "aud must contain $audience", null))
+                OAuth2TokenValidatorResult.failure(
+                    OAuth2Error("invalid_token", "aud must contain one of $audiences", null),
+                )
             }
         }
     decoder.setJwtValidator(

@@ -15,10 +15,11 @@ data class AuthProperties(
     /** The token's `aud` must contain this; the IdP client is configured to add it. */
     val audience: String = "proofu-api",
     /**
-     * The web BFF's client id. An ID token sent to `POST /me/reauthentications` must be issued to
-     * it (`aud`), ADR-0010 결정 3.
+     * Our own OIDC clients: the web BFF and, from ADR-0011, the iOS app (`OIDC_CLIENT_ID`, comma
+     * separated). An ID token sent to `POST /me/reauthentications` must be issued to one of them
+     * (`aud`), ADR-0010 결정 3.
      */
-    val clientId: String? = null,
+    val clientIds: List<String> = emptyList(),
     /** Sensitive actions require a login newer than this. */
     val reauthMaxAge: Duration = Duration.ofMinutes(10),
 ) {
@@ -27,6 +28,9 @@ data class AuthProperties(
     fun requireOidcConfigured() {
         check(!issuer.isNullOrBlank()) { "proofu.auth.mode=oidc needs OIDC_ISSUER" }
         check(!jwksUri.isNullOrBlank()) { "proofu.auth.mode=oidc needs OIDC_JWKS_URI" }
-        check(!clientId.isNullOrBlank()) { "proofu.auth.mode=oidc needs OIDC_CLIENT_ID" }
+        check(clients.isNotEmpty()) { "proofu.auth.mode=oidc needs OIDC_CLIENT_ID" }
     }
+
+    /** [clientIds] without blanks, so `OIDC_CLIENT_ID=""` or `"proofu-web, "` cannot widen anything. */
+    val clients: Set<String> get() = clientIds.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
 }

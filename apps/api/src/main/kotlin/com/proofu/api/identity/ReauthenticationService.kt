@@ -13,8 +13,8 @@ import java.time.Instant
 
 /**
  * ADR-0010 결정 3: hosted IdPs put no `auth_time` in access tokens, so the web sends the ID token
- * it got at login and the API checks it itself — signature against the issuer's JWKS, `aud` = the
- * web client, the caller's own `(iss, sub)`, and an `auth_time` inside the step-up window — then
+ * it got at login and the API checks it itself — signature against the issuer's JWKS, `aud` = one
+ * of our clients (the web BFF, or the iOS app per ADR-0011 — it sends its own the same way), the caller's own `(iss, sub)`, and an `auth_time` inside the step-up window — then
  * keeps that time in `users.reauthenticated_at`. The web vouches for nothing.
  */
 @Service
@@ -27,7 +27,7 @@ class ReauthenticationService(
     private val log = LoggerFactory.getLogger(ReauthenticationService::class.java)
 
     private val idTokens: JwtDecoder by lazy {
-        oidcJwtDecoder(checkNotNull(auth.issuer), checkNotNull(auth.jwksUri), checkNotNull(auth.clientId))
+        oidcJwtDecoder(checkNotNull(auth.issuer), checkNotNull(auth.jwksUri), auth.clients)
     }
 
     @Transactional
