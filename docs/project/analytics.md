@@ -11,6 +11,8 @@ review: 실험 또는 지표 변경 시
 | 이벤트                     | 핵심 속성                                       | 수집 금지            |
 | -------------------------- | ----------------------------------------------- | -------------------- |
 | career_entry_created       | type, source, completionState                   | 경력 본문, 회사 기밀 |
+| career_log_created         | linkCount, sensitivity, daysSinceOccurred       | 로그 본문, 회사 기밀 |
+| career_log_promoted        | target, daysSinceCreated                        | 로그 본문, 성과 원문 |
 | evidence_linked            | evidenceType, verification, sensitivity         | 파일 원문, URL 토큰  |
 | job_posting_analyzed       | source, requirementCount, duration, status      | 공고 전체 본문       |
 | match_reviewed             | requirementCategory, accepted, rejected         | Evidence 원문        |
