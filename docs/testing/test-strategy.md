@@ -8,15 +8,15 @@ review: 릴리스 계획 시
 
 ## 피라미드
 
-| 수준      | 대상                                  | 실행 시점          | 도구                        |
-| --------- | ------------------------------------- | ------------------ | --------------------------- |
-| 정적 검사 | 타입, 린트, 보안 규칙, 스키마         | 모든 커밋          | tsc, eslint, ktlint, detekt |
-| 단위      | 도메인 불변식, 점수 계산, 변환        | 모든 커밋          | Kotest/JUnit, Vitest        |
-| 통합      | DB, 객체 저장소, 큐, AI 어댑터        | PR과 main          | Testcontainers              |
-| 계약      | OpenAPI, career-ops, iterview, 이벤트 | PR과 배포 전       | openapi-diff, 계약 fixture  |
-| E2E       | 핵심 사용자 여정과 브라우저           | main과 릴리스      | Playwright                  |
-| AI 평가   | 사실성, 근거, 관련성, 안전성          | 프롬프트·모델 변경 | `packages/ai-evaluation`    |
-| 성능·보안 | 부하, 권한, 파일 입력 공격            | 릴리스 후보와 정기 | k6, 권한 테스트             |
+| 수준      | 대상                                  | 실행 시점          | 도구                                                                 |
+| --------- | ------------------------------------- | ------------------ | -------------------------------------------------------------------- |
+| 정적 검사 | 타입, 린트, 보안 규칙, 스키마         | 모든 커밋          | tsc, eslint, ktlint, detekt                                          |
+| 단위      | 도메인 불변식, 점수 계산, 변환        | 모든 커밋          | Kotest/JUnit, Vitest                                                 |
+| 통합      | DB, 객체 저장소, 큐, AI 어댑터        | PR과 main          | Testcontainers                                                       |
+| 계약      | OpenAPI, career-ops, iterview, 이벤트 | PR과 배포 전       | openapi-diff, 계약 fixture                                           |
+| E2E       | 핵심 사용자 여정과 브라우저           | main과 릴리스      | Playwright                                                           |
+| AI 평가   | 사실성, 근거, 관련성, 안전성          | 프롬프트·모델 변경 | `packages/ai-evaluation`                                             |
+| 성능·보안 | 부하, 권한, 파일 입력 공격            | 릴리스 후보와 정기 | `scripts/perf.sh`(k6, [performance.md](performance.md)), 권한 테스트 |
 
 ## 도메인 불변식 테스트 (필수)
 
