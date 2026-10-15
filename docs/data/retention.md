@@ -41,4 +41,4 @@ review: 법률 검토 후 확정
 ## 백업
 
 - 일일 전체 백업과 지속적 트랜잭션 로그 보관을 구성하고 암호화합니다.
-- 분기마다 별도 환경에서 복구하여 RPO/RTO와 파일 객체 참조 무결성을 검증합니다.
+- 분기마다 별도 환경에서 복구하여 RPO/RTO와 파일 객체 참조 무결성을 검증합니다 — `scripts/restore.sh --rehearse --boot`이 그 훈련이고, 만료된 내보내기의 바이트가 실제로 지워졌는지도 같이 봅니다([operations/backup-recovery.md](../operations/backup-recovery.md)).

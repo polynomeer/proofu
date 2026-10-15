@@ -65,7 +65,7 @@ cosign verify --certificate-identity-regexp '.*/release\.yml@.*' \
 ## 롤백 원칙
 
 - 코드 롤백은 이전 불변 artifact를 재배포합니다.
-- 파괴적 DB 변경과 데이터 변환은 즉시 롤백하지 않고 전진 수정과 백업 복구 조건을 따릅니다.
+- 파괴적 DB 변경과 데이터 변환은 즉시 롤백하지 않고 전진 수정과 백업 복구 조건을 따릅니다([backup-recovery.md](backup-recovery.md)).
 - AI 모델과 프롬프트는 버전별 기능 플래그로 즉시 이전 조합으로 돌릴 수 있어야 합니다.
 - 롤백 후 큐의 작업이 어느 정책 버전으로 실행되는지 명확히 결정합니다.
 
