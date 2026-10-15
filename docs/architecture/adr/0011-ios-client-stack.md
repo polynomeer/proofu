@@ -1,6 +1,6 @@
 # 0011 iOS 앱: 네이티브 SwiftUI 클라이언트와 공개 OIDC 클라이언트
 
-- 상태: **제안**
+- 상태: **승인** (2026-10-15)
 - 일자: 2026-10-15
 
 ## 맥락
@@ -35,7 +35,7 @@
 | D. 웹 래핑(Capacitor·WKWebView로 Next.js)        | 기존 화면 재사용, 가장 빠름                                                                                        | 네이티브 느낌·탭 바·시트 불가, BFF 쿠키 세션을 웹뷰에 맞추는 별도 처리, 공유 확장은 네이티브, App Store 심사(최소 기능) 위험                                                |
 | E. Kotlin Multiplatform(공유 로직) + SwiftUI(UI) | 서버와 같은 Kotlin으로 API 클라이언트·모델 공유, UI는 A와 같음                                                     | `packages/domain`은 JVM 전용(`java.time` 등)이라 그대로 공유되지 않음. 도메인 규칙은 서버에만 두기로 했으므로 공유할 로직이 적음 — 들이는 빌드 복잡도에 비해 얻는 것이 작음 |
 
-## 결정 (제안)
+## 결정
 
 **A. 네이티브 SwiftUI.** 근거: 시안의 핵심(Liquid Glass 탭 바·시트, 공유 시트로 Evidence 추가, 패스키 재인증)이 모두 Apple 표준 API에서 바로 나오고, 클라이언트에 도메인 로직이 없어 크로스플랫폼으로 공유할 것이 적다. Android가 필요해지면 그때 Android 네이티브(Compose)를 같은 원칙으로 별도 결정한다.
 
@@ -56,10 +56,10 @@
 - 좋은 점: 시안 그대로의 네이티브 경험, 공유 확장·패스키·키체인을 표준 방식으로, 서버·계약은 거의 그대로(ID token `aud` 목록만 확장).
 - 비용: Swift 역량 확보, macOS CI 러너 비용, Android는 별도 결정.
 - 서버 쪽 후속 작업(앱 착수 전):
-  - [ ] IdP에 공개 클라이언트 `proofu-ios` 등록(제공자 결정 후, ADR-0010 결정 2)
-  - [ ] `proofu.auth.client-id`를 목록으로(웹·iOS), `ReauthenticationService`가 목록 중 하나를 `aud`로 허용
-  - [ ] Universal Link용 `apple-app-site-association` 제공(웹)
-  - [ ] CI에 Swift 클라이언트 생성 최신 여부 확인 추가
+  - [ ] IdP에 공개 클라이언트 `proofu-ios` 등록 — 로컬 Keycloak realm에는 등록함(PKCE S256, `aud`에 `proofu-api`). 운영 제공자는 ADR-0010 결정 2 이후
+  - [x] API의 `OIDC_CLIENT_ID`를 쉼표 목록으로(`proofu.auth.client-ids`, 예: `proofu-web,proofu-ios`). 재인증 ID token은 목록 중 하나가 `aud`에 있으면 받는다. 웹은 자기 id 하나만 쓴다
+  - [x] `/.well-known/apple-app-site-association`(웹, `IOS_APP_IDS`=`<Team ID>.<bundle id>` 목록, 비어 있으면 404). `/auth/ios/callback`만 앱으로 넘기고, 앱이 없는 기기에는 안내 페이지를 보여 준다 — 웹은 다른 클라이언트의 코드를 교환하지 않는다
+  - [ ] CI에 Swift 클라이언트 생성 최신 여부 확인 — `apps/ios`가 생길 때 함께
 - 별도 ADR이 필요한 것: **푸시 알림**(마감 D-3·결과 회고 — 기기 토큰 저장, 알림 동의, APNs 발송 경로), Android.
 - 위험: 공개 클라이언트는 비밀이 없으므로 PKCE·Universal Link·짧은 access token에 의존한다. refresh token이 기기에 있으므로 기기 분실 시 IdP 세션 회수 절차가 필요하다(threat-model "세션 회수" 항목과 함께).
 
