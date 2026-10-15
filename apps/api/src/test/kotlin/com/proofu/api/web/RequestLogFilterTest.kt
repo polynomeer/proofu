@@ -112,4 +112,29 @@ class RequestLogFilterTest {
         assertThat(body).doesNotContain(workspaceId.toString())
         assertThat(body).doesNotContain("workspace")
     }
+
+    @Test
+    fun `the latency buckets the alert rule needs are published, and only those`() {
+        support.create(workspaceId, "/api/v1/skills", """{"canonicalName":"Kafka","category":"DATA"}""")
+        val body =
+            client
+                .get()
+                .uri("/actuator/prometheus")
+                .exchange()
+                .expectStatus()
+                .isOk
+                .expectBody(String::class.java)
+                .returnResult()
+                .responseBody!!
+        // infra/observability/alerts.yml reads le="1.0"; 0.5 is the SLI target in
+        // docs/operations/monitoring.md. Without these, the latency alert has no data and
+        // quietly never fires.
+        val buckets =
+            body
+                .lineSequence()
+                .filter { it.startsWith("http_server_requests_seconds_bucket") }
+                .mapNotNull { Regex("""le="([^"]+)"""").find(it)?.groupValues?.get(1) }
+                .toSet()
+        assertThat(buckets).containsExactlyInAnyOrder("0.5", "1.0", "+Inf")
+    }
 }
