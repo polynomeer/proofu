@@ -70,7 +70,7 @@ reserve_port() {
 run_deadline() {
   local secs="$1"; shift
   local tmp pid waited=0 rc
-  tmp="$(mktemp -t proofu-deadline)"
+  tmp="$(mktemp "${TMPDIR:-/tmp}/proofu-deadline.XXXXXX")"
   ( "$@" >/dev/null 2>&1; echo $? >"$tmp" ) &
   pid=$!
   disown "$pid" 2>/dev/null || true
