@@ -12,6 +12,7 @@
 | [0008](0008-ai-provider-anthropic-claude.md)          | AI 제공자와 모델 정책: Anthropic Claude                 | 승인                 |
 | [0009](0009-document-rendering-and-export-storage.md) | 문서 렌더링(Apache POI)과 내보내기 저장                 | 승인                 |
 | [0010](0010-oidc-provider-and-session-model.md)       | 인증: OIDC 연동 형태(BFF 세션·resource server)와 제공자 | 부분 승인 (결정 3·4) |
+| [0012](0012-release-artifacts.md)                     | 배포 산출물: 컨테이너 이미지와 릴리스 파이프라인        | 승인                 |
 
 ## 템플릿
 
