@@ -9,6 +9,7 @@ enum class AiPurpose {
     DOCUMENT_GENERATION,
     SENTENCE_REVISION,
     REVIEW_HYPOTHESIS,
+    CAREER_IMPORT,
 }
 
 enum class Effort {

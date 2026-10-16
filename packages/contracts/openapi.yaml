@@ -313,6 +313,28 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /career-imports:
+    post:
+      tags: [career, async]
+      operationId: importCareer
+      summary: Propose career entries from a pasted resume (asynchronous)
+      description: |
+        Starts a `career.import` job. The proposals come back in the job's `result`
+        (`CareerImportResult`) and are **not stored**: the caller creates the ones the user
+        picked with `POST /career-entries`. Contact details (email, phone, long digit runs) are
+        removed from the text before it reaches the model.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerImportRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /career-entries:
     get:
       tags: [career]
@@ -706,6 +728,130 @@ paths:
       responses:
         "204":
           description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /career-logs:
+    get:
+      tags: [career]
+      operationId: listCareerLogs
+      summary: Career logs of the workspace, by when they happened
+      parameters:
+        - name: promoted
+          in: query
+          required: false
+          description: true for logs already promoted, false for the ones still waiting
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of career logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerLogPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [career]
+      operationId: createCareerLog
+      summary: Write a career log
+      description: |
+        A private note written while the work happens, so achievements are not reconstructed from
+        memory later. `occurredAt` may not be in the future (422 DOMAIN_RULE_VIOLATION), and
+        `sensitivity` defaults to CONFIDENTIAL so a log does not reach a model in a workspace that
+        never consented. A log has no visibility: it is never shared or exported.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerLogInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerLog"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /career-logs/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: getCareerLog
+      summary: One career log
+      responses:
+        "200":
+          description: Career log
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerLog"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [career]
+      operationId: updateCareerLog
+      summary: Update a career log (requires revision)
+      description: |
+        The links are replaced as a whole set. Promotion is not an edit: use
+        `POST /career-logs/{id}/promotion`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerLogInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerLog"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [career]
+      operationId: deleteCareerLog
+      summary: Soft-delete a career log
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /career-logs/{id}/promotion:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [career]
+      operationId: promoteCareerLog
+      summary: Record that this log became an achievement or evidence
+      description: |
+        Promotion is a copy: the achievement or evidence is created through its own endpoint and
+        the log only remembers that it happened, so the two are indistinguishable afterwards. A
+        log is promoted once (422 DOMAIN_RULE_VIOLATION), and a target of another workspace is
+        reported as not found.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CareerLogPromotionInput"
+      responses:
+        "200":
+          description: Promotion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerLog"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -2621,6 +2767,68 @@ components:
       description: Five-level scale; self-assessment and evidence-based judgement stay separate
       type: string
       enum: [NOVICE, PRACTITIONER, INDEPENDENT, ADVANCED, STRATEGIC]
+    CareerImportRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 10
+          maxLength: 50000
+          description: The resume as plain text, as pasted by the user.
+
+    CareerImportProposal:
+      type: object
+      required: [type, title, startDate, quote]
+      description: |
+        A career entry the model proposes. Nothing here exists yet — the client sends the ones
+        the user picked to `POST /career-entries`, where the usual validation applies.
+      properties:
+        type:
+          $ref: "#/components/schemas/CareerEntryType"
+        title:
+          type: string
+        organization:
+          type: [string, "null"]
+        location:
+          type: [string, "null"]
+        description:
+          type: [string, "null"]
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: [string, "null"]
+          format: date
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        quote:
+          type: string
+          description: Copied verbatim from the resume, so the user can compare.
+        warning:
+          type: [string, "null"]
+          description: Set when the quote could not be found in the text as given.
+
+    CareerImportResult:
+      type: object
+      required: [proposals, dropped, redacted]
+      description: The `result` of a succeeded `career.import` job.
+      properties:
+        proposals:
+          type: array
+          items:
+            $ref: "#/components/schemas/CareerImportProposal"
+        dropped:
+          type: array
+          description: Items the model returned that the server refused, with the reason.
+          items:
+            type: string
+        redacted:
+          type: integer
+          description: How many contact details were removed before the model saw the text.
+
     CareerEntryType:
       type: string
       enum: [EMPLOYMENT, EDUCATION, TRAINING, AWARD, CERTIFICATION, OTHER]
@@ -3130,6 +3338,103 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Skill"
+        nextCursor:
+          type: [string, "null"]
+
+    CareerLogInput:
+      type: object
+      required: [occurredAt, body]
+      properties:
+        occurredAt:
+          description: When it happened; not in the future
+          type: string
+          format: date
+        body:
+          type: string
+          maxLength: 2000
+        sensitivity:
+          description: Defaults to CONFIDENTIAL, because a work journal carries the employer's information
+          oneOf:
+            - $ref: "#/components/schemas/Sensitivity"
+            - type: "null"
+        careerEntryIds:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Uuid"
+        projectIds:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Uuid"
+        revision:
+          description: Required on PATCH
+          type: integer
+          format: int64
+
+    CareerLogPromotionType:
+      type: string
+      enum: [ACHIEVEMENT, EVIDENCE]
+
+    CareerLogPromotionInput:
+      type: object
+      required: [targetType, targetId]
+      properties:
+        targetType:
+          $ref: "#/components/schemas/CareerLogPromotionType"
+        targetId:
+          description: An achievement or evidence of this workspace, created beforehand
+          $ref: "#/components/schemas/Uuid"
+
+    CareerLogPromotion:
+      type: object
+      required: [promotedAt]
+      properties:
+        promotedAt:
+          type: string
+          format: date-time
+        targetType:
+          description: Null once the promoted record was permanently deleted; the date stays
+          oneOf:
+            - $ref: "#/components/schemas/CareerLogPromotionType"
+            - type: "null"
+        targetId:
+          oneOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+
+    CareerLog:
+      allOf:
+        - $ref: "#/components/schemas/CareerLogInput"
+        - type: object
+          required: [id, sensitivity, careerEntryIds, projectIds, revision, createdAt, updatedAt]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            sensitivity:
+              $ref: "#/components/schemas/Sensitivity"
+            promotion:
+              oneOf:
+                - $ref: "#/components/schemas/CareerLogPromotion"
+                - type: "null"
+            revision:
+              type: integer
+              format: int64
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    CareerLogPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CareerLog"
         nextCursor:
           type: [string, "null"]
 
@@ -4193,7 +4498,14 @@ components:
         errorCode:
           type: string
         result:
-          description: Job-type specific result, present when SUCCEEDED
+          description: |
+            Job-type specific result, present when SUCCEEDED. Most types describe their result
+            in the description of the operation that starts them; the ones with a schema are
+            listed here so a client can narrow the union.
+          anyOf:
+            - $ref: "#/components/schemas/CareerImportResult"
+            - type: object
+              additionalProperties: true
         createdAt:
           type: string
           format: date-time

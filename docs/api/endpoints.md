@@ -31,6 +31,9 @@ review: API 릴리스 시
 | PUT                   | `/capabilities/{id}/evidence` ✅              | 역량의 Evidence 연결 집합 교체                                      |
 | GET, PATCH, DELETE    | `/achievements/{id}` ✅                       | 성과 상세, 변경, 삭제                                               |
 | GET, PATCH, DELETE    | `/career-entries/{id}` ✅                     | 경력 상세, 변경, 삭제                                               |
+| GET, POST             | `/career-logs` ✅                             | 커리어 로그 목록(승격 여부 필터)과 작성                             |
+| GET, PATCH, DELETE    | `/career-logs/{id}` ✅                        | 로그 상세, 변경(연결 집합 교체), 삭제(휴지통)                       |
+| POST                  | `/career-logs/{id}/promotion` ✅              | 이 로그가 성과·Evidence가 되었음을 기록 (한 번만)                   |
 | GET, POST             | `/evidence` ✅                                | Evidence 목록과 등록 (파일 제외)                                    |
 | GET, PATCH, DELETE    | `/evidence/{id}` ✅                           | Evidence 상세, 변경(검증 상태 포함), 삭제                           |
 | GET                   | `/evidence/{id}/claims` ✅                    | 이 Evidence가 연결된 Claim                                          |

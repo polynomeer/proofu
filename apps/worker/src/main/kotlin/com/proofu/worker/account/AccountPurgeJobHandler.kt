@@ -134,6 +134,14 @@ class AccountPurgeJobHandler(
             )
             run("claims", "delete from claims where workspace_id = ?", w)
             run("evidence", "delete from evidence where workspace_id = ?", w)
+            // Career logs before the records they point at, so the promotion pointers leave with
+            // the log instead of being nulled on the way out (docs/data/retention.md §커리어 로그).
+            run(
+                "career_log_links",
+                "delete from career_log_links where log_id in (select id from career_logs where workspace_id = ?)",
+                w,
+            )
+            run("career_logs", "delete from career_logs where workspace_id = ?", w)
             run("achievements", "delete from achievements where workspace_id = ?", w)
             run(
                 "project_skills",

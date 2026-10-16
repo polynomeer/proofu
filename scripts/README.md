@@ -13,6 +13,11 @@
 | `backup.sh`        | 검증 가능한 데이터베이스 백업(덤프 + sha256 + 표별 행 수 매니페스트)                              |
 | `restore.sh`       | 백업을 **새 데이터베이스**로 되살리고 행 수·참조·api 기동까지 확인 (`--rehearse --boot`)          |
 | `e2e.sh`           | Playwright 여정 테스트(실제 스택 + mock IdP + 가짜 AI)                                            |
+| `images.sh`        | 릴리스 이미지 3개 빌드, `--check`면 production 프로필로 띄워 smoke까지 (ADR-0012)                 |
+| `smoke.sh`         | 배포된 환경을 자격 증명 없이 점검(헬스·익명 401·문서 차단·보안 헤더)                              |
+| `alerts.sh`        | 알림 규칙 문법·단위 테스트(promtool) + 규칙이 쓰는 메트릭이 실제로 있는지                         |
+| `perf.sh`          | 읽기 경로 부하 측정(k6). 성능 목표를 threshold로 강제한다                                         |
+| `check-metrics.py` | `alerts.yml`의 메트릭 이름 ↔ 코드가 등록하는 meter 이름 일치 (CI)                                 |
 | `check-enums.py`   | enum 값이 domain Kotlin ↔ `migrations/` CHECK ↔ `openapi.yaml` 세 곳에서 일치하는지 (CI)          |
 | `contract-diff.sh` | 선언한 계약과 실행 중인 api의 오퍼레이션 목록 비교 (CI)                                           |
 | `ai-live-check.sh` | 실제 모델 호출 스모크 (`.env`의 `ANTHROPIC_API_KEY` 사용)                                         |

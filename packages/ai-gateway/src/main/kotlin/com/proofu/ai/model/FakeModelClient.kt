@@ -31,6 +31,7 @@ class FakeModelClient(
                     AiPurpose.MATCH_EXPLANATION -> explanationHeuristic(request)
                     AiPurpose.DOCUMENT_GENERATION -> draftHeuristic(request)
                     AiPurpose.SENTENCE_REVISION -> revisionHeuristic(request)
+                    AiPurpose.CAREER_IMPORT -> careerImportHeuristic(request)
                     else -> """{"fake":true,"purpose":"${request.purpose}"}"""
                 }
             return ModelOutcome.Completed(text, request.model, ModelUsage(100, 20, 0, 0), truncated = false)
@@ -110,6 +111,55 @@ class FakeModelClient(
             }
             return """{"blocks":[${blocks.joinToString(",")}]}"""
         }
+
+        /**
+         * Reads the dated lines a resume is mostly made of ("2020.03 - 2023.02 회사 / 직무") so the
+         * import flow can be exercised without a key. It understands one line shape and nothing
+         * else — a real model reads prose, and this does not pretend to.
+         */
+        private fun careerImportHeuristic(request: ModelRequest): String {
+            val doc = request.documents.firstOrNull() ?: return """{"items":[]}"""
+            val lines = doc.text.lines()
+            val items = mutableListOf<String>()
+            lines.forEachIndexed { index, raw ->
+                val line = raw.trim()
+                val match = PERIOD.find(line) ?: return@forEachIndexed
+                if (items.size >= MAX_ITEMS) return@forEachIndexed
+                val rest = line.removeRange(match.range).trim().trim('/', '|', '-', ' ')
+                if (rest.isEmpty()) return@forEachIndexed
+                val parts = rest.split("/", "|").map { it.trim() }.filter { it.isNotEmpty() }
+                val organization = if (parts.size > 1) parts.first() else null
+                val title = if (parts.size > 1) parts.drop(1).joinToString(" ") else parts.first()
+                val type =
+                    when {
+                        EDUCATION_WORDS.containsMatchIn(rest) -> "EDUCATION"
+                        CERTIFICATE_WORDS.containsMatchIn(rest) -> "CERTIFICATION"
+                        else -> "EMPLOYMENT"
+                    }
+                val description =
+                    lines
+                        .getOrNull(index + 1)
+                        ?.trim()
+                        ?.takeIf { it.isNotEmpty() && PERIOD.find(it) == null && !it.endsWith(":") }
+                val end = match.groupValues[2].takeIf { it.isNotBlank() }?.replace(Regex("[./]"), "-")
+                items +=
+                    buildString {
+                        append("""{"type":"$type","title":${json(title)},""")
+                        if (organization != null) append(""""organization":${json(organization)},""")
+                        if (description != null) append(""""description":${json(description)},""")
+                        append(""""startDate":${json(match.groupValues[1].replace(Regex("[./]"), "-"))},""")
+                        if (end != null) append(""""endDate":${json(end)},""")
+                        append(""""quote":${json(line)},"confidence":0.6,"sourceId":${json(doc.sourceId)}}""")
+                    }
+            }
+            return """{"items":[${items.joinToString(",")}]}"""
+        }
+
+        /** `2020.03 - 2023.02`, `2020-03 ~ 현재`, `2017.03-2020.02`. */
+        private val PERIOD =
+            Regex("""(\d{4}[.\-/]\d{1,2})\s*[-~–]\s*(\d{4}[.\-/]\d{1,2})?(?:현재|present)?""")
+        private val EDUCATION_WORDS = Regex("""학사|석사|박사|대학|학과|University|Bachelor|Master""")
+        private val CERTIFICATE_WORDS = Regex("""자격증|certificate|certification""", RegexOption.IGNORE_CASE)
 
         /** Collapses whitespace and marks the proposal so the compare-and-apply flow can be exercised. */
         private fun revisionHeuristic(request: ModelRequest): String {

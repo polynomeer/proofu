@@ -17,6 +17,7 @@ review: 도메인 변경 시
 | Capability     | id, name, definition                           | level, evidenceCriteria, parentId             |
 | Learning       | id, type, title, completedAt                   | provider, hours, certificateId, notes         |
 | Portfolio Item | id, title, artifactId, visibility              | summary, tags, publishedAt                    |
+| Career Log     | id, occurredAt, body, sensitivity              | careerEntryIds, projectIds, promotedTo        |
 
 ## 프로필
 
@@ -25,6 +26,29 @@ review: 도메인 변경 시
 ## Career Entry 유형
 
 `EMPLOYMENT`, `EDUCATION`, `TRAINING`, `AWARD`, `CERTIFICATION`, `OTHER`
+
+## 이력서에서 가져오기
+
+기존 이력서를 붙여넣으면 `career.import` 잡이 **경력 기록 후보**를 돌려줍니다(F13, [ai/ai-feature-spec.md](../ai/ai-feature-spec.md)). 후보는 어디에도 저장되지 않고, 사용자가 원문 인용과 대조해 고른 것만 평소의 생성 경로(`POST /career-entries`)로 들어옵니다 — 그래서 가져온 기록과 손으로 넣은 기록은 저장된 뒤에 구분되지 않습니다. `visibility`는 다른 새 기록과 같이 워크스페이스 기본값을 따릅니다.
+
+## 커리어 로그 (Career Log)
+
+성과는 지원할 때 기억에서 복원하는 것이 아니라 **그때그때 적어 둔 기록에서** 나와야 합니다(F20, [product/network-and-social-proof.md](../product/network-and-social-proof.md)). 커리어 로그는 그 목적만 가진 비공개 업무 기록입니다.
+
+| 필드             | 규칙                                                                          |
+| ---------------- | ----------------------------------------------------------------------------- |
+| `occurredAt`     | 필수. 미래 날짜 불가                                                          |
+| `body`           | 필수. 공백만으로 채울 수 없음                                                 |
+| `sensitivity`    | 필수. **기본 `CONFIDENTIAL`** (다른 기록의 기본값 `INTERNAL`과 다르다)        |
+| `careerEntryIds` | 선택. 같은 워크스페이스의 경력 기록                                           |
+| `projectIds`     | 선택. 같은 워크스페이스의 프로젝트                                            |
+| `promotedTo`     | 선택. 승격한 성과 또는 Evidence 하나. 승격 시각(`promotedAt`)과 함께 기록한다 |
+
+- 로그에는 **공개 범위(`visibility`)가 없습니다.** 청중이 없으므로 공개할 범위도 없고, 공유 프로필과 내보내기에 들어가지 않습니다.
+- 기본 민감도가 `CONFIDENTIAL`인 이유는 업무 일지가 고용주의 정보를 기본적으로 끌어오기 때문입니다. 따라서 AI 동의가 없는 워크스페이스에서는 모델 컨텍스트에 들어가지 않습니다(`Sensitivity.allowedInAiContext`).
+- **승격은 복사입니다.** 로그에서 만든 성과는 저장된 뒤 손으로 넣은 성과와 구분되지 않습니다 — 이력서 가져오기(위)와 같은 선입니다. 로그는 승격 사실만 기억합니다.
+- 승격 대상을 나중에 영구 삭제해도 로그는 남고 포인터만 비워집니다. 로그가 다른 원천 데이터의 삭제를 막지 않습니다([data/retention.md](../data/retention.md)).
+- 1단계에는 AI가 없습니다. 로그 묶음에서 성과 후보를 뽑는 것은 이력서 가져오기와 같은 패턴으로 나중에 검토합니다.
 
 ## 공개 범위 (Visibility)
 
