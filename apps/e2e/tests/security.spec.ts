@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { switchUser, unique } from "./helpers";
+import { IDP, switchUser, unique } from "./helpers";
 
 test("보안 헤더: 페이지는 nonce CSP와 기본 헤더를 보내고 위반 없이 렌더된다", async ({ page }) => {
   await switchUser(unique("security"), "보안 테스트");
@@ -21,7 +21,8 @@ test("보안 헤더: 페이지는 nonce CSP와 기본 헤더를 보내고 위반
   expect(csp).toContain("object-src 'none'");
   expect(csp).toContain("upgrade-insecure-requests"); // production build
   // Logout posts to /auth/logout and is redirected on to the IdP; Chrome checks the whole chain.
-  expect(csp).toMatch(/form-action 'self' http:\/\/localhost:8181/);
+  // The origin comes from the IdP the stack actually started, which reserves a free port.
+  expect(csp).toContain(`form-action 'self' ${new URL(IDP).origin}`);
   expect(headers["x-content-type-options"]).toBe("nosniff");
   expect(headers["x-frame-options"]).toBe("DENY");
   expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
