@@ -31,16 +31,20 @@ export default async function CareerPage({ searchParams }: { searchParams: Searc
       <Icon name="plus" size={16} />새 경력 추가
     </ButtonLink>
   );
-  const headerActions = (
-    <div className="flex gap-2">
+  // The sub-screens sit under the header rather than beside the primary action: at phone width
+  // four buttons in one row push the page sideways (apps/e2e/tests/mobile.spec.ts).
+  const subScreens = (
+    <nav aria-label="커리어 하위 화면" className="mb-4 flex flex-wrap gap-2">
       <ButtonLink variant="secondary" href="/career/import">
         이력서 가져오기
+      </ButtonLink>
+      <ButtonLink variant="secondary" href="/career/logs">
+        로그
       </ButtonLink>
       <ButtonLink variant="secondary" href="/career/skills">
         기술 관리
       </ButtonLink>
-      {addAction}
-    </div>
+    </nav>
   );
 
   return (
@@ -48,8 +52,9 @@ export default async function CareerPage({ searchParams }: { searchParams: Searc
       <PageHeader
         title="커리어"
         description="경력, 학력, 자격, 수상을 사실 단위로 관리합니다. 이 기록이 모든 지원 문서의 원천입니다."
-        action={headerActions}
+        action={addAction}
       />
+      {subScreens}
       <div className="mb-4">
         <TypeFilter current={typeFilter} q={q} />
       </div>
