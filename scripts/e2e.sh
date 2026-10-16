@@ -27,6 +27,8 @@ export APP_ORIGIN="http://localhost:$WEB_PORT" API_ORIGIN="http://localhost:$API
 export E2E_BASE_URL="$APP_ORIGIN"
 export E2E_API_URL="$API_ORIGIN/api/v1"
 export E2E_IDP_URL="$OIDC_ISSUER"
+# A made-up Team ID: the association file is served only when an app is configured (ADR-0011).
+export IOS_APP_IDS=ABCDE12345.dev.proofu.e2e
 
 pids=()
 cleanup() {
