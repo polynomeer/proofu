@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 // Apple's fetcher and a phone without the app both arrive with no session (ADR-0011 §3).
@@ -28,4 +29,9 @@ test("iOS 앱 연결: 앱이 없는 기기의 콜백은 로그인으로 튕기�
   await expect(
     page.getByRole("heading", { name: "ProofU 앱에서 로그인을 마쳐 주세요" }),
   ).toBeVisible();
+  // Outside the app shell and too small for the shared scan's rule-count floor; checked here.
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(violations.map((v) => v.id)).toEqual([]);
 });
