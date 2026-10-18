@@ -8,16 +8,17 @@ review: 도메인 변경 시
 
 원천 데이터는 문서에 맞춰 복사한 문장이 아니라, 여러 지원에서 재사용할 수 있는 **사실 단위**로 저장합니다. 설명용 서술과 구조화 필드를 함께 보존하되, 기간과 수치는 원문 문자열뿐 아니라 정규화 값도 갖습니다.
 
-| 영역           | 필수 필드                                      | 선택 필드                                     |
-| -------------- | ---------------------------------------------- | --------------------------------------------- |
-| Career Entry   | id, type, title, startDate, visibility, status | organization, endDate, location, description  |
-| Project        | id, name, role, summary, period, visibility    | teamSize, links, technologies, careerEntryIds |
-| Achievement    | id, action, outcome, confidence                | metricValue, metricUnit, baseline, timeframe  |
-| Skill          | id, canonicalName, category                    | aliases, proficiency, lastUsedAt              |
-| Capability     | id, name, definition                           | level, evidenceCriteria, parentId             |
-| Learning       | id, type, title, completedAt                   | provider, hours, certificateId, notes         |
-| Portfolio Item | id, title, artifactId, visibility              | summary, tags, publishedAt                    |
-| Career Log     | id, occurredAt, body, sensitivity              | careerEntryIds, projectIds, promotedTo        |
+| 영역           | 필수 필드                                      | 선택 필드                                                   |
+| -------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| Career Entry   | id, type, title, startDate, visibility, status | organization, endDate, location, description                |
+| Project        | id, name, role, summary, period, visibility    | teamSize, links, technologies, careerEntryIds               |
+| Achievement    | id, action, outcome, confidence                | metricValue, metricUnit, baseline, timeframe                |
+| Skill          | id, canonicalName, category                    | aliases, proficiency, lastUsedAt                            |
+| Capability     | id, name, definition                           | level, evidenceCriteria, parentId                           |
+| Learning       | id, type, title, completedAt                   | provider, hours, certificateId, notes                       |
+| Portfolio Item | id, title, artifactId, visibility              | summary, tags, publishedAt                                  |
+| Career Log     | id, occurredAt, body, sensitivity              | careerEntryIds, projectIds, promotedTo                      |
+| Contact        | id, displayName, relation                      | email, organization, role, careerEntryIds, projectIds, note |
 
 ## 프로필
 
@@ -49,6 +50,28 @@ review: 도메인 변경 시
 - **승격은 복사입니다.** 로그에서 만든 성과는 저장된 뒤 손으로 넣은 성과와 구분되지 않습니다 — 이력서 가져오기(위)와 같은 선입니다. 로그는 승격 사실만 기억합니다.
 - 승격 대상을 나중에 영구 삭제해도 로그는 남고 포인터만 비워집니다. 로그가 다른 원천 데이터의 삭제를 막지 않습니다([data/retention.md](../data/retention.md)).
 - 1단계에는 AI가 없습니다. 로그 묶음에서 성과 후보를 뽑는 것은 이력서 가져오기와 같은 패턴으로 나중에 검토합니다.
+
+## 인맥 (Contact)
+
+함께 일한 사람을 **상호성 없는 사실**로 기록합니다(F14, [product/network-and-social-proof.md](../product/network-and-social-proof.md)). 수락도 승인도 공개 프로필도 없고, 상대는 증언을 요청받기 전까지 자신이 기록되었다는 사실을 알지 못합니다. ProofU 사용자가 아니어도 되며, 협업 계정(`workspace_members`)과는 다른 개념입니다.
+
+| 필드             | 규칙                                    |
+| ---------------- | --------------------------------------- |
+| `displayName`    | 필수, 120자 이하                        |
+| `relation`       | 필수. `ContactRelation` 7종             |
+| `email`          | 선택. 증언·추천 요청을 보내려면 필요    |
+| `organization`   | 선택, 120자 이하. 함께 일할 당시의 소속 |
+| `role`           | 선택, 120자 이하. 당시 역할             |
+| `careerEntryIds` | 선택. 같은 워크스페이스의 경력 기록     |
+| `projectIds`     | 선택. 같은 워크스페이스의 프로젝트      |
+| `note`           | 선택. 비공개 메모                       |
+
+관계(`ContactRelation`): `MANAGER`(상사), `PEER`(동료), `REPORT`(구성원), `CLIENT`(고객), `PARTNER`(협력사), `MENTOR`(멘토), `OTHER`(기타).
+
+- **민감도는 저장하지 않고 `RESTRICTED`로 고정합니다**(`Contact.sensitivity`). 기획은 "`CONFIDENTIAL` 이상"이라고 했지만, 민감도를 컬럼으로 두면 사용자가 낮춰 모델에 보낼 수 있다는 뜻이 됩니다. 인맥은 제3자의 개인정보이므로 AI 동의와 무관하게 컨텍스트에 넣지 않습니다 — `Sensitivity.allowedInAiContext`가 `RESTRICTED`에 대해 언제나 거짓입니다. 로그에도 남기지 않습니다.
+- 연락처 일괄 가져오기(주소록·소셜 동기화)는 하지 않습니다. 한 건씩 사용자가 입력합니다.
+- **전역 검색 대상이 아닙니다.** 제3자 정보의 노출 면적을 늘리지 않기 위해 인맥은 인맥 화면에서만 찾습니다.
+- 연결(경력·프로젝트)은 집합을 통째로 교체하고, 연결 대상이 영구 삭제되면 연결만 사라지고 인맥은 남습니다.
 
 ## 공개 범위 (Visibility)
 

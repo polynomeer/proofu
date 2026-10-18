@@ -10,6 +10,7 @@ review: 스키마 변경 시
 User 1---N WorkspaceMember N---1 Workspace
 Workspace 1---N CareerEntry 1---N Project 1---N Achievement
 Workspace 1---N CareerLog  N---N (CareerEntry | Project)  (through CareerLogLink)
+Workspace 1---N Contact    N---N (CareerEntry | Project)  (through ContactLink)
 CareerLog 0---1 Achievement  (승격, 복사)
 Claim N---N Evidence
 Capability N---N Evidence
@@ -35,6 +36,10 @@ erDiagram
   career_entries ||--o{ career_log_links : logged
   projects ||--o{ career_log_links : logged
   career_logs |o--o| achievements : promoted
+  workspaces ||--o{ contacts : owns
+  contacts ||--o{ contact_links : links
+  career_entries ||--o{ contact_links : worked_together
+  projects ||--o{ contact_links : worked_together
   projects }o--o{ skills : uses
   workspaces ||--o{ claims : owns
   workspaces ||--o{ evidence : owns
