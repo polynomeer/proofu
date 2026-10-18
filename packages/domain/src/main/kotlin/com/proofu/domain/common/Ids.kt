@@ -27,6 +27,10 @@ import java.util.UUID
     val value: UUID,
 )
 
+@JvmInline value class ContactId(
+    val value: UUID,
+)
+
 @JvmInline value class SkillId(
     val value: UUID,
 )
