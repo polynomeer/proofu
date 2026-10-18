@@ -158,6 +158,9 @@ class AccountExportJobHandler(
                 "projects" to "select * from projects $BY_WS",
                 "achievements" to "select * from achievements $BY_WS",
                 "career_logs" to "select * from career_logs $BY_WS",
+                "contacts" to "select * from contacts $BY_WS",
+                "contact_links" to
+                    "select l.* from contact_links l join contacts c on c.id = l.contact_id where c.workspace_id = ?",
                 "career_log_links" to
                     "select l.* from career_log_links l join career_logs g on g.id = l.log_id where g.workspace_id = ?",
                 "skills" to "select * from skills $BY_WS",
