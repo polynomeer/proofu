@@ -41,6 +41,9 @@ export default async function CareerPage({ searchParams }: { searchParams: Searc
       <ButtonLink variant="secondary" href="/career/logs">
         로그
       </ButtonLink>
+      <ButtonLink variant="secondary" href="/career/contacts">
+        인맥
+      </ButtonLink>
       <ButtonLink variant="secondary" href="/career/skills">
         기술 관리
       </ButtonLink>
