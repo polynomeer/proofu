@@ -115,6 +115,17 @@ class ListQueryPlanTest {
     }
 
     @Test
+    fun `contact list walks an index`() {
+        assertIndexed(
+            "contacts",
+            """
+            select * from contacts where workspace_id = '$WORKSPACE' and deleted_at is null
+            order by created_at desc, id desc limit 20
+            """.trimIndent(),
+        )
+    }
+
+    @Test
     fun `capability list walks an index`() {
         assertIndexed(
             "capabilities",
@@ -287,6 +298,13 @@ class ListQueryPlanTest {
             )
             jdbc.execute(
                 """
+                insert into contacts (workspace_id, display_name, relation, created_at)
+                select '$WORKSPACE', 'contact ' || g, 'PEER', now() - (g || ' minutes')::interval
+                from generate_series(1, $ROWS) g
+                """.trimIndent(),
+            )
+            jdbc.execute(
+                """
                 insert into job_postings (workspace_id, company, role_title, updated_at)
                 select '$WORKSPACE', 'company ' || g, 'role ' || g, now() - (g || ' minutes')::interval
                 from generate_series(1, $ROWS) g
@@ -339,6 +357,7 @@ class ListQueryPlanTest {
                 "evidence" to "type, title, source, uri, captured_at",
                 "capabilities" to "name, definition, category, created_at",
                 "career_logs" to "occurred_at, body",
+                "contacts" to "display_name, relation, created_at",
             ).forEach { (table, columns) ->
                 jdbc.execute(
                     """
@@ -354,6 +373,7 @@ class ListQueryPlanTest {
                 "skills",
                 "capabilities",
                 "career_logs",
+                "contacts",
                 "job_postings",
                 "applications",
                 "documents",
