@@ -1,0 +1,182 @@
+---
+owner: 제품 오너와 기술 책임자
+status: 설계 (제안)
+review: 단계 승인 시
+---
+
+# 개인 자료 가져오기 설계
+
+career-hub처럼 **사용자가 이미 자기 방식으로 굴려 온 구직 자료**를 ProofU로 들이는 구조입니다. 대조 결과는 [career-hub-alignment](career-hub-alignment.md)에 있고, 이 문서는 그중 "어떻게 들여올 것인가"만 다룹니다.
+
+## 두 줄 요약
+
+> 제품은 **번들 형식 하나**만 알고, 저장소마다 다른 사정은 **어댑터**가 맡습니다. 가져온 것은 사용자가 고르기 전에는 아무것도 저장되지 않고, 저장된 뒤에는 손으로 넣은 것과 구분되지 않습니다.
+
+두 번째 문장은 이미 F13(이력서 가져오기)이 지키는 선이고, 이 설계는 그것을 **여러 유형·대량**으로 넓힌 것뿐입니다.
+
+## 무엇을 들여오는가
+
+career-hub 기준으로, 양이 많은 순서입니다.
+
+| 자료                              | career-hub에서              | ProofU에서 받을 곳                            | AI   |
+| --------------------------------- | --------------------------- | --------------------------------------------- | ---- |
+| 지원 이력 214건                   | `APPLICATIONS.md` 표        | `job_postings` + `applications` + 상태 이벤트 | ✗    |
+| 공고 원문                         | `jd-analysis/*.md`          | `job_posting_snapshots` → 요구사항(F04)       | 일부 |
+| 이력서·경력기술서·포트폴리오 본문 | `content/*.res.md`          | `document_versions`(가져온 층)                | ✗    |
+| 사실 층                           | `facts/`, `career-details/` | 경력·프로젝트·성과 **후보**(F13 확장)         | 일부 |
+| 면접 준비·기록                    | `interview-prep/`, `-log/`  | 커리어 로그(F20)                              | ✗    |
+| 산출물 PDF                        | `exports/`                  | **아직 받지 않음** (아래 §파일)               | —    |
+
+AI는 **새로 만들지 않습니다.** 비구조 텍스트를 다루는 두 곳에서만 기존 기능을 재사용합니다 — 공고 원문 → 요구사항은 F04, 사실 층 → 경력 후보는 F13. 나머지는 전부 결정적 매핑입니다.
+
+## 구조: 번들 + 어댑터
+
+```
+career-hub/                     ProofU
+  APPLICATIONS.md  ──┐
+  jd-analysis/       ├─ 어댑터 ─→  가져오기 번들(ZIP) ─→ POST /imports ─→ 계획 ─→ 사용자 선택 ─→ 평소 생성 경로
+  content/           │             manifest.json
+  facts/           ──┘             postings/ documents/ career/ notes/
+```
+
+**제품은 career-hub를 모릅니다.** 디렉터리 이름도, `APPLICATIONS.md`의 표 모양도, 사이트별 링크 규칙도 제품 바깥에 둡니다 — [career-hub-alignment](career-hub-alignment.md) §가져오지 않을 것이 이미 그렇게 정했습니다. 어댑터는 `scripts/`의 작은 변환기이거나 사용자가 직접 쓴 스크립트입니다.
+
+### 번들
+
+```
+manifest.json
+postings/<key>.txt      공고 원문 그대로
+documents/<key>.md      이력서·경력기술서·포트폴리오 본문
+career/<key>.md         사실 층 원문
+notes/<key>.md          면접 준비·기록 등 날짜 있는 메모
+```
+
+`manifest.json`의 항목 하나:
+
+```json
+{
+  "type": "application",
+  "key": "acme-backend-2026-09",
+  "sourcePath": "APPLICATIONS.md#L42",
+  "contentHash": "sha256:…",
+  "fields": {
+    "company": "ACME",
+    "roleTitle": "백엔드 엔지니어",
+    "status": "SUBMITTED",
+    "submittedAt": "2026-09-14",
+    "deadlineAt": "2026-09-20",
+    "canonicalUrl": "https://…"
+  },
+  "links": { "posting": "acme-backend-2026-09", "documents": ["acme-resume"] }
+}
+```
+
+- `type`: `application` · `posting` · `document` · `career` · `note`
+- `sourcePath`는 **사람이 되짚기 위한 것**입니다. 어디서 왔는지 모르는 행을 사용자가 판단할 수 없습니다.
+- `contentHash`는 재가져오기의 축입니다(§멱등).
+- 상태·유형 값은 ProofU enum을 그대로 씁니다. 어댑터가 번역하고, 모르는 값은 번들 검증에서 거부합니다.
+
+### 왜 번들인가
+
+한 건씩 붙여넣기(F13)는 214건에 쓸 수 없고, 저장소를 직접 읽는 것은 제품이 남의 디렉터리 구조를 배우는 일입니다. 번들은 **사람이 열어볼 수 있는 형식**이라 가져오기 전에 무엇이 들어가는지 확인할 수 있고, 어댑터가 틀렸을 때 고칠 자리가 분명합니다.
+
+## 흐름
+
+1. `POST /imports` — 번들 업로드. 접수만 하고 202 + jobId.
+2. `import.plan` 잡 — 번들을 검증하고 **계획**을 돌려줍니다. 아무것도 저장하지 않습니다.
+3. 사용자가 계획을 표에서 검토하고 고릅니다.
+4. `POST /imports/{id}/apply` — 고른 항목만 `import.apply` 잡이 **평소의 도메인 경로**로 만듭니다.
+
+계획 항목 하나는 `NEW` · `UNCHANGED` · `CHANGED` · `CONFLICT` · `REJECTED` 중 하나이고, 거부에는 이유가 붙습니다(모르는 상태 값, 참조가 깨진 링크, 인용을 원문에서 찾지 못함).
+
+**검토 화면은 유형별 표**입니다. 214행을 한 건씩 카드로 보여 주면 아무도 끝까지 가지 못합니다. 유형 탭 + 일괄 선택 + 기본값은 "`NEW`만 선택", 그리고 `CONFLICT`만 따로 모읍니다.
+
+### 적용은 평소 경로로
+
+`import.apply`는 SQL을 직접 쓰지 않고 `JobPostingSnapshot.capture`, `Application.transition`, `CareerEntry` 생성 등 **도메인 팩토리를 그대로 호출**합니다. 가져오기가 불변식의 뒷문이 되면 안 되고, 그래야 저장된 뒤 손으로 넣은 것과 같아집니다.
+
+## 과거 제출을 어떻게 기록할 것인가
+
+여기가 이 설계에서 가장 조심한 곳입니다.
+
+**제출 스냅샷은 만들지 않습니다.** `SubmissionSnapshot`은 "이 제품이 만든 그 파일이 그대로 나갔다"는 주장이고, `freeze`가 문서 버전과 공고 스냅샷을 직접 고정해서 그 주장을 뒷받침합니다. career-hub에서 2026년 9월에 낸 PDF는 ProofU 안에서 만들어진 적이 없으므로, 그 주장을 할 근거가 없습니다. 가져오기가 스냅샷을 만들면 제품의 가장 강한 약속이 "가져온 것도 포함"으로 희석됩니다.
+
+대신 과거는 **사실로** 들어옵니다:
+
+| 가져온 사실          | 어디에                                                    |
+| -------------------- | --------------------------------------------------------- |
+| 언제 무엇에 지원했다 | `applications` + `application_status_events`(append-only) |
+| 그때 공고 원문       | `job_posting_snapshots` (원문이 번들에 있으면)            |
+| 그때 낸 문서의 본문  | `document_versions`, 가져온 층                            |
+| 결과(합/불/무응답)   | 상태 이벤트                                               |
+
+상태 이벤트에는 **출처 표시**가 필요합니다(`origin`: `PRODUCT` | `IMPORTED`). 지원 화면은 가져온 이력을 "ProofU 밖에서 일어난 일"로 구분해 보여 주고, 회고(F11)의 비교 대상에서도 그 차이를 숨기지 않습니다. enum 한 개가 네 곳에 추가되는 평범한 작업입니다.
+
+## 가져온 문서는 근거가 없다
+
+가져온 이력서 본문에는 Claim도 Evidence도 없습니다. 그대로 두면 블록은 전부 `UNSUPPORTED`이고, 내보내기 게이트가 막습니다. **그게 의도한 동작입니다.**
+
+- 가져온 본문은 `document_versions`에 한 버전으로 들어가고 `created_by = IMPORTED`입니다(`VersionAuthor` 확장).
+- 모든 블록은 `UNSUPPORTED`에서 시작합니다. 내보내려면 사용자가 근거를 붙이고 승인해야 합니다.
+- 즉 가져오기는 **출발점을 주는 것이지 승인을 주지 않습니다.** 214건을 들여와도 근거 없는 문장이 저절로 나가지는 않습니다.
+
+## 파일
+
+`exports/`의 PDF·DOCX는 **지금은 받지 않습니다.** 파일 Evidence(`EvidenceType.FILE`)는 객체 저장소가 정해질 때까지 API가 422로 거부하고([open-decisions](../project/open-decisions.md)), 가져오기만 예외로 두면 저장할 곳이 없습니다. 번들에 파일이 들어 있으면 계획에서 "보관하지 않음"으로 표시하고 **텍스트만** 뽑아 씁니다. 객체 저장소가 정해지면 같은 번들을 다시 넣어 파일을 승격시킬 수 있습니다(§멱등).
+
+## 멱등
+
+career-hub는 계속 바뀌므로 가져오기는 한 번으로 끝나지 않습니다.
+
+- `import_runs`(번들 단위)와 `import_items`(항목 단위: `source_key`, `content_hash`, 만들어진 행의 id)를 남깁니다.
+- 같은 `source_key`가 같은 해시로 다시 오면 `UNCHANGED` — 건너뜁니다.
+- 해시가 다르면 `CHANGED` — 무엇이 달라졌는지 보여 주고, 적용하면 **새 버전/새 행**으로 들어갑니다(불변 테이블은 정정도 새 행이라는 규칙 그대로).
+- ProofU에서 이미 손본 행을 번들이 덮으려 하면 `CONFLICT` — 기본값은 ProofU 쪽 유지이고, 사용자가 선택합니다. 매칭의 `user_decision`을 덮지 않는 규칙과 같은 선입니다.
+- 공고는 이미 `ContentHash`로 재사용 규칙이 있으므로 그대로 씁니다.
+
+## 개인정보
+
+번들에는 연락처와 **제3자의 이름**이 섞여 들어옵니다.
+
+- 모델에 보내는 단계(F04·F13 재사용)에서는 `ResumeRedactor`를 그대로 통과시킵니다. 지운 개수를 화면에 밝힙니다.
+- 사람 이름이 보이더라도 **인맥(F14)을 자동으로 만들지 않습니다.** 제3자 개인정보는 사용자가 한 건씩 넣기로 한 결정이고, 가져오기가 그 결정을 우회하면 안 됩니다.
+- 업로드한 번들은 **처리 후 지웁니다.** 원문을 보관하지 않는다는 F13의 선을 그대로 따릅니다.
+- 민감도 기본값: 가져온 메모·사실은 `CONFIDENTIAL`(커리어 로그와 같음), 문서 본문은 워크스페이스 기본값.
+
+## 단계
+
+| 단계 | 내용                                                             | 값                                     |
+| ---- | ---------------------------------------------------------------- | -------------------------------------- |
+| 1    | 번들 형식 + `import.plan`/`apply` + 지원 이력·공고 원문, AI 없음 | 214건이 여기서 들어옵니다 — 가장 큰 값 |
+| 2    | 문서 본문 → 가져온 층(`IMPORTED` 버전)                           | 과거 제출물이 편집 가능한 출발점이 됨  |
+| 3    | 사실 층 → 경력·프로젝트·성과 후보 (F13 확장)                     | 중첩 검토 화면이 필요해 비용이 큼      |
+| 4    | 메모·면접 기록 → 커리어 로그                                     | 면접 기록 소유권 결정이 선행           |
+| 보류 | 파일 Evidence 승격, ProofU 계정 번들 복구                        | 객체 저장소 결정 뒤                    |
+
+1단계만으로도 career-hub-alignment §6("공고를 한꺼번에 등록하는 입구")이 함께 풀립니다 — 번들에 공고만 담으면 그게 일괄 등록입니다.
+
+## 비목표
+
+- **채용 사이트별 파싱.** 어댑터가 URL을 그대로 옮깁니다.
+- **제품이 저장소를 직접 읽는 것.** 로컬 경로·git·파일 권한은 제품의 관심사가 아닙니다.
+- **가져오기로 승인·검증 상태를 올리는 것.** 가져온 문장은 `UNSUPPORTED`에서 시작하고, 가져온 Evidence는 `UNVERIFIED`입니다. AI가 검증 상태를 올릴 수 없다는 규칙과 같은 이유입니다.
+- **자동 적용.** 계획을 사람이 보지 않고 적용하는 경로는 두지 않습니다.
+
+## 미확정
+
+- **번들 상한**: 파일 수·총 용량·한 번에 적용할 항목 수. 214건은 한 번에 적용할 수 있어야 합니다.
+- **어댑터의 자리**: `scripts/`에 career-hub용 변환기를 둘지, 번들 형식만 문서로 공개할지.
+- **면접 기록의 소유권**: ProofU의 사실인가 iterview의 데이터인가([career-hub-alignment](career-hub-alignment.md) 열린 질문 2). 4단계가 여기에 달려 있습니다.
+- **객체 저장소**: 파일 승격의 전제([open-decisions](../project/open-decisions.md)).
+
+## 승인 시 함께 바꿀 문서
+
+| 문서                                     | 무엇을                                  |
+| ---------------------------------------- | --------------------------------------- |
+| `product/prd.md`                         | F21 개인 자료 가져오기                  |
+| `api/endpoints.md`, `packages/contracts` | `/imports` 세 오퍼레이션                |
+| `data/data-dictionary.md`, `data/erd.md` | `import_runs`, `import_items`           |
+| `domain/application-lifecycle.md`        | 상태 이벤트의 `origin`                  |
+| `documents/document-generation.md`       | `VersionAuthor.IMPORTED`와 가져온 층    |
+| `ai/ai-feature-spec.md`                  | F04·F13 재사용 범위                     |
+| `security/privacy-requirements.md`       | 번들 보관하지 않음, 인맥 자동 생성 금지 |
