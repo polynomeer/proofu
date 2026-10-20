@@ -32,6 +32,8 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/api/") ||
     // Apple fetches the app-site association without cookies (ADR-0011 Universal Links).
     pathname.startsWith("/.well-known/") ||
+    // The favicon is requested before, and regardless of, any session.
+    pathname === "/icon.svg" ||
     pathname.startsWith("/_next/")
   ) {
     return proceed();
