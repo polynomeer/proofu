@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-6 -14 470 120" width="470" height="120">
+  <mask id="tab" maskUnits="userSpaceOnUse" x="360" y="-30" width="120" height="150">
+    <rect x="360" y="-30" width="120" height="150" fill="#fff"/>
+    <polygon points="443,-2 462,-2 462,17" fill="#000"/>
+    <polyline points="445,-2 445,13 462,13" fill="none" stroke="#000" stroke-width="2.6"/>
+  </mask>
+  <g fill="#3B5998">
+    <path fill-rule="evenodd" d="M0 0H48A32 32 0 0 1 48 64H18V100H0Z M18 18V46H48A14 14 0 0 0 48 18Z"/>
+    <rect x="24" y="23" width="30" height="5"/>
+    <rect x="24" y="35" width="22" height="5"/>
+    <path mask="url(#tab)" d="M368 0H386V55A27 27 0 0 0 440 55V0H458V55A45 45 0 0 1 368 55Z"/>
+  </g>
+  <g fill="none" stroke="#3B5998" stroke-width="17">
+    <path d="M100.5 100V58A30 30 0 0 1 130.5 28H136"/>
+    <circle cx="182" cy="64" r="27.5"/>
+    <circle cx="264" cy="64" r="27.5"/>
+    <path d="M320.5 100V26A24 24 0 0 1 344.5 2H352"/>
+    <path d="M304 36.5H348"/>
+  </g>
+</svg>
