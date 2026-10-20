@@ -73,6 +73,27 @@ export const skillCategoryLabel = labelsOf<Schema<"SkillCategory">>({
   OTHER: "기타",
 });
 
+/** 함께 일한 사이 (docs/domain/career-data-model.md §인맥). */
+export const contactRelationLabel = labelsOf<Schema<"ContactRelation">>({
+  MANAGER: "상사",
+  PEER: "동료",
+  REPORT: "함께 일한 구성원",
+  CLIENT: "고객",
+  PARTNER: "협력사",
+  MENTOR: "멘토",
+  OTHER: "기타",
+});
+
+export const CONTACT_RELATIONS: readonly Schema<"ContactRelation">[] = [
+  "MANAGER",
+  "PEER",
+  "REPORT",
+  "CLIENT",
+  "PARTNER",
+  "MENTOR",
+  "OTHER",
+];
+
 export const SKILL_CATEGORIES: readonly Schema<"SkillCategory">[] = [
   "PROGRAMMING_LANGUAGE",
   "FRAMEWORK",

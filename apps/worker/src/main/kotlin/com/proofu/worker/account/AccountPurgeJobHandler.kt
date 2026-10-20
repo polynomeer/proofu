@@ -142,6 +142,14 @@ class AccountPurgeJobHandler(
                 w,
             )
             run("career_logs", "delete from career_logs where workspace_id = ?", w)
+            // Third-party personal data: it goes with the account, like everything else keyed
+            // by the workspace (docs/security/privacy-requirements.md).
+            run(
+                "contact_links",
+                "delete from contact_links where contact_id in (select id from contacts where workspace_id = ?)",
+                w,
+            )
+            run("contacts", "delete from contacts where workspace_id = ?", w)
             run("achievements", "delete from achievements where workspace_id = ?", w)
             run(
                 "project_skills",

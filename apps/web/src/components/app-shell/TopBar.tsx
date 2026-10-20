@@ -1,3 +1,6 @@
+import Link from "next/link";
+
+import { BrandLockup } from "@/components/brand/Logo";
 import { Icon } from "@/components/ui/Icon";
 
 /**
@@ -7,7 +10,9 @@ import { Icon } from "@/components/ui/Icon";
 export function TopBar({ userName, canSignOut }: { userName: string; canSignOut: boolean }) {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border-300 bg-surface-000 px-4 md:px-6">
-      <span className="text-[22px] font-bold text-primary-600 md:hidden">ProofU</span>
+      <Link href="/" className="text-primary-600 md:hidden" aria-label="ProofU 홈">
+        <BrandLockup height={26} />
+      </Link>
       <form role="search" className="relative flex-1 md:max-w-xl" action="/search">
         <label htmlFor="global-search" className="sr-only">
           통합 검색

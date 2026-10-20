@@ -24,6 +24,8 @@ review: 법률 검토 후 확정
 
 **커리어 로그** — 로그는 다른 행이 참조하지 않으므로 보류 조건이 없고 `career_log_links` → `career_logs` 순으로 먼저 지웁니다. 반대 방향도 막지 않습니다: 성과·Evidence·경력·프로젝트를 영구 삭제할 때 살아 있는 로그가 이를 붙잡지 않고, 연결은 함께 사라지며(`ON DELETE CASCADE`) 승격 포인터만 비워집니다(`ON DELETE SET NULL`). 로그 본문과 승격 시각은 남습니다 — 승격은 복사였고, 그 일이 있었다는 사실은 로그의 것입니다.
 
+**인맥** — 제3자의 개인정보이므로 휴지통 정리 대상입니다. 다른 행이 인맥을 참조하지 않으므로 보류 조건이 없고 `contact_links` → `contacts` 순으로 지웁니다. 경력·프로젝트를 영구 삭제할 때 살아 있는 인맥이 이를 붙잡지 않고 연결만 사라집니다(`ON DELETE CASCADE`). 보존 기간은 당분간 `trash_retention_days`를 그대로 따릅니다 — 별도 기간을 둘지는 법률 검토 항목입니다([project/open-decisions.md](../project/open-decisions.md)).
+
 **정리하지 않는 것** — 공고·지원·문서는 불변 자식(공고 스냅샷, 상태 이벤트, 문서 버전, 제출 스냅샷)을 가지므로 휴지통에서도 영구 삭제하지 않고 계정 삭제 때만 제거합니다(위 표 "제출 스냅샷"). 감사 로그와 AI 실행 메타데이터도 정리 잡 범위 밖입니다.
 
 **내보내기 만료** — `exports`는 `created_at`, `account_exports`는 `expires_at`(만들 때 `export_retention_days`로 계산) 기준으로 `READY → EXPIRED`가 되고 `export_files`의 바이트를 지웁니다(같은 파일을 가리키는 READY 행이 없을 때). 만료된 문서 내보내기는 다시 요청하면 새로 렌더하고, 전체 내보내기는 새 요청으로만 받습니다.

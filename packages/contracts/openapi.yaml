@@ -731,6 +731,101 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /contacts:
+    get:
+      tags: [career]
+      operationId: listContacts
+      summary: People the user worked with, newest first
+      description: |
+        Contacts are third-party personal data and are deliberately absent from `/search`: this
+        list is the only way to find one.
+      parameters:
+        - name: relation
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ContactRelation"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of contacts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [career]
+      operationId: createContact
+      summary: Record someone the user worked with
+      description: |
+        No invitation and no acceptance: the person is not told they were recorded, and need not
+        use ProofU. `email` is needed only to ask them for an attestation later (F15). Contacts
+        never enter an AI context, whatever the workspace consented to.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /contacts/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: getContact
+      summary: One contact
+      responses:
+        "200":
+          description: Contact
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      tags: [career]
+      operationId: updateContact
+      summary: Update a contact (requires revision)
+      description: The links are replaced as a whole set.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contact"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      tags: [career]
+      operationId: deleteContact
+      summary: Soft-delete a contact
+      responses:
+        "204":
+          description: Deleted
+        default:
+          $ref: "#/components/responses/Problem"
+
   /career-logs:
     get:
       tags: [career]
@@ -3338,6 +3433,82 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Skill"
+        nextCursor:
+          type: [string, "null"]
+
+    ContactRelation:
+      type: string
+      enum: [MANAGER, PEER, REPORT, CLIENT, PARTNER, MENTOR, OTHER]
+
+    ContactInput:
+      type: object
+      required: [displayName, relation]
+      properties:
+        displayName:
+          type: string
+          maxLength: 120
+        relation:
+          $ref: "#/components/schemas/ContactRelation"
+        email:
+          description: Only needed to ask this person for an attestation (F15)
+          type: [string, "null"]
+          format: email
+          maxLength: 320
+        organization:
+          description: Their organization at the time
+          type: [string, "null"]
+          maxLength: 120
+        role:
+          type: [string, "null"]
+          maxLength: 120
+        note:
+          description: Private note; never sent to a model
+          type: [string, "null"]
+          maxLength: 2000
+        careerEntryIds:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Uuid"
+        projectIds:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Uuid"
+        revision:
+          description: Required on PATCH
+          type: integer
+          format: int64
+
+    Contact:
+      allOf:
+        - $ref: "#/components/schemas/ContactInput"
+        - type: object
+          required: [id, careerEntryIds, projectIds, reachable, revision, createdAt, updatedAt]
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
+            reachable:
+              description: Whether an attestation can be asked of them at all
+              type: boolean
+            revision:
+              type: integer
+              format: int64
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    ContactPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Contact"
         nextCursor:
           type: [string, "null"]
 
