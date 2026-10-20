@@ -319,8 +319,8 @@ enum은 네 곳(domain Kotlin ↔ `migrations/` CHECK ↔ `openapi.yaml` ↔ `do
 
 [project/open-decisions.md](../project/open-decisions.md)에 추가한 항목입니다.
 
-- **트랜잭션 메일 제공자** — 증언·추천 요청의 전제. 발송 도메인, SPF/DKIM, 수신 거부 처리, 리전.
-- **증언 요청 상한** — 월 요청 수와 수신자 재요청 간격의 초기값.
+- **트랜잭션 메일 제공자** — 증언·추천 요청의 전제. 발송 도메인, SPF/DKIM, 수신 거부 처리, 리전. → 제안: [ADR-0013](../architecture/adr/0013-transactional-mail.md)
+- **증언 요청 상한** — 월 요청 수와 수신자 재요청 간격의 초기값. → 제안: 월 10건, 7일 간격, 가입 후 24시간 (ADR-0013 §7)
 - **공유 프로필 공개 범위** — 공개 여부 자체를 요금제 기능으로 둘지, 전체 공개를 허용할지.
 - **인맥 보존 기간** — 제3자 개인정보에 별도 보존 기간을 둘지, `trash_retention_days`를 따를지.
 

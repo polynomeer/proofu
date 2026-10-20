@@ -14,6 +14,7 @@
 | [0010](0010-oidc-provider-and-session-model.md)       | 인증: OIDC 연동 형태(BFF 세션·resource server)와 제공자 | 부분 승인 (결정 3·4) |
 | [0011](0011-ios-client-stack.md)                      | iOS 앱: 네이티브 SwiftUI와 공개 OIDC 클라이언트         | 승인                 |
 | [0012](0012-release-artifacts.md)                     | 배포 산출물: 컨테이너 이미지와 릴리스 파이프라인        | 승인                 |
+| [0013](0013-transactional-mail.md)                    | 트랜잭션 메일: 제공자 중립 발송과 제3자 메일 원칙       | 제안                 |
 
 ## 템플릿
 
