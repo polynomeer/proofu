@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { BrandLockup } from "@/components/brand/Logo";
 import { Icon } from "@/components/ui/Icon";
 import { PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "@/lib/navigation";
 
@@ -29,8 +30,8 @@ export function Sidebar() {
   return (
     <aside className="hidden w-sidebar shrink-0 flex-col bg-primary-800 text-white md:flex">
       <div className="flex h-16 items-center px-5">
-        <Link href="/" className="text-[26px] font-bold tracking-tight" aria-label="ProofU 홈">
-          ProofU
+        <Link href="/" className="text-white" aria-label="ProofU 홈">
+          <BrandLockup height={30} />
         </Link>
       </div>
       <nav aria-label="주 메뉴" className="flex flex-1 flex-col gap-1 px-3 pt-2">
