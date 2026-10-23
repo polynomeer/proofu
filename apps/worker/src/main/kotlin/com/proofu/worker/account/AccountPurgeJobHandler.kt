@@ -150,6 +150,10 @@ class AccountPurgeJobHandler(
                 w,
             )
             run("contacts", "delete from contacts where workspace_id = ?", w)
+            // The import ledger is not source data and never sits in the trash, but it is
+            // keyed by the workspace and goes with the account like everything else.
+            run("import_items", "delete from import_items where workspace_id = ?", w)
+            run("import_runs", "delete from import_runs where workspace_id = ?", w)
             run("achievements", "delete from achievements where workspace_id = ?", w)
             run(
                 "project_skills",
