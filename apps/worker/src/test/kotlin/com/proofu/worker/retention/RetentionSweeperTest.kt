@@ -99,6 +99,55 @@ class RetentionSweeperTest {
         assertThat(count("projects", "workspace_id = ?", w)).isZero()
     }
 
+    /**
+     * F20 and F14 were both added after this sweeper and were both left out of it, so a contact
+     * the user deleted stayed in the workspace for good — against what retention.md and
+     * privacy-requirements.md promise about third-party data.
+     */
+    @Test
+    fun `a deleted log or contact leaves with its links, and takes nothing else with it`() {
+        val s = AccountSeed.seed(jdbc)
+        val w = s.workspaceId
+        assertThat(count("career_logs", "workspace_id = ?", w)).isOne()
+        assertThat(count("contacts", "workspace_id = ?", w)).isOne()
+
+        // Only the log and the contact go in the trash; the records they point at stay alive.
+        val old = "now() - interval '40 days'"
+        jdbc.update("update career_logs set deleted_at = $old where workspace_id = ?", w)
+        jdbc.update("update contacts set deleted_at = $old where workspace_id = ?", w)
+
+        val swept = sweeper.sweep(w)
+        assertThat(swept).containsEntry("career_logs", 1).containsEntry("contacts", 1)
+        assertThat(swept).containsEntry("career_log_links", 1).containsEntry("contact_links", 1)
+        assertThat(count("career_logs", "workspace_id = ?", w)).isZero()
+        assertThat(count("contacts", "workspace_id = ?", w)).isZero()
+        // Scoped to this workspace: other tests in this class seed their own.
+        assertThat(
+            count("career_log_links", "career_entry_id in (select id from career_entries where workspace_id = ?)", w),
+        ).isZero()
+        assertThat(count("contact_links", "project_id in (select id from projects where workspace_id = ?)", w)).isZero()
+        // What they pointed at is untouched: a log is not a reason to keep or drop an achievement.
+        assertThat(count("achievements", "workspace_id = ?", w)).isOne()
+        assertThat(count("career_entries", "workspace_id = ?", w)).isOne()
+        assertThat(count("projects", "workspace_id = ?", w)).isOne()
+        assertThat(sweeper.sweep(w)).isEmpty()
+    }
+
+    /** The other direction: purging what a live log points at leaves the log, minus the pointer. */
+    @Test
+    fun `a live log never holds up the achievement it was promoted from`() {
+        val s = AccountSeed.seed(jdbc)
+        val w = s.workspaceId
+        val old = "now() - interval '40 days'"
+        jdbc.update("update achievements set deleted_at = $old where workspace_id = ?", w)
+
+        assertThat(sweeper.sweep(w)).containsEntry("achievements", 1)
+        assertThat(count("achievements", "workspace_id = ?", w)).isZero()
+        // The log stays, the pointer is gone, and that it was promoted is still recorded.
+        assertThat(count("career_logs", "workspace_id = ? and promoted_achievement_id is null", w)).isOne()
+        assertThat(count("career_logs", "workspace_id = ? and promoted_at is not null", w)).isOne()
+    }
+
     @Test
     fun `inside the window nothing is purged`() {
         val s = AccountSeed.seed(jdbc)

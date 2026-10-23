@@ -42,12 +42,32 @@ object AccountSeed {
             ws,
             entry,
         )
+        val achievement = UUID.randomUUID()
         jdbc.update(
             "insert into achievements (id, workspace_id, project_id, action, outcome, confidence) values (?, ?, ?, 'a', 'o', 0.8)",
-            UUID.randomUUID(),
+            achievement,
             ws,
             project,
         )
+        // F20: a log that was promoted into that achievement, linked to the entry it happened in.
+        val log = UUID.randomUUID()
+        jdbc.update(
+            "insert into career_logs (id, workspace_id, occurred_at, body, promoted_achievement_id, promoted_at) " +
+                "values (?, ?, current_date, '로그', ?, now())",
+            log,
+            ws,
+            achievement,
+        )
+        jdbc.update("insert into career_log_links (log_id, career_entry_id) values (?, ?)", log, entry)
+        // F14: third-party personal data, linked to the project they worked on together.
+        val contact = UUID.randomUUID()
+        jdbc.update(
+            "insert into contacts (id, workspace_id, display_name, relation, email) values (?, ?, '김동료', 'PEER', ?)",
+            contact,
+            ws,
+            "peer-$contact@example.com",
+        )
+        jdbc.update("insert into contact_links (contact_id, project_id) values (?, ?)", contact, project)
         val skill = UUID.randomUUID()
         jdbc.update(
             "insert into skills (id, workspace_id, canonical_name, category) values (?, ?, 'Kotlin', 'PROGRAMMING_LANGUAGE')",

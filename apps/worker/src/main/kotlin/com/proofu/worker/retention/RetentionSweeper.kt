@@ -72,6 +72,23 @@ class RetentionSweeper(
             }
 
             // --- trash: children before parents, and never a row something alive still cites ---
+            // Logs and contacts first: nothing cites them, so they have no held-back condition,
+            // and dropping them first keeps the promotion pointers from being nulled on the way
+            // out when the achievement goes in the same sweep (docs/data/retention.md).
+            run(
+                "career_log_links",
+                "delete from career_log_links where log_id in (select id from career_logs where workspace_id = ? and deleted_at < ?)",
+                w,
+                trash,
+            )
+            run("career_logs", "delete from career_logs where workspace_id = ? and deleted_at < ?", w, trash)
+            run(
+                "contact_links",
+                "delete from contact_links where contact_id in (select id from contacts where workspace_id = ? and deleted_at < ?)",
+                w,
+                trash,
+            )
+            run("contacts", "delete from contacts where workspace_id = ? and deleted_at < ?", w, trash)
             run(
                 "achievements",
                 """
