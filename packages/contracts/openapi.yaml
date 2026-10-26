@@ -731,6 +731,67 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /imports:
+    get:
+      tags: [career]
+      operationId: listImports
+      summary: Bundles planned so far, newest first
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of import runs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportRunPage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      tags: [career]
+      operationId: planImport
+      summary: Work out what a bundle would do
+      description: |
+        Hands the bundle to the `import.plan` job (202 + jobId; poll `/jobs/{id}` for the run id).
+        **Nothing is written to the workspace** and the bundle itself is not stored — only the
+        ledger that says what was already imported and whether it has moved since.
+
+        There is no `contentHash` in the request: the server computes it over the canonical form
+        of each item, so "the same content" means the same thing however the adapter was written.
+
+        An application item must name the posting it was for (`links.posting`). A past application
+        cannot be recorded without one — it needs a snapshot and a snapshot needs text — and the
+        server will not invent that text, so the archive sends whatever it has, even one line.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportBundle"
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /imports/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [career]
+      operationId: getImport
+      summary: One planned bundle and every verdict in it
+      responses:
+        "200":
+          description: Import run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportRun"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /contacts:
     get:
       tags: [career]
@@ -3433,6 +3494,151 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Skill"
+        nextCursor:
+          type: [string, "null"]
+
+    ImportItemType:
+      type: string
+      enum: [APPLICATION, POSTING, DOCUMENT, CAREER, NOTE]
+
+    ImportItemStatus:
+      description: NEW is never seen, UNCHANGED is already in, CHANGED moved on, CONFLICT also changed here
+      type: string
+      enum: [NEW, UNCHANGED, CHANGED, CONFLICT, REJECTED]
+
+    ImportRunStatus:
+      type: string
+      enum: [PLANNED, APPLIED, FAILED]
+
+    ImportBundle:
+      type: object
+      required: [items]
+      properties:
+        source:
+          description: Where the adapter read this from, for the person reading the plan
+          type: [string, "null"]
+          maxLength: 120
+        items:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/ImportBundleItem"
+        contents:
+          description: Item key to the text that belongs to it, such as a posting's raw text
+          type: object
+          additionalProperties:
+            type: string
+            maxLength: 200000
+
+    ImportBundleItem:
+      type: object
+      required: [sourceKey, type]
+      properties:
+        sourceKey:
+          description: The adapter's own name for the thing; what makes a second import safe
+          type: string
+          maxLength: 200
+        type:
+          $ref: "#/components/schemas/ImportItemType"
+        sourcePath:
+          description: Where it came from, so a row can be traced back and judged
+          type: [string, "null"]
+          maxLength: 500
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+        links:
+          description: Keys of other items this one belongs to, by role
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    ImportItem:
+      type: object
+      required: [id, sourceKey, type, status]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        sourceKey:
+          type: string
+        sourcePath:
+          type: [string, "null"]
+        type:
+          $ref: "#/components/schemas/ImportItemType"
+        status:
+          $ref: "#/components/schemas/ImportItemStatus"
+        reason:
+          description: Why it was rejected, in terms of the file that was sent
+          type: [string, "null"]
+        targetType:
+          type: [string, "null"]
+        targetId:
+          oneOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        appliedAt:
+          type: [string, "null"]
+          format: date-time
+
+    ImportRun:
+      type: object
+      required: [id, status, itemCount, summary, items, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        source:
+          type: [string, "null"]
+        status:
+          $ref: "#/components/schemas/ImportRunStatus"
+        itemCount:
+          type: integer
+        summary:
+          description: How many items reached each verdict
+          type: object
+          additionalProperties:
+            type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportItem"
+        createdAt:
+          type: string
+          format: date-time
+        appliedAt:
+          type: [string, "null"]
+          format: date-time
+
+    ImportRunSummary:
+      type: object
+      required: [id, status, itemCount, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        source:
+          type: [string, "null"]
+        status:
+          $ref: "#/components/schemas/ImportRunStatus"
+        itemCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        appliedAt:
+          type: [string, "null"]
+          format: date-time
+
+    ImportRunPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRunSummary"
         nextCursor:
           type: [string, "null"]
 
