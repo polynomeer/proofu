@@ -146,6 +146,11 @@ step "references no foreign key protects"
 #
 #   exports.object_key -> export_files   a string, by design (ADR-0009 §4)
 #   provenance_links.source_id -> whichever table source_type names (polymorphic)
+#   import_items.target_id     -> whichever table target_type names (polymorphic, V21)
+#
+# The import ledger is deliberately not checked for a live target: the user may delete what an
+# import created, and the ledger still truthfully says it was brought in once. What must hold is
+# that the type is one this code knows, because an unknown one is a bug nobody would see.
 #
 # They are also the two that matter most: a document you cannot download and a sentence whose
 # source is gone are exactly what this product promises not to have.
@@ -175,6 +180,12 @@ check "every provenance link still finds its source" 0 \
       or (p.source_type = 'CLAIM'        and not exists (select 1 from claims t         where t.id = p.source_id))
       or (p.source_type = 'EVIDENCE'     and not exists (select 1 from evidence t       where t.id = p.source_id))
       or (p.source_type = 'REQUIREMENT'  and not exists (select 1 from requirements t   where t.id = p.source_id))")"
+
+check "every applied import points at a type we know" 0 \
+  "$(db_query "
+    select count(*) from import_items
+    where applied_at is not null
+      and target_type not in ('application', 'posting_snapshot', 'document_version', 'career_entry')")"
 
 if [ -n "$BOOT" ]; then
   step "the application on the restored copy"
