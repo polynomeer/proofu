@@ -63,6 +63,15 @@ data class ImportItem(
     fun field(name: String): String? = fields[name]?.trim()?.ifEmpty { null }
 
     /**
+     * Whether this item names the posting it was for.
+     *
+     * A past application cannot be recorded without it: `applications` needs a snapshot and a
+     * snapshot needs text. The server will not invent that text, so the archive supplies whatever
+     * it has — even a single line — as a posting item of its own.
+     */
+    val citesPosting: Boolean get() = links["posting"].orEmpty().any { it.isNotBlank() }
+
+    /**
      * What this item is missing before it can become anything. Empty means it can be planned —
      * not that it will be accepted, which is the planner's call.
      */

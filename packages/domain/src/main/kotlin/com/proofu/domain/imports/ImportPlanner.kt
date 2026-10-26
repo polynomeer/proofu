@@ -39,7 +39,14 @@ object ImportPlanner {
         val seen = mutableSetOf<String>()
         val keys = items.map { it.sourceKey }.toSet()
         return items.map { item ->
-            val reason = rejection(item, keys, repeated = !seen.add(item.sourceKey), applicable = applicable)
+            val reason =
+                rejection(
+                    item,
+                    keys,
+                    repeated = !seen.add(item.sourceKey),
+                    applicable = applicable,
+                    importedKeys = imported.keys,
+                )
             when {
                 reason != null -> ImportPlanEntry(item, ImportItemStatus.REJECTED, reason)
                 else -> ImportPlanEntry(item, verdict(item, imported[item.sourceKey]))
@@ -64,16 +71,23 @@ object ImportPlanner {
         keys: Set<String>,
         repeated: Boolean,
         applicable: Set<ImportItemType>,
+        importedKeys: Set<String>,
     ): String? {
         if (repeated) return "같은 source key가 번들에 두 번 있습니다: ${item.sourceKey}"
         val missing = item.missingFields()
         if (missing.isNotEmpty()) return "필요한 값이 없습니다: ${missing.joinToString(", ")}"
+        // A key the ledger already applied is not dangling: a second import may link to a posting
+        // that came in with the first one.
         val dangling =
             item.links.values
                 .flatten()
-                .filterNot { it in keys }
+                .filterNot { it in keys || it in importedKeys }
         if (dangling.isNotEmpty()) return "번들에 없는 항목을 가리킵니다: ${dangling.joinToString(", ")}"
         if (item.type !in applicable) return "이 단계에서는 ${item.type.name.lowercase()} 항목을 아직 들이지 않습니다"
+        if (item.type == ImportItemType.APPLICATION && !item.citesPosting) {
+            return "공고가 없습니다. 지원 건은 공고 원문 없이 만들 수 없으므로, " +
+                "가진 만큼이라도 posting 항목으로 함께 보내고 links.posting으로 가리키세요"
+        }
         return null
     }
 
