@@ -54,7 +54,7 @@ class AnthropicModelClient(
                             .cacheControl(CacheControlEphemeral.builder().build())
                             .build(),
                     ),
-                ).addUserMessageOfBlockParams(userBlocks(request))
+                ).addUserMessageOfContentBlockParams(userBlocks(request))
                 .outputConfig(
                     OutputConfig
                         .builder()
