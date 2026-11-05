@@ -84,6 +84,38 @@ export const contactRelationLabel = labelsOf<Schema<"ContactRelation">>({
   OTHER: "기타",
 });
 
+/** 가져오기 판정 (docs/product/personal-archive-import.md §흐름). */
+export const importItemStatusLabel = labelsOf<Schema<"ImportItemStatus">>({
+  NEW: "새 항목",
+  UNCHANGED: "이미 들여옴",
+  CHANGED: "원본이 바뀜",
+  CONFLICT: "양쪽이 바뀜",
+  REJECTED: "들일 수 없음",
+});
+
+export const importItemTypeLabel = labelsOf<Schema<"ImportItemType">>({
+  APPLICATION: "지원 이력",
+  POSTING: "공고",
+  DOCUMENT: "문서",
+  CAREER: "경력 사실",
+  NOTE: "메모",
+});
+
+export const importRunStatusLabel = labelsOf<Schema<"ImportRunStatus">>({
+  PLANNED: "계획만 세움",
+  APPLIED: "들여옴",
+  FAILED: "실패",
+});
+
+/** Postings come first because an application needs the posting it was for. */
+export const IMPORT_ITEM_TYPES: readonly Schema<"ImportItemType">[] = [
+  "POSTING",
+  "APPLICATION",
+  "DOCUMENT",
+  "CAREER",
+  "NOTE",
+];
+
 export const CONTACT_RELATIONS: readonly Schema<"ContactRelation">[] = [
   "MANAGER",
   "PEER",

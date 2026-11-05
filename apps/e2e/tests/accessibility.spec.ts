@@ -115,6 +115,7 @@ const SCREENS = [
   ["커리어 로그", "/career/logs"],
   ["인맥", "/career/contacts"],
   ["이력서 가져오기", "/career/import"],
+  ["자료 가져오기", "/career/imports"],
   ["Evidence 목록", "/evidence"],
   ["역량", "/evidence/capabilities"],
   ["채용공고 목록", "/jobs"],
