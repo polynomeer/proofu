@@ -38,6 +38,9 @@ export default async function CareerPage({ searchParams }: { searchParams: Searc
       <ButtonLink variant="secondary" href="/career/import">
         이력서 가져오기
       </ButtonLink>
+      <ButtonLink variant="secondary" href="/career/imports">
+        자료 가져오기
+      </ButtonLink>
       <ButtonLink variant="secondary" href="/career/logs">
         로그
       </ButtonLink>
