@@ -51,6 +51,8 @@ data class ImportItem(
     val fields: Map<String, String> = emptyMap(),
     /** Keys of other items this one belongs to, by role: "posting", "documents". */
     val links: Map<String, List<String>> = emptyMap(),
+    /** The text that belongs to this item, such as a posting's raw text. */
+    val content: String = "",
 ) {
     init {
         domainRequire(sourceKey.isNotBlank()) { "import item needs a source key" }
@@ -79,6 +81,33 @@ data class ImportItem(
 
     companion object {
         const val MAX_KEY_LENGTH = 200
+
+        /**
+         * What "the same content" means, in one place.
+         *
+         * The server computes this rather than trusting the sender, and the plan and the apply
+         * must compute it the same way or the guard that refuses a bundle which moved in between
+         * would compare two different things.
+         */
+        fun canonicalHash(
+            type: ImportItemType,
+            fields: Map<String, String>,
+            content: String?,
+        ): String =
+            sha256(
+                buildString {
+                    append(type.name).append('\n')
+                    fields.toSortedMap().forEach { (k, v) -> append(k).append('=').append(v.trim()).append('\n') }
+                    append(content?.trim().orEmpty())
+                },
+            )
+
+        private fun sha256(text: String): String =
+            java.security.MessageDigest
+                .getInstance("SHA-256")
+                .digest(text.toByteArray())
+                .joinToString("") { "%02x".format(it) }
+
         private val SHA256 = Regex("[0-9a-f]{64}")
 
         /**

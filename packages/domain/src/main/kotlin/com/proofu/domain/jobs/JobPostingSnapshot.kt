@@ -9,6 +9,9 @@ enum class SnapshotSource {
     MANUAL_TEXT,
     URL_FETCH,
     CAREER_OPS,
+
+    /** Brought in from the user's own archive (F21); the text is whatever they had. */
+    IMPORTED,
 }
 
 /** Immutable capture of a posting at a point in time. A changed contentHash yields a new snapshot. */

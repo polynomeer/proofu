@@ -1,5 +1,7 @@
 package com.proofu.domain.imports
 
+import com.proofu.domain.applications.ApplicationStatus
+
 /** What the ledger already knows about a key in this workspace. */
 data class ImportedBefore(
     val contentHash: String,
@@ -84,6 +86,12 @@ object ImportPlanner {
                 .filterNot { it in keys || it in importedKeys }
         if (dangling.isNotEmpty()) return "번들에 없는 항목을 가리킵니다: ${dangling.joinToString(", ")}"
         if (item.type !in applicable) return "이 단계에서는 ${item.type.name.lowercase()} 항목을 아직 들이지 않습니다"
+        if (item.type == ImportItemType.APPLICATION) {
+            val status = item.field("status")
+            if (status != null && ApplicationStatus.entries.none { it.name == status }) {
+                return "모르는 지원 상태입니다: $status"
+            }
+        }
         if (item.type == ImportItemType.APPLICATION && !item.citesPosting) {
             return "공고가 없습니다. 지원 건은 공고 원문 없이 만들 수 없으므로, " +
                 "가진 만큼이라도 posting 항목으로 함께 보내고 links.posting으로 가리키세요"
