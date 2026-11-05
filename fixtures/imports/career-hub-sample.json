@@ -1,0 +1,57 @@
+{
+  "source": "career-hub",
+  "items": [
+    {
+      "sourceKey": "jd-analysis/nimbus-backend.md",
+      "type": "POSTING",
+      "sourcePath": "jd-analysis/nimbus-backend.md",
+      "fields": {
+        "company": "님버스테크",
+        "roleTitle": "백엔드 엔지니어",
+        "canonicalUrl": "https://jobs.example.test/nimbus/backend"
+      }
+    },
+    {
+      "sourceKey": "APPLICATIONS.md#nimbus-backend",
+      "type": "APPLICATION",
+      "sourcePath": "APPLICATIONS.md:42",
+      "fields": {
+        "company": "님버스테크",
+        "roleTitle": "백엔드 엔지니어",
+        "status": "DOCUMENT_REJECTED",
+        "deadlineAt": "2026-03-14"
+      },
+      "links": { "posting": ["jd-analysis/nimbus-backend.md"] }
+    },
+    {
+      "sourceKey": "jd-analysis/mirae-platform.md",
+      "type": "POSTING",
+      "sourcePath": "jd-analysis/mirae-platform.md",
+      "fields": { "company": "미래플랫폼", "roleTitle": "플랫폼 엔지니어" }
+    },
+    {
+      "sourceKey": "APPLICATIONS.md#mirae-platform",
+      "type": "APPLICATION",
+      "sourcePath": "APPLICATIONS.md:58",
+      "fields": { "company": "미래플랫폼", "roleTitle": "플랫폼 엔지니어", "status": "SUBMITTED" },
+      "links": { "posting": ["jd-analysis/mirae-platform.md"] }
+    },
+    {
+      "sourceKey": "APPLICATIONS.md#orphan-role",
+      "type": "APPLICATION",
+      "sourcePath": "APPLICATIONS.md:77",
+      "fields": { "company": "출처없는회사", "roleTitle": "서버 개발자", "status": "SUBMITTED" }
+    },
+    {
+      "sourceKey": "resumes/2026-03-nimbus.md",
+      "type": "DOCUMENT",
+      "sourcePath": "resumes/2026-03-nimbus.md",
+      "fields": { "title": "님버스테크 지원 이력서", "type": "RESUME" }
+    }
+  ],
+  "contents": {
+    "jd-analysis/nimbus-backend.md": "[모집 부문]\n백엔드 엔지니어\n\n[자격 요건]\n- 서버 개발 경력 5년 이상\n- Kotlin 또는 Java 실무 경험\n\n[우대 사항]\n- 대용량 트래픽 처리 경험",
+    "jd-analysis/mirae-platform.md": "[자격 요건]\n- 사내 플랫폼 운영 경험\n- Kubernetes 운영 경험\n\n[전형 절차]\n서류 → 과제 → 면접",
+    "resumes/2026-03-nimbus.md": "## 경력\n- 합성 회사 백엔드 엔지니어 (2021-2026)\n"
+  }
+}
