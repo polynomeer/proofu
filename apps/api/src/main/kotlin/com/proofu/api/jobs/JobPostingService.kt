@@ -45,6 +45,10 @@ class JobPostingService(
             SnapshotSource.MANUAL_TEXT -> importManual(workspace, request)
             SnapshotSource.URL_FETCH -> throw NotImplementedException("URL fetching")
             SnapshotSource.CAREER_OPS -> throw NotImplementedException("career-ops import")
+            // IMPORTED is made by the bundle path (F21) and nowhere else: a posting pasted here
+            // must not be able to call itself imported.
+            SnapshotSource.IMPORTED ->
+                throw InvalidRequestException("IMPORTED 스냅샷은 가져오기 번들로만 만들어집니다")
         }
 
     private fun importManual(
