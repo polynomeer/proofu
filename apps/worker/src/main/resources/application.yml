@@ -8,6 +8,13 @@ spring:
   threads:
     virtual:
       enabled: true
+  task:
+    scheduling:
+      # The job poller shares this scheduler with the retention sweeper and the stuck-job reaper.
+      # One thread (Spring's default) means a sweep over many workspaces holds it for minutes and
+      # every queued job waits that long, so each scheduled task gets a thread of its own.
+      pool:
+        size: ${WORKER_SCHEDULER_THREADS:4}
 
 proofu:
   worker:
