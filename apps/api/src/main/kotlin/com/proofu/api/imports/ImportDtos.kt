@@ -39,6 +39,20 @@ data class ImportItemRequest(
     val links: Map<String, List<String>> = emptyMap(),
 )
 
+/**
+ * What to create out of a plan, and the bundle to create it from.
+ *
+ * The bundle comes back with the request because none of it was stored: the ledger holds keys,
+ * hashes and verdicts only. Each picked item is hashed again and must match what the plan
+ * recorded, so a bundle that moved in between is refused rather than applied from a stale preview.
+ */
+data class ImportApplyRequest(
+    @field:NotNull
+    @field:Size(min = 1, max = MAX_ITEMS, message = "한 번에 {max}건까지 적용할 수 있습니다")
+    val sourceKeys: List<String>? = null,
+    @field:NotNull @field:Valid val bundle: ImportBundleRequest? = null,
+)
+
 data class ImportItemResponse(
     val id: UUID,
     val sourceKey: String,

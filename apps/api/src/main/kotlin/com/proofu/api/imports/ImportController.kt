@@ -147,6 +147,40 @@ class ImportController(
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) limit: Int,
     ): ImportRunPage = service.list(workspace, cursor?.let(InstantIdCursor::decode), limit)
 
+    /** Creates what the user picked. The bundle rides along; see [ImportApplyRequest]. */
+    @PostMapping("/imports/{id}/apply")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    fun apply(
+        workspace: WorkspaceContext,
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: ImportApplyRequest,
+    ): AcceptedJob {
+        service.get(workspace, id)
+        val bundle = requireNotNull(request.bundle)
+        return AcceptedJob(
+            jobs.enqueue(
+                workspace,
+                type = JobTypes.IMPORT_APPLY,
+                payload =
+                    mapOf(
+                        "runId" to id.toString(),
+                        "sourceKeys" to requireNotNull(request.sourceKeys),
+                        "items" to
+                            requireNotNull(bundle.items).map {
+                                mapOf(
+                                    "sourceKey" to requireNotNull(it.sourceKey).trim(),
+                                    "type" to requireNotNull(it.type).name,
+                                    "sourcePath" to it.sourcePath,
+                                    "fields" to it.fields,
+                                    "links" to it.links,
+                                )
+                            },
+                        "contents" to bundle.contents,
+                    ),
+            ),
+        )
+    }
+
     @GetMapping("/imports/{id}")
     fun get(
         workspace: WorkspaceContext,

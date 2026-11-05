@@ -1,7 +1,5 @@
 package com.proofu.worker.imports
 
-import com.proofu.domain.imports.ImportItem
-import com.proofu.domain.imports.ImportItemType
 import com.proofu.domain.imports.ImportPlanner
 import com.proofu.domain.imports.ImportedBefore
 import com.proofu.worker.jobs.JobFailure
@@ -11,7 +9,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
 import org.springframework.transaction.support.TransactionTemplate
-import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 import java.security.MessageDigest
 import java.util.UUID
@@ -32,6 +29,7 @@ class ImportPlanJobHandler(
     private val jdbc: JdbcTemplate,
     private val tx: TransactionTemplate,
     private val mapper: ObjectMapper,
+    private val hashes: ImportHashing,
 ) : JobHandler {
     private val log = LoggerFactory.getLogger(ImportPlanJobHandler::class.java)
 
@@ -39,13 +37,7 @@ class ImportPlanJobHandler(
 
     override fun handle(job: JobRecord): String {
         val payload = mapper.readTree(job.payload)
-        val contents =
-            payload
-                .get("contents")
-                ?.properties()
-                ?.associate { it.key to it.value.asString() }
-                .orEmpty()
-        val items = payload.get("items")?.toList()?.map { it.toItem(contents) } ?: emptyList()
+        val items = hashes.itemsOf(payload)
         if (items.isEmpty()) throw JobFailure("VALIDATION_FAILED", "bundle has no items", retryable = false)
 
         val imported = importedBefore(job.workspaceId, items.map { it.sourceKey })
@@ -146,41 +138,7 @@ class ImportPlanJobHandler(
         return updated.isAfter(appliedAt)
     }
 
-    private fun JsonNode.toItem(contents: Map<String, String>): ImportItem {
-        val key = get("sourceKey")?.asString().orEmpty()
-        val type =
-            runCatching { ImportItemType.valueOf(get("type")?.asString().orEmpty()) }
-                .getOrElse { throw JobFailure("VALIDATION_FAILED", "unknown item type", retryable = false) }
-        val fields = get("fields")?.properties()?.associate { it.key to it.value.asString() }.orEmpty()
-        val links =
-            get("links")
-                ?.properties()
-                ?.associate { (name, node) -> name to node.toList().map { it.asString() } }
-                .orEmpty()
-        return ImportItem(
-            sourceKey = key,
-            type = type,
-            contentHash = canonicalHash(type, fields, contents[key]),
-            sourcePath = get("sourcePath")?.asString(),
-            fields = fields,
-            links = links,
-        )
-    }
-
-    /** The same content always hashes the same way, whoever wrote the adapter. */
-    private fun canonicalHash(
-        type: ImportItemType,
-        fields: Map<String, String>,
-        content: String?,
-    ): String =
-        sha256(
-            buildString {
-                append(type.name).append('\n')
-                fields.toSortedMap().forEach { (k, v) -> append(k).append('=').append(v.trim()).append('\n') }
-                append(content?.trim().orEmpty())
-            },
-        )
-
+    /** Identifies the bundle as a whole, so the same file is recognised when it is sent twice. */
     private fun sha256(text: String): String =
         MessageDigest.getInstance("SHA-256").digest(text.toByteArray()).joinToString("") { "%02x".format(it) }
 

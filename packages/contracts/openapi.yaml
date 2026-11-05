@@ -792,6 +792,37 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  /imports/{id}/apply:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [career]
+      operationId: applyImport
+      summary: Create what was picked out of a plan
+      description: |
+        Hands the picked keys and the bundle to `import.apply` (202 + jobId).
+
+        **The bundle comes back with the request.** Nothing of it was stored between planning and
+        applying — the ledger holds keys, hashes and verdicts only — so each picked item is hashed
+        again and must match what the plan recorded. An item whose content moved in between is
+        skipped with a reason rather than applied from a stale preview.
+
+        This stage applies `NEW` items only, postings before the applications that cite them. A
+        posting becomes a snapshot with `source: IMPORTED`, carrying exactly the text the archive
+        had; the server never writes posting text of its own. An application is created at the
+        status the archive recorded rather than walked there through transitions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportApplyRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/Accepted"
+        default:
+          $ref: "#/components/responses/Problem"
+
   /contacts:
     get:
       tags: [career]
@@ -3497,6 +3528,20 @@ components:
         nextCursor:
           type: [string, "null"]
 
+    ImportApplyRequest:
+      type: object
+      required: [sourceKeys, bundle]
+      properties:
+        sourceKeys:
+          description: Which items of the plan to create
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            type: string
+        bundle:
+          $ref: "#/components/schemas/ImportBundle"
+
     ImportItemType:
       type: string
       enum: [APPLICATION, POSTING, DOCUMENT, CAREER, NOTE]
@@ -4172,7 +4217,7 @@ components:
 
     SnapshotSource:
       type: string
-      enum: [MANUAL_TEXT, URL_FETCH, CAREER_OPS]
+      enum: [MANUAL_TEXT, URL_FETCH, CAREER_OPS, IMPORTED]
 
     JobPostingSnapshotSummary:
       type: object
